@@ -61,6 +61,10 @@
 #include	<net/if.h>
 #include	<sys/ioctl.h>
 #include    <pthread.h>
+#include	<net/lisp/lisp.h>
+#include	<net/lisp/maptables.h>
+#include	<poll.h>
+#include	<time.h>
 
 typedef enum			{FALSE,TRUE} boolean;
 #define	uchar			u_char
@@ -76,6 +80,11 @@ typedef enum			{FALSE,TRUE} boolean;
 #define	MIN_EPHEMERAL_PORT	32768
 #define	MAX_EPHEMERAL_PORT	65535
 
+#define LISP_AFI_IP		1
+#define LISP_AFI_IPV6		2
+#define	LISP_IP_MASK_LEN	32
+#define	LISP_IPV6_MASK_LEN	128
+	
 /*
  *	VERSION 
  *
@@ -109,6 +118,15 @@ typedef enum			{FALSE,TRUE} boolean;
  */
 
 #define SA_LEN(a) ((a == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6))
+
+/*
+ *      IA_LEN --
+ *
+ *      inet sockaddr length
+ *
+ */
+
+#define IA_LEN(a) ((a == AF_INET) ? sizeof(struct in_addr) : sizeof(struct in6_addr))
 
 /*
  *	names for where the udp checksum goes
@@ -150,6 +168,55 @@ typedef enum			{FALSE,TRUE} boolean;
 
 #define LISP_AFI_IP			1
 #define LISP_AFI_IPV6		2
+
+#define MAPM_VERSION	1	/* Up the ante and ignore older versions */
+
+#define MAPM_ADD	   0x01	 /* Add Map */
+#define MAPM_DELETE	   0x02	 /* Delete Map */
+#define MAPM_CHANGE	   0x03	 /* Change Mapping (not yet implemented) */
+#define MAPM_GET 	   0x04	 /* Get matching mapping */
+#define MAPM_MISS          0x05  /* Lookup Failed  (general case) */
+#define MAPM_MISS_EID      0x06  /* Lookup Failed  and EID returned */
+#define MAPM_MISS_HEADER   0x07  /* Lookup Failed  and IP header returned */
+#define MAPM_MISS_PACKET   0x08  /* Lookup Failed  and Packet returned */
+#define MAPM_LSBITS        0x09  /* Locator Status Bits Changed */
+#define MAPM_LOCALSTALE    0x0A  /* Local Map Version is stale */
+#define MAPM_REMOTESTALE   0x0B  /* Remote Map Version is stale */
+#define MAPM_NONCEMISMATCH 0x0C  /* Rceived a mismatching nonce */
+
+/* Sysctl missmsg state definition
+ */
+#define LISP_MISSMSG_EID           1
+#define LISP_MISSMSG_HEADER        2
+#define LISP_MISSMSG_PACKET        3
+
+/* Sysctl ETR state definition
+ */
+#define LISP_ETR_STANDARD          1
+#define LISP_ETR_NOTIFY            2
+#define LISP_ETR_SECURE            3
+
+/*
+ * Bitmask values for map_addrs.
+ */
+#define MAPA_EID	0x01	 /* EID sockaddr present */
+#define MAPA_EIDMASK	0x02	 /* netmask sockaddr present */
+#define MAPA_RLOC	0x04	 /* Locator present */
+
+/*
+ * Index offsets for sockaddr array for alternate internal encoding.
+ */
+#define MAPX_EID	0	 /* EID sockaddr present */
+#define MAPX_EIDMASK	1	 /* EIDmask sockaddr present */
+#define MAPX_RLOC	2	 /* RLOC sockaddr present */
+#define MAPX_MAX	3	 /* size of array to allocate */
+
+
+#define COUNT		3
+#define MIN_COUNT		1
+#define	MAX_COUNT		3
+#define MAX_LOOKUPS     100     /* Maximum allowed concurrent lookups */
+#define MAP_REPLY_TIMEOUT	2	/* seconds */
 
 
 /*Encapsulated Control Message Format
@@ -548,9 +615,33 @@ struct map_db {
 	struct sockaddr_in sourceip;
 	struct sockaddr_in6 sourceip6;
 	struct map_server_db *ms;
+	struct map_server_db *mr;
 	struct eid_rloc_db *data;
 };
 
+struct openlisp_mapmsg{
+	struct	map_msghdr m_map;
+	char	m_space[8192];
+};
+
+struct eid_lookup {
+    struct sockaddr_storage eid;/* Destination EID */
+    int rx;                     /* Receiving socket */
+    uint32_t nonce0[MAX_COUNT]; /* First half of the nonce */
+    uint32_t nonce1[MAX_COUNT]; /* Second half of the nonce */
+    uint16_t sport;             /* EMR inner header source port */
+    struct timespec start;      /* Start time of lookup */
+    int count;                  /* Current count of retries */
+    uint64_t active;            /* Unique lookup identifier, 0 if inactive */
+	char * pkt;					/* Point to map request package */
+};
+
+struct thread_params {
+	int opl_socket;
+	int mr_socket;
+	struct sockaddr_storage map_resolver_addr;
+	struct sockaddr_storage my_addr;	
+};
 
 extern  unsigned int	debug;
 extern	unsigned int	machinereadable;
@@ -567,3 +658,4 @@ extern char		*strdup();
 #endif
 
 static const char filename[] = "/etc/register_parameters.txt";
+

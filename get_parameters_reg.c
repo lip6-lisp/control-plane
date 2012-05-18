@@ -54,7 +54,9 @@ void getparameters_reg(struct map_db *params, int afi){
 	struct addrinfo *res;
 	struct rloc_db *rloc_db = NULL, * rloc_lst = NULL;
 	struct eid_rloc_db *eid_rloc_db = NULL, * eid_rloc_lst = NULL;
-	struct map_server_db * ms_db = NULL, *ms_lst = NULL;
+	struct map_server_db * ms_db = NULL, *mr_db = NULL, *mr_lst = NULL, *ms_lst = NULL;
+	char  port_str[NI_MAXSERV];
+
 	if (afi == LISP_AFI_IP) {
 		afi = AF_INET;
 	}
@@ -67,7 +69,7 @@ void getparameters_reg(struct map_db *params, int afi){
 
 		int nx; //{0=NOTHING,1=SOURCEIP,2=MAPSERVER,3=EID,4=RLOC};
         nx = 0;
-		char opk[5][20] = {"EMPTY","@SOURCEIP","@MAPSERVER","@EID","@RLOC"};
+		char opk[5][20] = {"EMPTY","@MAPRESOLVER","@MAPSERVER","@EID", "@SOURCEIP"};
 		int opk_c = 5;
 
 		
@@ -103,19 +105,23 @@ void getparameters_reg(struct map_db *params, int afi){
 			token[strlen(data[i-1])-1] = '\0';
 			
 			switch (nx) {
-				case 1://sourceip
-					ip2sockaddr(data[0], &res, NULL);
-					
-					if (res->ai_family == AF_INET) {
-						memcpy(&(params->sourceip), res->ai_addr, sizeof(struct sockaddr_in));
+				case 1://map resolver				
+					if (mr_db == NULL){
+						mr_db = malloc(sizeof(struct map_server_db));
+						mr_lst = mr_db;
 					}
 					else{
-						memcpy(&(params->sourceip6), res->ai_addr, sizeof(struct sockaddr_in6));
+						mr_lst->ms_next = malloc(sizeof(struct map_server_db));
+						mr_lst = mr_lst->ms_next;
 					}
-	
+					mr_lst->ms_next = NULL;
+					sprintf(port_str, "%d", LISP_CONTROL_PORT);
+					ip2sockaddr(data[0], &res, port_str);
+					memcpy(&mr_lst->ms_ip, res->ai_addr, SA_LEN(res->ai_family));
+					
 					freeaddrinfo(res);
 					break;
-				
+
 				case 2://mapserver
 					if (ms_db == NULL){
 						ms_db = malloc(sizeof(struct map_server_db));
@@ -128,13 +134,9 @@ void getparameters_reg(struct map_db *params, int afi){
 					ms_lst->ms_next = NULL;
 					ms_lst->ms_key = malloc(strlen(data[1])* sizeof(char));
 					strcpy((char *)ms_lst->ms_key, data[1]);
-
-					char  port_str[NI_MAXSERV];
 					sprintf(port_str, "%d", LISP_CONTROL_PORT);
-
 					ip2sockaddr(data[0], &res, port_str);
-					memcpy(&ms_lst->ms_ip, res->ai_addr,
-							(res->ai_family == AF_INET)?sizeof(struct sockaddr_in):sizeof(struct sockaddr_in6));
+					memcpy(&ms_lst->ms_ip, res->ai_addr, SA_LEN(res->ai_family));
 					
 					freeaddrinfo(res);
 					break;
@@ -162,8 +164,7 @@ void getparameters_reg(struct map_db *params, int afi){
 					eid_rloc_lst->locator = 0;
 
 					ip2sockaddr(data[0], &res,NULL);
-					memcpy(&eid_rloc_lst->ed_ip, res->ai_addr,
-							(res->ai_family = AF_INET)?sizeof(struct sockaddr_in):sizeof(struct sockaddr_in6));
+					memcpy(&eid_rloc_lst->ed_ip, res->ai_addr, SA_LEN(res->ai_family));
 					nx = 4;
 					rloc_db = NULL;
 					freeaddrinfo(res);				
@@ -185,8 +186,7 @@ void getparameters_reg(struct map_db *params, int afi){
 					eid_rloc_lst->locator = eid_rloc_lst->locator + 1;
 
 					ip2sockaddr(data[0], &res,NULL);
-					memcpy(&rloc_lst->rl_ip, res->ai_addr,
-							(res->ai_family == AF_INET)?sizeof(struct sockaddr_in):sizeof(struct sockaddr_in6));					
+					memcpy(&rloc_lst->rl_ip, res->ai_addr,SA_LEN(res->ai_family));					
 					freeaddrinfo(res);				
 
 					break;
@@ -196,9 +196,9 @@ void getparameters_reg(struct map_db *params, int afi){
 		}//end while
 		fclose(file);
 		params->ms = ms_db;
+		params->mr = mr_db;
 		params->data = eid_rloc_db;
 		//print_params(params);
-
 	}
 	else {
 		perror(filename); /* why didn't the file open? */
@@ -227,11 +227,21 @@ int ip2sockaddr(char * ip, struct addrinfo **res, char * port){
 	
 	struct addrinfo hints;
 	int e; 
+    struct protoent	    *proto;
+    if ((proto = getprotobyname("UDP")) == NULL) {
+		perror ("getprotobyname");
+		exit(BAD);
+    }
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;	//Allow IPv4 or IPv6 
 	hints.ai_socktype  = SOCK_DGRAM;	// Datagram socket 
 	hints.ai_flags  = AI_PASSIVE;	
+    hints.ai_protocol  = proto->p_proto;
+    hints.ai_canonname = NULL;
+    hints.ai_addr      = NULL;
+    hints.ai_next      = NULL;
+
 	
 	if ((e = getaddrinfo(ip, port, &hints, res)) != 0) {
 			fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(e));
@@ -260,27 +270,28 @@ void sockaddr2ip(struct sockaddr_storage *sk, char *res){
 	memcpy(res,&ip, INET6_ADDRSTRLEN);
 }
 
-//Print all params
+//Print all parameters
 void print_params(struct map_db * map_db){
 	
 	int i, j;
-	struct map_server_db *ms;
+	struct map_server_db *ms, *mr;
 	struct eid_rloc_db *eid;
 	struct rloc_db *rloc;
 	char ip[INET6_ADDRSTRLEN];
 
-	printf("\nParamas from configure file\n");
+	printf("Parameters from configuration file\n");
     printf("==========================\n");
 	
-	sockaddr2ip( (struct sockaddr_storage *)(&map_db->sourceip), ip);
-	printf("SOURCE IP= %s\n",ip); 
-	sockaddr2ip( (struct sockaddr_storage *)(&map_db->sourceip6), ip);
-	printf("SOURCE IP= %s\n",ip); 
+	//sockaddr2ip( (struct sockaddr_storage *)(&map_db->sourceip), ip);
+	//printf("SOURCE IP= %s\n",ip); 
+	//sockaddr2ip( (struct sockaddr_storage *)(&map_db->sourceip6), ip);
+	//printf("SOURCE IP= %s\n",ip); 
 	
-	printf("\n");
+	//printf("\n");
 
-	//map server
+	//show list of map-server and map-resolver
 	ms = map_db->ms;
+	mr = map_db->mr;
 	i = 0;
 
 	while(ms != NULL){
@@ -292,7 +303,16 @@ void print_params(struct map_db * map_db){
 		ms = ms->ms_next;
 	}
 
-	//eid
+	i = 0;
+	while(mr != NULL){
+		sockaddr2ip(&(mr->ms_ip), ip);
+		printf("Map resolver[%i] = %s\n",
+					i++, 
+					ip);		
+		mr = mr->ms_next;
+	}
+
+	//Show mapping eid-rloc
 	eid = map_db->data;
 	i = 0;
 

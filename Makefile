@@ -37,7 +37,7 @@
 #
 #
 
-SRC      = map_register_reply.c hmac_sha.c sha.c  send_map_register.c send_map_reply.c get_parameters_reg.c 
+SRC      = map_register_reply.c hmac_sha.c sha.c cksum.c  send_map_register.c send_map_reply.c send_map_request.c get_parameters_reg.c 
 INC	 = map_register_reply.h  sha.h
 OBJ	 = $(SRC:%.c=%.o)
 EXE      = lisp_register_reply

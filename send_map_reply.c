@@ -190,7 +190,7 @@ int send_map_reply(s,noncereply0,noncereply1,from,source_eid_afi,source_eid_pref
 		perror("sendto");
 		exit(BAD);
 	}
-
+	printf("Sent map reply: finish\n");
 	if (nbytes != (length)) {
 		fprintf(stderr,
 				"send_map_reply: nbytes (%d) != length(%d)\n",
