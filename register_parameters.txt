@@ -31,9 +31,9 @@
 
 @MAPSERVER
 #mapserver			Key
-193.162.145.50 			lip6-fr-xtr
-195.50.116.18 			lip6-fr-xtr
-2001:67c:21b4:109::b 		lip6-fr-xtr
+193.162.145.50 			lip6
+195.50.116.18 			lip6
+2001:67c:21b4:109::b 		lip6
 
 @EID
 #Eid-Prefix	Subnet-mask	TTL	Flag
