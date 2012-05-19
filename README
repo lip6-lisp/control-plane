@@ -4,6 +4,7 @@
     The program runs in a FreeBSD environment, and is fully compatible with OpenLISP, and can optionally use its mapping socket. 
     It implements map-register and map-reply functionalities (as of draft-ietf-lisp-22), a novel change-priority-message to differently mange virtual machine mobility, and allows registering to many mapping servers with different keys. 
     Please read at the companion PDF short paper for some more details.
+    This code is the result of student work at LIP6/UPMC, GMU and VNU. More information about LISP activities at LIP6 can be found here: http://www.lisp.ipv6.lip6.fr
 
 
 
