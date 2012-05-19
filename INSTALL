@@ -23,9 +23,10 @@ the configure file to suit before go to next step.
 ##
 
 #Version 01.00: 16/08/2011
-	By Guruprasad K. Rao - Communications and Networking Lab., George Mason Universityby  <grao2@gmu.edu>
+	By Guruprasad K. Rao - Communications and Networking Lab., George Mason University
 
 #Version 01.01: 12/04/2012
+	By Dung Phung Chi - VNU Hanoi and LIP6 UPMC.
   * Support draft-ietf-lisp-22.txt
   * Change format of configure file
   * Change to allow working with multi EID: register multi EID, answer to map request with multi EID
@@ -35,6 +36,7 @@ the configure file to suit before go to next step.
   * Fix bugs
 
 #Version 01.02: 24/04/2012
+	By Dung Phung Chi - VNU Hanoi and LIP6 UPMC - and Patrick Raad - NSS and LIP6 UPMC.
   * Support IPv6
   * Change format of configure file to easy define
   * Support multi map server with multi key
