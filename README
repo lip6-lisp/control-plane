@@ -11,7 +11,8 @@
     
     To implement control-plane, xTR (IRT or ERT) need to know about mapping between
     the EIDs and RLOCs that it manages, and which map-servers to send register message. 
-    That information is stored in the configure file. The configuration file includes 
+    Please refer to the LISP specification for an explanation about the LISP architecture and control-plane.
+    That information is stored in a configuration file text file. The configuration file includes 
     one section for map-server and one or more sections for EID-to-RLOC mappings. 
     Each sections start by a control keyword: 
     @MAPSERVER for map-server section and @EID for EID-to-RLOC section.
@@ -22,9 +23,9 @@
 	E.g:
 	----
 	@MAPSERVER
-	193.162.145.50 					lip6
-	l3-london-mr-ms.rloc.lisp4.net			lip6
-	2001:67c:21b4:109::b 				lip6
+	193.162.145.50 					AUTH_KEY
+	l3-london-mr-ms.rloc.lisp4.net			AUTH_KEY
+	2001:67c:21b4:109::b 				AUTH_KEY
 
     Each EID-to-RLOC section includes mapping between one EID and RLOC(s). 
     The first line of section contains EID's information: EID-prefix, Subnetmask, 
@@ -53,9 +54,6 @@
 	2001:660:240::242 	5 		100 		1
 	2001:660:240::243	3		100		0
 
-    Please refer to the original LISP specification [section 6] for more details about the terms.
-
-
 
 
 3. THREAD
@@ -69,15 +67,15 @@
     Encapsulated Control Message (ECM), which contain map-request message. 
     ECM maybe has inner header in IPv4 and outer header in IPv6 or vice versa.
     
-    For messages format and how thread working, please refer to the original LISP specification [section 6].
+    For messages format and how thread working, please refer to the  LISP specification.
 
 
 
 
 4. DEBUG
     
-    During running, the program prints debug information to console. 
-    With control-plane message, the debug information exit in two forms: 
+    While running, the program prints debug information to the console. 
+    Debug information is displayed in two forms: 
     raw package format (in hexa) and human readable format.
 
 	E.g:
