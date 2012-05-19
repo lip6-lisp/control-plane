@@ -1,40 +1,18 @@
 1.  INTRODUCTION
 
-    Open Lisp control plane implements the control-plane function of LISP (Locator/Identifier Separation Protocol).
-    The basic idea of LISP is to replace IP addresses with two new types of numbers:
-        
-	- Routing Locators (RLOCs), which are topologically assigned to network attachment points
-	and used for routing and forwarding of packets through the network;
-        
-	- Endpoint Identifiers (EIDs) which are assigned independently from the network topology,
-	are used for numbering devices, and are aggregated along administrative boundaries [IETF-LISP-Draft].
-
-    During the packet exchange between the two hosts, at the beginning, 
-    the source issues a normal IP package with source and destination IP are EIDs. 
-    When the package reach one of border routers of its domain (ITR), ITR lookup 
-    for EID-to-RLOC mapping and then it append a new LISP header to the package (encapsulation processing) 
-    before forward it. In the new header (outer header), source and destination IP are RLOCs. 
-    The new package is routed over core network until it reaches the border router of 
-    destination host (ETR). At this time, ETR strips the outer header (decapsulation processing) 
-    and deliver the package to the destination host. The eventual reply of the host follows the same steps.
-    
-    Lisp control-plane implements the function of mapping between 
-    the two spaces numbering. Our purpose is the provision a control-plane support in FreeBSD. 
-    It implements two functions, which are map-register and map-reply. 
-    The first one is register xTR's EID-to-RLOC mapping database with map-server. The second function allows xTR response with map-request. In this document, we will describe the architecture of our implement.
-
-    For terms used in this document (e.g., xTR, MS, MR), please refer to the original LISP specification.
+    The provided LISP control plane implements some control-plane functions of LISP (Locator/Identifier Separation Protocol).
+    The program runs in a FreeBSD environment, and is fully compatible with OpenLISP, and can optionally use its mapping socket. 
+    It implements map-register and map-reply functionalities (as of draft-ietf-lisp-22), a novel change-priority-message to differently mange virtual machine mobility, and allows registering to many mapping servers with different keys. 
+    Please read at the companion PDF short paper for some more details.
 
 
 
-
-
-2. CONFIGURE FILE
+2. CONFIGURATION FILE
     
     To implement control-plane, xTR (IRT or ERT) need to know about mapping between
-    the EIDs and RLOCs that it manages, which map-servers to send register message. 
-    That information is kept in configure file. The configuration file includes 
-    one section for map-server and one or more sections for EID-to-RLOC database. 
+    the EIDs and RLOCs that it manages, and which map-servers to send register message. 
+    That information is stored in the configure file. The configuration file includes 
+    one section for map-server and one or more sections for EID-to-RLOC mappings. 
     Each sections start by a control keyword: 
     @MAPSERVER for map-server section and @EID for EID-to-RLOC section.
 
@@ -48,7 +26,7 @@
 	l3-london-mr-ms.rloc.lisp4.net			lip6
 	2001:67c:21b4:109::b 				lip6
 
-    Each EID-to-RLOC section include mapping between one EID and RLOC(s). 
+    Each EID-to-RLOC section includes mapping between one EID and RLOC(s). 
     The first line of section contains EID's information: EID-prefix, Subnetmask, 
     Time-To-Live (TTL) and Flag. 
     Flag is used to indicate if EID-prefix is registered with map-server or not. 
@@ -75,7 +53,7 @@
 	2001:660:240::242 	5 		100 		1
 	2001:660:240::243	3		100		0
 
-    Please refer to the original LISP specification [section 6] for more detail about terms.
+    Please refer to the original LISP specification [section 6] for more details about the terms.
 
 
 
@@ -154,4 +132,4 @@
 
 6. COMMENT AND BUG
     
-    All comment and bug report are welcome!!!
+    All comment and bug report are welcome.
