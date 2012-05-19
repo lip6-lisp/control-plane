@@ -7,6 +7,7 @@
 #
 # The configuration directives are grouped into two basic sections:
 # one for map server and one for EID-to-RLOC database
+# What you find below is an example configuration of the LIP6 site.
 #
 # -------------------------------------------------------------------------
 #
@@ -31,9 +32,9 @@
 
 @MAPSERVER
 #mapserver			Key
-193.162.145.50 			lip6
-195.50.116.18 			lip6
-2001:67c:21b4:109::b 		lip6
+193.162.145.50 			SITE-AUTH-KEY
+195.50.116.18 			SITE-AUTH-KEY
+2001:67c:21b4:109::b 		SITE-AUTH-KEY
 
 @EID
 #Eid-Prefix	Subnet-mask	TTL	Flag
