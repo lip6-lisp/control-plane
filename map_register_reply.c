@@ -5,7 +5,6 @@
  *
  *	Copyright (c) 2012 LIP6 <http://www.lisp.ipv6.lip6.fr>
  *	Base on <Lig code> copyright by David Meyer <dmm@1-4-5.net>
- *	Base on <OpenLisp code> copyright by OpenLisp Project <openlisp.org>
  *	All rights reserved.
  *
  *	LIP6
@@ -224,6 +223,28 @@ void * mask2ip(int masklen, int ipv, struct addrinfo **res){
 	return 0;
 }
 
+int net2mask(int af, char *net_str){
+	uchar *ptr;
+	int max = (af == AF_INET)?24:128;
+	int masklen = 0;
+	ptr = (uchar *)net_str;
+	while(max > 0){
+		
+		if (*ptr == 255)
+			masklen +=8;
+		else{
+			while(*ptr > 0){
+				masklen++;
+				*ptr = *ptr <<1;
+			}
+			break;
+		}
+
+		ptr = CO(ptr,8);
+		max = max - 8;
+	}
+	return masklen;
+}
 //
 //Add mapping to database of openlisp
 //
@@ -233,7 +254,7 @@ void add_eid(int s, void *params, int db){
 	struct eid_rloc_db * data_ptr = params;
 	struct openlisp_mapmsg m_mapmsg;
 	struct rloc_mtx rloc_mtx;
-	uint8_t pkt_len, rlen;
+	int pkt_len, rlen;
 	char *ptr;
 	struct addrinfo *res;
 	struct rloc_db * rloc = data_ptr->rloc;
@@ -243,7 +264,7 @@ void add_eid(int s, void *params, int db){
 	m_mapmsg.m_map.map_version = MAPM_VERSION;
 	m_mapmsg.m_map.map_type =  MAPM_ADD;      
 	m_mapmsg.m_map.map_flags = (db == 1? MAPF_DB: 0) | MAPF_STATIC | MAPF_UP; 
-	m_mapmsg.m_map.map_addrs = MAPA_EID | MAPA_EIDMASK | MAPA_RLOC;
+	m_mapmsg.m_map.map_addrs = MAPA_EID | MAPA_RLOC;
 	m_mapmsg.m_map.map_pid = getpid();
 	m_mapmsg.m_map.map_versioning = 0;
 	m_mapmsg.m_map.map_errno = 0;
@@ -259,10 +280,14 @@ void add_eid(int s, void *params, int db){
 	memcpy(ptr, &(data_ptr->ed_ip), t_len);
 	ptr = CO(ptr, t_len);
 	pkt_len += t_len;
-	mask2ip(data_ptr->eidlen, data_ptr->ed_ip.ss_family,&res); 
-	memcpy(ptr, res->ai_addr, t_len);
-	ptr = CO(ptr, t_len);
-	pkt_len += t_len;
+	int mask_max = (data_ptr->ed_ip.ss_family == AF_INET)?32:128;
+	if(mask_max > data_ptr->eidlen){
+		mask2ip(data_ptr->eidlen, data_ptr->ed_ip.ss_family,&res); 
+		memcpy(ptr, res->ai_addr, t_len);
+		ptr = CO(ptr, t_len);
+		pkt_len += t_len;
+		m_mapmsg.m_map.map_addrs |= MAPA_EIDMASK;
+	}
 	m_mapmsg.m_map.map_rloc_count = 0;
 	while (rloc != NULL) {
 		t_len = SA_LEN(rloc->rl_ip.ss_family);
@@ -343,44 +368,61 @@ void del_eid(int s, void *params, int db){
 //Read a mapping from Openlisp database
 //
 
-void get_eid(int s, void *params){
+void get_eid(int s, struct eid_rloc_db *params, struct  eid_rloc_db *rs){
 	
 	struct eid_rloc_db * data_ptr = params;
 	struct openlisp_mapmsg m_mapmsg;
+	struct rloc_db *rloc;
+	int rn;
 
-	char *ptr;
+	void *ptr;
 	struct addrinfo *res;
 	int t_len,pkt_len, rlen;
 	int cseq;
 	int pid;
+	int afi;
+	int max_masklen;
 
+	uint16_t  map_addrs;
+	ptr = &m_mapmsg;
+	memset(ptr,0,8192+sizeof(struct map_msghdr));
+
+	//build map_msghdr
 	m_mapmsg.m_map.map_version = MAPM_VERSION;
 	m_mapmsg.m_map.map_type =  MAPM_GET;      
-	m_mapmsg.m_map.map_flags = MAPF_DB | MAPF_STATIC | MAPF_UP; 
-	m_mapmsg.m_map.map_addrs = (data_ptr->eidlen > 0)?MAPA_EID | MAPA_EIDMASK: MAPA_EID;
+	m_mapmsg.m_map.map_addrs = (data_ptr->eidlen > 0)?(MAPA_EID | MAPA_EIDMASK): MAPA_EID;
 	m_mapmsg.m_map.map_pid = pid = getpid();
-	
-	ptr = m_mapmsg.m_space;
-	memset(ptr,0,8192);
 	m_mapmsg.m_map.map_seq = cseq = ++seq;
+	m_mapmsg.m_map.map_rloc_count = 0;
 	
+	//skip to pakage payload
+	ptr = m_mapmsg.m_space;
 	pkt_len = sizeof(struct	map_msghdr);
-	t_len =  (data_ptr->ed_ip.ss_family == AF_INET)?sizeof(struct sockaddr_in):sizeof(struct sockaddr_in6);
-		
+	t_len =  SA_LEN(data_ptr->ed_ip.ss_family);
+	printf("Make EID sockaddr\n");	
+	//build eid sockaddr part
+	data_ptr->ed_ip.ss_len = t_len;
+
 	memcpy(ptr, &(data_ptr->ed_ip), t_len);
 	ptr = CO(ptr, t_len);
 	pkt_len += t_len;
-	if ((data_ptr->eidlen > 0)) {
-		mask2ip(data_ptr->eidlen, data_ptr->ed_ip.ss_family,&res); 
+
+	//build eid mask if exist
+	max_masklen = (data_ptr->ed_ip.ss_family == AF_INET)? 32:128;
+	if ( (data_ptr->eidlen > 0) && (data_ptr->eidlen < max_masklen) ) {
+		mask2ip(data_ptr->eidlen, data_ptr->ed_ip.ss_family,&res);
+		((struct sockaddr_storage *)(res->ai_addr))->ss_len = t_len;
 		memcpy(ptr, res->ai_addr, t_len);
 		ptr = CO(ptr, t_len);
 		pkt_len += t_len;
 	}
 	
-	m_mapmsg.m_map.map_rloc_count = 0;
-	
 	m_mapmsg.m_map.map_msglen = pkt_len;
 	
+	//send to mapping socket
+	printf("Put:");
+	hexout((char *)&m_mapmsg,pkt_len);
+
 	if ((rlen = write(s, (char *)&m_mapmsg, pkt_len)) < 0) {
 		if (errno == EPERM)
 			err(1, "writing to mapping socket");
@@ -388,15 +430,61 @@ void get_eid(int s, void *params){
 		return;
 	};
 
+	//wait for return from mapping soket
 	do {
 		rlen = read(s, (char *)&m_mapmsg, sizeof(m_mapmsg));
 	} while (rlen > 0 && (m_mapmsg.m_map.map_seq != cseq || m_mapmsg.m_map.map_pid != pid));
 	
+	//get result
 	if (rlen < 0){
-		perror("Read from mapping socket");
+		err("read from mapping socket");
+		res = NULL;
 		return;
 	}
-	
+	printf("Get:");
+	hexout((char *)&m_mapmsg,pkt_len);
+
+	data_ptr = rs;
+	hexout((char *)&m_mapmsg,m_mapmsg.m_map.map_msglen);
+	ptr = (char *)m_mapmsg.m_space;
+	map_addrs = m_mapmsg.m_map.map_addrs;
+	//get EID 
+	if ( (map_addrs & MAPA_EID) > 0 ) {
+		memcpy(&data_ptr->ed_ip, ptr, SA_LEN(((struct sockaddr_storage *)ptr)->ss_family));
+		ptr = CO(ptr, ((struct sockaddr_storage *)ptr)->ss_len);
+	}
+	//get EID-masklen if exist
+	if ( (map_addrs & MAPA_EIDMASK ) > 0) {
+		if ( ((struct sockaddr_storage *)ptr)->ss_family == AF_INET)
+			data_ptr->eidlen = net2mask(AF_INET,(char *)&(((struct sockaddr_in *)ptr)->sin_addr)); 			
+		else
+			data_ptr->eidlen = net2mask(AF_INET6,(char *)&(((struct sockaddr_in6 *)ptr)->sin6_addr)); 			
+		
+		ptr = CO(ptr,((struct sockaddr_storage *)ptr)->ss_len );
+	}
+	printf("Get rloc\n");
+	//get Rloc if exist
+	if ( (map_addrs & MAPA_RLOC ) > 0) {
+		for (rn = 0; rn < m_mapmsg.m_map.map_rloc_count ; rn++) {
+			if (rn == 0) {
+				rloc = malloc(sizeof(struct rloc_db));
+				data_ptr->rloc = rloc;
+			}
+			else{
+				rloc->rl_next = malloc(sizeof(struct rloc_db));
+				rloc = rloc->rl_next;
+			}
+			rloc->rl_next = NULL;
+			afi = ((struct sockaddr_storage *)ptr)->ss_family;
+			printf("afi = %d(%s)\n",afi,afi == AF_INET?"AF_INET":"AF_INET6");
+			memcpy(&rloc->rl_ip, ptr, ((struct sockaddr_storage *)ptr)->ss_len);
+			ptr = CO(ptr,((struct sockaddr_storage *)ptr)->ss_len);
+			rloc->priority = ((struct rloc_mtx *)ptr)->priority;
+			rloc->weight = ((struct rloc_mtx *)ptr)->weight;
+			rloc->local = ((struct rloc_mtx *)ptr)->flags;
+			ptr = CO(ptr,sizeof(struct rloc_mtx)); 
+		}
+	}
 }
 
 
@@ -406,7 +494,7 @@ void get_eid(int s, void *params){
 
 struct eid_lookup lookups[MAX_LOOKUPS];
 
-struct pollfd [MAX_LOOKUPS + 1];
+struct pollfd fds[MAX_LOOKUPS + 1];
 int fds_idx[MAX_LOOKUPS +1];
 nfds_t nfds = 0;
 int tx;
@@ -547,7 +635,6 @@ int send_mr(idx)
     uint32_t nonce0, nonce1;
     struct timeval before;      /* Unused -- only present to avoid breaking the
                                    lig "API" when calling send_map_request() */
-    time_t now;
     int cnt;
     struct sockaddr *eid = (struct sockaddr *)&lookups[idx].eid;
 	//printf("count = %d-%d\n",lookups[idx].count, count);
@@ -597,13 +684,13 @@ int read_mr(idx)
 			0,
 			(struct sockaddr *)&from,
 			&fromlen)) < 0) {
-		return;
+		return 0;
 	}
 	
 		map_reply = (struct map_reply_pkt *)reply;
 	//only accept map-reply
 	if (map_reply->lisp_type != LISP_MAP_REPLY) {
-		return;
+		return 0;
 	}
 	
 	map_reply	= (struct map_reply_pkt *) reply;
@@ -613,11 +700,11 @@ int read_mr(idx)
 	
 	for (j = 1;j<=MAX_COUNT ; j++) {
 		if (lookups[i].nonce0[j] == nonce0 && lookups[i].nonce1[j] == nonce1)
-			return;		
+			return 0;		
 	}
 
 	if (map_reply->record_count <= 0)
-		return;
+		return 0;
 
 	p = CO(map_reply,sizeof(struct  map_reply_pkt));
 	ptr = eid_db = NULL;
@@ -751,7 +838,7 @@ void * openlisp(void *threadarg){
 	struct addrinfo  *res;
 	int i;
 	pthread_t sthread[3];
-	int rc1, rc2, rc3;
+	//int rc1, rc2, rc3;
 	struct thread_params thr_params;
 
     struct protoent	    *proto;

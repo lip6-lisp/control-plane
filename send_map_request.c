@@ -158,7 +158,7 @@ int get_saddr(afi,saddr)
  *
  */
 
-int send_map_request(s,nonce0,nonce1,before,eid_addr,map_resolver_addr,my_addr, emr_inner_src_port)
+int send_map_request(s,nonce0,nonce1,before,eid_addr,map_resolver_addr,my_addr, emr_inner_src_port, smr_bit)
      int		s;
      unsigned int	nonce0;
      unsigned int	nonce1;
@@ -167,6 +167,7 @@ int send_map_request(s,nonce0,nonce1,before,eid_addr,map_resolver_addr,my_addr, 
      struct sockaddr	*map_resolver_addr;
      struct sockaddr	*my_addr; 
 	 int  emr_inner_src_port;
+	 int smr_bit;
 {
 
     unsigned int		ip_len		   = 0;
@@ -390,7 +391,7 @@ int send_map_request(s,nonce0,nonce1,before,eid_addr,map_resolver_addr,my_addr, 
      * We set Source-EID-AFI to 0 and skip the Source EID Address field
      */
 
-    map_request->smr_bit                     = 0;
+    map_request->smr_bit                     = smr_bit;
     map_request->rloc_probe                  = 0;
     map_request->map_data_present            = 0;
     map_request->auth_bit                    = 0;

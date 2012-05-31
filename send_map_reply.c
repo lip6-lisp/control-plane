@@ -56,6 +56,7 @@
  *	
  */
 void * eid_search(struct map_db *, uchar, ushort, char *);
+void changepriority(int s, void *message, void *d);
 
 int send_map_reply(s,noncereply0,noncereply1,from,source_eid_afi,source_eid_prefix,source_eid_mask_len, probe)
   
@@ -250,7 +251,7 @@ void * mapreply(void *d){
 			}
 			printf("From: %s\n",ipstr);
 
-			print_map_request((struct map_request_pkt *)reply,rcvl);
+			//print_map_request((struct map_request_pkt *)reply,rcvl);
 
 			unsigned int noncereply0 ;
 			unsigned int noncereply1;
@@ -413,7 +414,18 @@ void * mapreply(void *d){
 					fprintf(stderr, "send_map_reply: can't send map-reply\n");
 				}
 
-			 }//end else   
+			 }//end else 
+			else if (((struct lisp_change_priority_pkt *) reply)->type == LISP_CHANGE_PRIORITY)
+				{
+					printf("I'm in map reply\n");
+					struct map_register_data mrd;
+					mrd.register_socket = map_reply_data->sk;
+					mrd.register_socket6 = map_reply_data->sk6;
+					make_nonce(&mrd.nonce0,&mrd.nonce1);
+					
+					changepriority(map_reply_data->l_sk,reply, &mrd);
+				}//end if
+				else {printf("not matched\n");}
 		}//end send
 	}//end while
 }
@@ -471,6 +483,7 @@ void * eid_search(params,eid_mask_len,eid_prefix_afi,eid_prefix)
 	}
 	c = 0;
 	m = 0;
+	int max_mask = 0;
 	while (eid != NULL) {
 		if (eid->ed_ip.ss_family == eid_prefix_afi) {
 			eid_ptr[c] = eid;
@@ -478,35 +491,54 @@ void * eid_search(params,eid_mask_len,eid_prefix_afi,eid_prefix)
 			if (eid_prefix_afi == AF_INET) {
 				tmp = (struct sockaddr_in *)&eid->ed_ip;
 				memcpy(eid_ip[c],&tmp->sin_addr,sizeof(struct in_addr));
+				max_mask = 32;
 			}
 			else{
 				tmp6 = (struct sockaddr_in6 *)&eid->ed_ip;
 				memcpy(eid_ip[c],&tmp6->sin6_addr,sizeof(struct in6_addr));
+				 max_mask = 128;
 			}
 
 			eid_mask[c] = eid->eidlen;
-			eid_match[c] = bcp(eid_ip[c], eid_prefix, (eid_mask[c] > eid_mask_len)?eid_mask_len:eid_mask[c]);
-			if (eid_match[c] > m) {
-				m = eid_match[c];
-			}
-			c++;
-		}
+			eid_match[c] = bcp(eid_ip[c], eid_prefix, max_mask);
+                        if ( (eid_match[c] >= eid->eidlen) &&(eid_match[c] >= m)) {
+                                m = eid_match[c];
+                        }
+                        else
+                                eid_match[c] = -1;
+                        c++;
 
+		}
 		eid = eid->ed_next;
 	}//end while
 	eid = eid_next = NULL;
-
+	int n = m;
 	for (i=0; i<c ;i++ ) {
-		if (eid_match[i] == m) {
-			if (eid == NULL) {
-				eid = eid_ptr[i];
-				eid_next = eid;
-			}else {
-				eid_next->ed_next = eid_ptr[i];
-				eid_next = eid_ptr[i];
-			}
-			eid_next->ed_next = NULL;
-		}
+              if ( eid_match[i] == n ) {
+                        if ( (eid_match[i] + eid_ptr[i]->eidlen) >= m) {
+                                m = eid_match[i]+ eid_ptr[i]->eidlen;
+                                eid_match[i] += eid_ptr[i]->eidlen;
+                        }
+                        else
+                                eid_match[i] = -1;
+                }
+                else
+                        eid_match[i] = -1;
+
+		
 	}
+	for (i=0; i<c ;i++ ) {
+              if ( eid_match[i] == m) {
+                        if (eid == NULL) {
+                                eid = eid_ptr[i];
+                                eid_next = eid;
+                        }else {
+                                eid_next->ed_next = eid_ptr[i];
+                                eid_next = eid_ptr[i];
+                        }
+                        eid_next->ed_next = NULL;
+                }
+        }
+
 	params->data = eid;
 }

@@ -207,6 +207,59 @@ void getparameters_reg(struct map_db *params, int afi){
 	return ;
 }
 
+//make configuration file
+void write_parametes_2_file(struct map_db *params){
+  
+	FILE *file = fopen(filename, "w"); /* try to open the file */
+	struct eid_rloc_db *eid_rloc_db = NULL;
+	struct rloc_db *rloc;
+
+	struct map_server_db *ms;
+	char ip_str[INET6_ADDRSTRLEN];
+
+	//map server section
+	fprintf(file,"%s\n","@MAPSERVER");
+	fprintf(file,"%s\t\t\t%s\n","#mapserver","Key");
+	ms = params->ms;
+	while (ms != NULL){
+		sockaddr2ip(&(ms->ms_ip), ip_str);
+		fprintf(file,"%s\t\t\t%s\n",ip_str,ms->ms_key);
+		ms = ms->ms_next;
+	}
+
+	//map resolver section
+	fprintf(file,"\n%s\n","@MAPRESOLVER");
+	ms = params->mr;
+	while (ms != NULL){
+		sockaddr2ip(&(ms->ms_ip), ip_str);
+		fprintf(file,"%s\n",ip_str);
+		ms = ms->ms_next;
+	}
+	
+	//EID section
+	eid_rloc_db = params->data;
+	while (eid_rloc_db != NULL) {
+		fprintf(file,"\n%s\n","@EID");
+		fprintf(file,"%s\t\t%s\t%s\t\t%s\n","#Eid-Prefix","Subnet-mask","TTL","Flag");
+		sockaddr2ip(&(eid_rloc_db->ed_ip), ip_str);
+		fprintf(file,"%s\t\t%d\t\t%d\t\t%d\n",ip_str,
+			eid_rloc_db->eidlen,eid_rloc_db->record_ttl,eid_rloc_db->flag);
+		//Rloc section
+		rloc = eid_rloc_db->rloc;
+		fprintf(file,"\n%s\t\t\t%s\t%s\t\t%s\n","#Rloc","Priority","Weight","Local");		
+		while (rloc != NULL) {
+			sockaddr2ip(&(rloc->rl_ip), ip_str);
+			fprintf(file,"%s\t\t%d\t\t%d\t\t%d\n",ip_str,
+			rloc->priority,rloc->weight,rloc->local);
+			rloc = rloc->rl_next;
+		}
+		eid_rloc_db = eid_rloc_db->ed_next;
+	}
+
+	fclose(file);
+	return ;
+}
+
 //Function convert from string to token
 int str2token(char * str, char * res[], char * sep){
 
@@ -251,7 +304,7 @@ int ip2sockaddr(char * ip, struct addrinfo **res, char * port){
 	return 1;	
 }
 
-//Function to show ip from sockaddr struct
+//Function to get ip string from sockaddr struct
 void sockaddr2ip(struct sockaddr_storage *sk, char *res){
 
 	struct sockaddr_in *tmp;
@@ -268,6 +321,39 @@ void sockaddr2ip(struct sockaddr_storage *sk, char *res){
 	}
 	
 	memcpy(res,&ip, INET6_ADDRSTRLEN);
+}
+
+//Function to get sockddr from an inet format of ip address
+void inet2sockaddr(int afi, uchar *ip, struct addrinfo **res, int port){
+	
+	struct addrinfo hints;
+	int e; 
+    struct protoent	    *proto;
+	char ip_str[INET6_ADDRSTRLEN];
+	char port_str[NI_MAXSERV];
+
+	inet_ntop(afi, ip, ip_str, INET6_ADDRSTRLEN);
+
+    if ((proto = getprotobyname("UDP")) == NULL) {
+		perror ("getprotobyname");
+		exit(BAD);
+    }
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;	//Allow IPv4 or IPv6 
+	hints.ai_socktype  = SOCK_DGRAM;	// Datagram socket 
+	hints.ai_flags  = AI_PASSIVE;	
+    hints.ai_protocol  = proto->p_proto;
+    hints.ai_canonname = NULL;
+    hints.ai_addr      = NULL;
+    hints.ai_next      = NULL;
+	sprintf(port_str, "%d", port);
+	if ((e = getaddrinfo(ip_str, port_str, &hints, res)) != 0) {
+			fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(e));
+			exit(BAD);
+	}
+	
+	return 1;	
 }
 
 //Print all parameters
