@@ -698,11 +698,13 @@ int read_mr(idx)
 	nonce0 = map_reply->lisp_nonce0;
 	nonce1 = map_reply->lisp_nonce1;
 	
-	for (j = 1;j<=MAX_COUNT ; j++) {
+	for (j = 0;j<=MAX_COUNT ; j++) {
 		if (lookups[i].nonce0[j] == nonce0 && lookups[i].nonce1[j] == nonce1)
-			return 0;		
+			break;		
 	}
-
+	if (j > MAX_COUNT)
+		return 0;
+		
 	if (map_reply->record_count <= 0)
 		return 0;
 
@@ -729,6 +731,8 @@ int read_mr(idx)
 		ip2sockaddr(ip, &res, 0);
 		memcpy(&ptr->ed_ip, res->ai_addr, SA_LEN(res->ai_family));
 		p = CO(p, sizeof(struct map_reply_eidtype)+ IA_LEN(res->ai_family));
+		ptr->rloc = rloc = NULL;
+		
 		for (k = 0; k < eidtype->loc_count ;k++ ) {
 			if (k == 0) {
 				rloc = malloc(sizeof(struct rloc_db));
