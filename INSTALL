@@ -1,0 +1,48 @@
+##
+#INSTALL
+#
+
+
+1. Make sure that you have the gcc compiler.
+
+2. Unpack the tarball soure code.
+
+3. From source code directory, run 'make'. This will make binary file 'lisp_register_reply'.
+
+4. Still from source code directory, run 'make install' to install service script to /etc/rc.d/. 
+It also copy a sample configure file 'register_parameters.txt' to /etc/. Please edit 
+the configure file to suit before go to next step.
+
+5. To start the program at first time, use '/etc/rc.d/lisp start' command
+
+6. To make program auto start when reboot, edit the /etc/rc.conf and add the flow line:
+	lisp_enable="YES"
+
+##
+#Change log
+##
+
+#Version 01.00: 16/08/2011
+	By Guruprasad K. Rao - Communications and Networking Lab., George Mason University
+
+#Version 01.01: 12/04/2012
+	By Dung Phung Chi - VNU Hanoi and LIP6 UPMC.
+  * Support draft-ietf-lisp-22.txt
+  * Change format of configure file
+  * Change to allow working with multi EID: register multi EID, answer to map request with multi EID
+  * Change to allow working with ECM (encapsulated Control Message)
+  * Add debug functions
+  * Add make nonce function
+  * Fix bugs
+
+#Version 01.02: 24/04/2012
+	By Dung Phung Chi - VNU Hanoi and LIP6 UPMC - and Patrick Raad - NSS and LIP6 UPMC.
+  * Support IPv6
+  * Change format of configure file to easy define
+  * Support multi map server with multi key
+  * Change Makefile to allow set up program as service in rc.conf
+  * Upgrade search EID function
+  * Add more debug functions
+	
+
+
