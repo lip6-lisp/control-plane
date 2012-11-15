@@ -1,45 +1,23 @@
 1.  INTRODUCTION
 
-    Open Lisp control plane implements the control-plane function of LISP (Locator/Identifier Separation Protocol).
-    The basic idea of LISP is to replace IP addresses with two new types of numbers:
-        
-	- Routing Locators (RLOCs), which are topologically assigned to network attachment points
-	and used for routing and forwarding of packets through the network;
-        
-	- Endpoint Identifiers (EIDs) which are assigned independently from the network topology,
-	are used for numbering devices, and are aggregated along administrative boundaries [IETF-LISP-Draft].
-
-    During the packet exchange between the two hosts, at the beginning, 
-    the source issues a normal IP package with source and destination IP are EIDs. 
-    When the package reach one of border routers of its domain (ITR), ITR lookup 
-    for EID-to-RLOC mapping and then it append a new LISP header to the package (encapsulation processing) 
-    before forward it. In the new header (outer header), source and destination IP are RLOCs. 
-    The new package is routed over core network until it reaches the border router of 
-    destination host (ETR). At this time, ETR strips the outer header (decapsulation processing) 
-    and deliver the package to the destination host. The eventual reply of the host follows the same steps.
+    The Open LISP control plane implements the control-plane function of LISP (Locator/Identifier Separation Protocol).
+    Please refer to IETF LISP drafts for a description of LISP, its acronyms and the control-plane functionalities.	
     
-    Lisp control-plane implements the function of mapping between 
-    the two spaces numbering. Our purpose is the provision a control-plane support in FreeBSD. 
-    It implements two functions, which are map-register and map-reply. 
-    The first one is register xTR's EID-to-RLOC mapping database with map-server. The second function allows xTR response with map-request. In this document, we will describe the architecture of our implement.
-
-    For terms used in this document (e.g., xTR, MS, MR), please refer to the original LISP specification.
+    The Open LISP control-plane is compatible and designed to work with the OpenLISP data-plane (http://www.openslip.org), and is therefore developed in a FreeBSD evnironment.
+    The implemented messages include map-register, map-request, map-reply, change-priority, ecm, map-notify messages. 
+    Additional functionalities related to Virtual Machine Mobility and Hypervisor-based management will be included soon.
+    For additional and recent information please refer to http://www.lisp.ipv6.lip6.fr (hosted beyond LISP!).
 
 
-
-
-
-2. CONFIGURE FILE
+2. CONFIGURATION FILE
     
-    To implement control-plane, xTR (IRT or ERT) need to know about mapping between
-    the EIDs and RLOCs that it manages, which map-servers to send register message. 
-    That information is kept in configure file. The configuration file includes 
-    one section for map-server and one or more sections for EID-to-RLOC database. 
-    Each sections start by a control keyword: 
-    @MAPSERVER for map-server section and @EID for EID-to-RLOC section.
+    Basic information needed by the control-plane is contained in a configuration file. It includes 
+    one section for map-server and one or more sections for EID-to-RLOC database information. 
+    Each section starts by a control keyword, for example: 
+    @MAPSERVER for the map-server section and @EID for the EID-to-RLOC section.
 
-    Map-server section contains a list of map-server (ip address or domain name) 
-    with Key which xTR use to authenticate. 
+    The map-server section contains a list of map-server (ip address or domain name) 
+    with the key used by the xTR for the authentication. 
 
 	E.g:
 	----
@@ -48,11 +26,11 @@
 	l3-london-mr-ms.rloc.lisp4.net			lip6-fr-xtr
 	2001:67c:21b4:109::b 				lip6-fr-xtr
 
-    Each EID-to-RLOC section include mapping between one EID and RLOC(s). 
-    The first line of section contains EID's information: EID-prefix, Subnetmask, 
+    Each EID-to-RLOC section includes EID-RLOC mapping information. 
+    The first line contains EID information: EID-prefix, Subnetmask, 
     Time-To-Live (TTL) and Flag. 
     Flag is used to indicate if EID-prefix is registered with map-server or not. 
-    Other lines is RLOC's information: RLOC address, Priority, Weight and Local flag. 
+    Other lines contain RLOC information: RLOC address, Priority, Weight and Local flag. 
       
 	E.g:
 	----
@@ -75,32 +53,24 @@
 	2001:660:240::242 	5 		100 		1
 	2001:660:240::243	3		100		0
 
-    Please refer to the original LISP specification [section 6] for more detail about terms.
-
-
 
 
 3. THREAD
     
-    This implementation include three threads when start. 
-    One is register-thread, it periodically sends map-register message to map-servers. 
+    This implementation includes three threads. 
+    One is the register-thread, it periodically sends map-register messages to map-servers. 
     Two other ones are ipv4-reply-thread and ipv6-reply-thread, 
-    to receive map-request message and response with map-repy message. 
+    to receive and process map-request and map-repy messages. 
     One work with IPv4 and one work with IPv6. Note that two reply-thread share 
     two socket (one for ipv4 and one for ipv6) because it must accept 
-    Encapsulated Control Message (ECM), which contain map-request message. 
-    ECM maybe has inner header in IPv4 and outer header in IPv6 or vice versa.
+    Encapsulated Control Message (ECM), which contains a map-request message. 
+    ECM may have an inner header in IPv4 and an outer header in IPv6 or vice versa.
     
-    For messages format and how thread working, please refer to the original LISP specification [section 6].
-
-
-
 
 4. DEBUG
     
-    During running, the program prints debug information to console. 
-    With control-plane message, the debug information exit in two forms: 
-    raw package format (in hexa) and human readable format.
+    When running, the program prints debug information to the console. 
+    The debug information exits with a raw package format (in hexa) and human readable format.
 
 	E.g:
 	----
@@ -154,4 +124,4 @@
 
 6. COMMENT AND BUG
     
-    All comment and bug report are welcome!!!
+    All comment and bug report are welcome!
