@@ -22,9 +22,9 @@
 	E.g:
 	----
 	@MAPSERVER
-	193.162.145.50 					lip6-fr-xtr
-	l3-london-mr-ms.rloc.lisp4.net			lip6-fr-xtr
-	2001:67c:21b4:109::b 				lip6-fr-xtr
+	193.162.145.50 					MS-KEY-HERE
+	l3-london-mr-ms.rloc.lisp4.net			MS-KEY-HERE
+	2001:67c:21b4:109::b 				MS-KEY-HERE
 
     Each EID-to-RLOC section includes EID-RLOC mapping information. 
     The first line contains EID information: EID-prefix, Subnetmask, 
