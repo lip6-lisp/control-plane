@@ -4,7 +4,7 @@
     Please refer to IETF LISP drafts for a description of LISP, its acronyms and the control-plane functionalities.	
     
     The Open LISP control-plane is compatible and designed to work with the OpenLISP data-plane (http://www.openslip.org), and is therefore developed in a FreeBSD evnironment.
-    The implemented messages include map-register, map-request, map-reply, change-priority, ecm, map-notify messages. 
+    The implemented messages include map-register (also with different mapping system (many authentication keys) for those willing to connect to multiple LISP testbeds simultaneously), map-request, map-reply, change-priority, ecm, map-notify messages, selective solicit-map-requests, with both IPv4 and IPv6 traffic and RLOC funcitonalities.
     Additional functionalities related to Virtual Machine Mobility and Hypervisor-based management will be included soon.
     For additional and recent information please refer to http://www.lisp.ipv6.lip6.fr (hosted beyond LISP!).
 
