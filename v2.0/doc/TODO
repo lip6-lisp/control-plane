@@ -15,5 +15,5 @@ Implement referral in udp.c/udp.h
 
 Reason
 ======
-for the momment, implemented as a simple Map-Reply
+for the moment, implemented as a simple Map-Reply
 
