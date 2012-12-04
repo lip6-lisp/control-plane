@@ -99,7 +99,7 @@
     
     **** opencp_mr.xml - DDT node and MR configuration file
 
-    * <geid> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap.
+    * <geid> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap. NB: if the node is a DDT, then it is here configured as being delegated for 0.0.0.0/0 (IPv4) and 0::/0 (IPv6).
 
     * One or more <eid> sections. Each section containes the information for one delegated prefix.
 
