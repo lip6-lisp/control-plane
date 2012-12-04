@@ -1,0 +1,191 @@
+##
+#INSTALL
+#
+
+**Require: expat library
+
+1. Make sure that you have the gcc compiler.
+
+2. Unpack the tarball soure code.
+
+3. From source code directory, run 'make'. This will make binary file 'opencp'.
+
+4. Still from source code directory, run 'make install' to install service script to /etc/rc.d/. 
+It also copy the main configure file (opencp.conf) and 03 sample configures 
+file 'opencp_xtr.xml, opencp_ms.xml, opencp_mr.xml' to /etc/. Please edit 
+the configure files to suit before go to next step.
+
+5. To start the program at first time, use '/etc/rc.d/opencp_service start' command or run manual
+by ./opencp <path_to_opencp.conf>
+
+6. To make program auto start when reboot, edit the /etc/rc.conf and add the flow line:
+	opencp_service_enable="YES"
+
+##
+#Change log
+##
+
+
+#Version 01.9: 06/2012
+	By Damien Saucez, Lorand Jackab - Université catholique de Louvain
+
+#Version 02.01: 11/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+
+  * New design
+  * Support draft-ietf-lisp-23.txt
+  * Support draft-ietf-lisp-ms-16
+  * Support IPv6
+  * Add xTR functions
+  * Change format of configure file
+  * Support defined site with EID range, key to authen...
+  * Support map-register with sub-prefix of site
+  * Support authentication and validate EID when process map-register
+  * Support proxy-map-reply bit set
+  * Support answer with negative of: LISP_REFERRAL_MS_NOT_REGISTERED, LISP_REFERRAL_DELEGATION_HOLE,
+	LISP_REFERRAL_NOTE_AUTHORITATIVE
+  * Fix bugs	
+	
+##
+#Lisp control-plane message format
+##
+
+##Map-Request message
+	
+	
+	0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=1 |A|M|P|S|p|s|    Reserved     |   IRC   | Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |         Source-EID-AFI        |   Source EID Address  ...     |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |         ITR-RLOC-AFI 1        |    ITR-RLOC Address 1  ...    |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                              ...                              |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |         ITR-RLOC-AFI n        |    ITR-RLOC Address n  ...    |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |   Reserved    | EID mask-len  |        EID-prefix-AFI         |
+   Rec +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     \ |                       EID-prefix  ...                         |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                   Map-Reply Record  ...                       |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##Map-reply message
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=2 |P|E|S|          Reserved               | Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   |                          Record  TTL                          |
+   |   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   R   | Locator Count | EID mask-len  | ACT |A|      Reserved         |
+   e   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   c   | Rsvd  |  Map-Version Number   |       EID-prefix-AFI          |
+   o   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   r   |                          EID-prefix                           |
+   d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  /|    Priority   |    Weight     |  M Priority   |   M Weight    |
+   | L +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | o |        Unused Flags     |L|p|R|           Loc-AFI             |
+   | c +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  \|                             Locator                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##Map-Register message
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=3 |P|            Reserved               |M| Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |            Key ID             |  Authentication Data Length   |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       ~                     Authentication Data                       ~
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   |                          Record  TTL                          |
+   |   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   R   | Locator Count | EID mask-len  | ACT |A|      Reserved         |
+   e   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   c   | Rsvd  |  Map-Version Number   |        EID-prefix-AFI         |
+   o   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   r   |                          EID-prefix                           |
+   d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  /|    Priority   |    Weight     |  M Priority   |   M Weight    |
+   | L +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | o |        Unused Flags     |L|p|R|           Loc-AFI             |
+   | c +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  \|                             Locator                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##Encapsulated Control Message
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |                       IPv4 or IPv6 Header                     |
+   OH  |                      (uses RLOC addresses)                    |
+     \ |                                                               |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |       Source Port = xxxx      |       Dest Port = 4342        |
+   UDP +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     \ |           UDP Length          |        UDP Checksum           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   LH  |Type=8 |S|D|                Reserved                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |                       IPv4 or IPv6 Header                     |
+   IH  |                  (uses RLOC or EID addresses)                 |
+     \ |                                                               |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |       Source Port = xxxx      |       Dest Port = yyyy        |
+   UDP +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     \ |           UDP Length          |        UDP Checksum           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   LCM |                      LISP Control Message                     |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+"D" is the "DDT-originated" flag and is set by a DDT client to
+indicate that the receiver can and should return Map-Referral
+messages as appropriate.
+
+##Map-Referral Message
+
+	0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=6 |                Reserved               | Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   |                          Record  TTL                          |
+   |   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   R   | Referral Count| EID mask-len  | ACT |A|I|     Reserved        |
+   e   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   c   |SigCnt |   Map Version Number  |            EID-AFI            |
+   o   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   r   |                          EID-prefix ...                       |
+   d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  /|    Priority   |    Weight     |  M Priority   |   M Weight    |
+   | L +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | o |        Unused Flags         |R|         Loc/LCAF-AFI          |
+   | c +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  \|                             Locator ...                       |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+

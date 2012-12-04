@@ -1,0 +1,19 @@
+Action
+======
+Change map_entry and mapping_flags to referral_entry and referral_falgs for all
+the code related to referral.
+
+Reason
+======
+Doing so would make the code more flexible as referrals and mappings would not
+be related at all. For the moment referrals are just mappings but it could
+change in the future.
+
+Action
+======
+Implement referral in udp.c/udp.h
+
+Reason
+======
+for the momment, implemented as a simple Map-Reply
+
