@@ -11,9 +11,9 @@
 
 2. CONFIGURATION FILES
 
-    The configuration relies on a main configuration file named "opencp.conf" that points to specific xml files: one for 
-    the xTR part, one for the MS part and one for the MR and/or DDT part.
-    xml files include many sections between tags <db> and </db>.
+    The configuration relies on a main configuration file named "opencp.conf" that points to specific xml files: 
+    one for the xTR part, one for the MS part and one for the MR and/or DDT part.
+    xml files include many sections using tags <db> and </db>.
 
 
     *** opencp.conf - main configuration file
@@ -44,9 +44,12 @@
 
     *** opencp_ms.xml - map-server configuration
 
-    * The <geid> section defines the IP prefixes the map-server allows ETR to register to. The IP ranges must not overlap.
+    * The <geid> section defines the IP prefixes the map-server allows ETR to register to. 
+      The IP ranges must not overlap.
     
-    * One or more <site> sections. Each section includes the information for one site: site name, key for map-register messages, EID IP prefixes the site can register. NB: key is case sensitive and must not include spaces.
+    * One or more <site> sections. Each section includes the information for one site: 
+      site name, key for map-register messages, EID IP prefixes the site can register. 
+      NB: the key is case sensitive and must not include spaces.
 
     * Here is a sample file
 
@@ -99,7 +102,9 @@
     
     **** opencp_mr.xml - DDT node and MR configuration file
 
-    * <geid> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap. NB: if the node is a DDT, then it is here configured as being delegated for 0.0.0.0/0 (IPv4) and 0::/0 (IPv6).
+    * <geid> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap. 
+      NB: if the node is a DDT root, then it is here configured as being delegated for 0.0.0.0/0 (IPv4) 
+      and 0::/0 (IPv6).
 
     * One or more <eid> sections. Each section containes the information for one delegated prefix.
 
@@ -283,9 +288,9 @@
 </db>
 
 3. DEBUG
-    When running, the program prints debug information to the console so you can follow the processing. It also includes
-    another method to debug by interacting with the program using the console. At this version, supported 
-    commands are:
+    When running, the program prints debug information to the console so you can follow the processing. 
+    It also includes another method to debug by interacting with the program using the console. 
+    At this version, supported commands are:
 	
 	map-database
 
