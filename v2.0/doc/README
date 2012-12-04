@@ -7,7 +7,7 @@
     The Open control plane is compatible and designed to work with the OpenLISP data-plane (http://www.openlisp.org), 
     and is therefore developed in a FreeBSD evnironment.
 
-    It includes all basic control-plane functions: xTR, MS, MR, DDT.
+    It includes all basic control-plane functions: xTR, MS, MR/DDT.
 
 2. CONFIGURATION FILES
 
@@ -18,7 +18,7 @@
 
     *** opencp.conf - main configuration file
 
-    # Functions: xTR, MS (Map-Server), MR (Map-Resolve), DDT (DDT-node)
+    # Functions: xTR, MS (Map-Server), MR/DDT (DDT Map-Resolver or DDT-only node)
     # NB: as of current implementation, there may be bugs when running MS and xTR functions in the same node
     
     functions = ms mr ddt
