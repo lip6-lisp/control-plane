@@ -7,7 +7,7 @@
     The Open control plane is compatible and designed to work with the OpenLISP data-plane (http://www.openlisp.org), 
     and is therefore developed in a FreeBSD evnironment.
 
-    It includes all basic control-plane functions: xTR, MS, MR/DDT.
+    It includes all basic control-plane functions: xTR, MS, MR/DDT, DDT.
 
 2. CONFIGURATION FILES
 
