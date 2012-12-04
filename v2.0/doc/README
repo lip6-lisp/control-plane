@@ -12,7 +12,7 @@
 2. CONFIGURATION FILES
 
     The configuration relies on a main configuration file named "opencp.conf" that points to specific xml files: 
-    one for the xTR part, one for the MS part and one for the MR and/or DDT part.
+    one for the xTR part, one for the MS part and one for the MR/DDT part.
     xml files include many sections using tags <db> and </db>.
 
 
