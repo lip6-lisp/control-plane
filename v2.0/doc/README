@@ -103,7 +103,7 @@
 
     * One or more <eid> sections. Each section containes the information for one delegated prefix.
 
-    * Special <eid> sections with prefix equal 0.0.0.0/0 or 0::/0 can be used to define a DDT root node. 
+    * Special <eid> sections with prefix equal 0.0.0.0/0 or 0::/0 is for DDT root nodes. 
       For the lisp4.net testbed, the root nodes are documented here: http://ddt-root.org/
 
     * For more information about prefix delegation and DDT, please refer to the IETF drafts.
