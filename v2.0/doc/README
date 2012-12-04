@@ -7,21 +7,19 @@
     The Open control plane is compatible and designed to work with the OpenLISP data-plane (http://www.openlisp.org), 
     and is therefore developed in a FreeBSD evnironment.
 
-    The implemented two main function are map-server and map-resolve. Addtional function to support 
-    LISP Delegated Database Tree (DDT) using in lisp testeb network (lisp4.net).
+    It includes all basic control-plane functions: xTR, MS, MR, DDT.
 
-    Additional functionalities related to control-plane and how to deploy xTR with OpenLISP and OpenLISP control-plane 
-    please refer to http://www.lisp.ipv6.lip6.fr (hosted beyond LISP!).
+2. CONFIGURATION FILES
 
-2. CONFIGURATION FILE
+    The configuration relies on a main configuration file named "opencp.conf" that points to specific xml files: one for 
+    the xTR part, one for the MS part and one for the MR and/or DDT part.
+    xml files include many sections between tags <db> and </db>.
 
-    Basic information needed by the lisp_mapping are contained in the main configure file and extern xml file: one for 
-    xTR function, one for map-server function and the last one for map-resolve or ddt-node function
 
-    ***Main configure file: define the functions will be serviced and the path to extern configure files for each functions.
+    *** opencp.conf - main configuration file
 
-    # Functions we want to be serving: xTR, ms(Map-server), mr(Map-resolve), ddt|node(DDT-node)
-    # You can not use xTR with Map-server/Map-resolve function
+    # Functions: xTR, MS (Map-Server), MR (Map-Resolve), DDT (DDT-node)
+    # NB: as of current implementation, there may be bugs when running MS and xTR functions in the same node
     
     functions = ms mr ddt
     #functions = xTR
@@ -29,7 +27,7 @@
     #Enable ipv6 or not, default is yes
     #ipv6_support = yes
 
-    #Chose source ip for map-respone package
+    #Choose source IP for map-response packet
     #Default is auto select
 
     source_ipv4 = auto
@@ -43,17 +41,15 @@
     ms_configure = opencp_ms.xml
     mr_configure = opencp_mr.xml
 
-    *** Each extern xml configure file inclues many sections put between tags <db> and </db>.
-    
-    a. opencp_ms.xml - Configure file for map-server
 
-    * One <geid> section, defined the ranges of ip which this map-server allowed ETR to register to. 
-    Notice: the ranges must not be overlap each other.
-    
-    * One or more <site> sections. Each section includes the information for one site: name of site, key which site used when 
-    send map-register message, ranges of ip which site can register. Notice: key is case sensitive and must not include space.
+    *** opencp_ms.xml - map-server configuration
 
---------------------------
+    * The <geid> section defines the IP prefixes the map-server allows ETR to register to. The IP ranges must not overlap.
+    
+    * One or more <site> sections. Each section includes the information for one site: site name, key for map-register messages, EID IP prefixes the site can register. NB: key is case sensitive and must not include spaces.
+
+    * Here is a sample file
+
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <db>
 	 <geid>
@@ -65,52 +61,35 @@
 	 </geid>
 	 
 	 <site>
-		<name>lip6</name>
-		<key>lip6-KEY-HERE</key>
-		<contact>stefano.secci@lip6.fr</contact>
+		<name>SITE1</name>
+		<key>SITE1-KEY-HERE</key>
+		<contact>SITE1-EMAIL-HERE</contact>
 		<active>yes</active>
 
 		<eid>
-			<addr family="IPv4">153.16.38.0/24</addr>
+			<addr family="IPv4">A.B.C.D/24</addr>
 			<active>yes</active>
 		</eid>
 
 		<eid>
-			<addr family="IPv6">2610:d0:2121::/48</addr>
+			<addr family="IPv6">A:B:C::/48</addr>
 			<active>yes</active>
 		</eid>
 	</site>
 	
 	<site>
-		<name>unirome</name>
-		<key>uniroma-KEY-HERE</key>
-		<contact>admin@uniroma.it</contact>
+		<name>SITE2</name>
+		<key>SITE2-KEY-HERE</key>
+		<contact>SITE2-EMAIL-HERE</contact>
 		<active>yes</active>
 
 		<eid>
-			<addr family="IPv4">153.16.44.112/28</addr>
+			<addr family="IPv4">E.F.G.H/28</addr>
 			<active>yes</active>
 		</eid>
 
 		<eid>
-			<addr family="IPv6">2610:d0:1129::/48</addr>
-			<active>yes</active>
-		</eid>
-	</site>
-
-	<site>
-		<name>vnu</name>
-		<key>vnu-KEY-HERE</key>
-		<contact>dungpc@vnu.edu.vn</contact>
-		<active>yes</active>
-
-		<eid>
-			<addr family="IPv4">153.16.70.16/28</addr>
-			<active>yes</active>
-		</eid>
-
-		<eid>
-			<addr family="IPv6">2610:d0:3215::/48</addr>
+			<addr family="IPv6">E:F:G::/48</addr>
 			<active>yes</active>
 		</eid>
 	</site>
@@ -118,19 +97,19 @@
 </db>
 
     
-    b. opencp_ms.xml - Configure file for map-ddnode and map-resolve
+    **** opencp_mr.xml - DDT node and MR configuration file
 
-    * One <geid> section, defined the ranges of ip which this server can be delegate.
-    Notice: the ranges must not be overlap each other.
+    * <geid> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap.
 
-    * One or more <eid> sections. Each section show information for one prefix delegation.
+    * One or more <eid> sections. Each section containes the information for one delegated prefix.
 
-    * Special <eid> sections with prefix equal 0.0.0.0/0 or 0::/0 is used to defined root DDT root. 
-    At this time, there are four DDT root in lisp tesbed network: http://ddt-root.org/
+    * Special <eid> sections with prefix equal 0.0.0.0/0 or 0::/0 can be used to define a DDT root node. 
+      For the lisp4.net testbed, the root nodes are documented here: http://ddt-root.org/
 
-    For more information about prefix delegation and how DDT working, please refer to IETF draft.
+    * For more information about prefix delegation and DDT, please refer to the IETF drafts.
 
---------------------------
+    * Here is a sample file
+
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <db>
 	<geid>
@@ -188,19 +167,21 @@
 		</rloc>
 	</eid>
 </db>
-    c. opencp_xtr.xml - Configure file for xTR node
 
-    * One <mapserver> section, defined the list of Map-server which this server must send
-    map-register to, each map-server need a key to authen.
 
-    * One <mapresolve> section, defined the list of Map-resolve which this server can request
-    to get mapping.
 
-    * One or more <eid> sections. Each section show information for one prefix delegation.
+    *** opencp_xtr.xml - xTR configuration file
 
-    For more information about xTR functions, please refer to IETF draft.
+    * The <mapserver> section defines the list of MSs the xTR registers to.  Each MS needs a key to authenticate.
 
---------------------------
+    * The <mapresolve> section defines the list of MRs the xTR can send map-requests.
+
+    * One or more <eid> sections. Each section gives the information for one EID IP prefix to register.
+
+    * For more information about xTR functions, please refer to the IETF drafts.
+
+    * Here is a sample file
+
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <db>
 	<mapserver>
@@ -302,9 +283,9 @@
 </db>
 
 3. DEBUG
-    When running, the program prints debug information to the console so you can flow the processing. It also inclue
-    another method to debug by interact with the program over command line in the console. At this version, supported 
-    command include:
+    When running, the program prints debug information to the console so you can follow the processing. It also includes
+    another method to debug by interacting with the program using the console. At this version, supported 
+    commands are:
 	
 	map-database
 
