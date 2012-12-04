@@ -26,10 +26,37 @@ by ./opencp <path_to_opencp.conf>
 ##
 
 
-#Version 01.9: 06/2012
-	By Damien Saucez, Lorand Jackab - Université catholique de Louvain
+#Version 01.00 (LISP-CP): 16/08/2011
+	By Guruprasad K. Rao - George Mason University <grao2@gmu.edu>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
 
-#Version 02.01: 11/2012
+#Version 01.01 (LISP-CP): 12/04/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Patrick Raad - NSS & LIP6 <patrick.raad@lip6.fr> 
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+  * Support draft-ietf-lisp-22.txt
+  * Change format of configure file
+  * Change to allow working with multi EID: register multi EID, answer to map request with multi EID
+  * Change to allow working with ECM (encapsulated Control Message)
+  * Add debug functions
+  * Add make nonce function
+  * Fix bugs
+
+#Version 01.02 (LISP-CP): 24/04/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Patrick Raad - NSS & LIP6 <patrick.raad@lip6.fr> 
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+  * Support IPv6
+  * Change format of configure file to easy define
+  * Support multi map server with multi key
+  * Change Makefile to allow set up program as service in rc.conf
+  * Upgrade search EID function
+  * Add more debug functions
+
+#Version 01.9 (DDT): 06/2012
+	By Damien Saucez, Lorand Jackab - UniversitÃ© catholique de Louvain
+
+#Version 02.00 (MERGE LISP-CP WITH UPDATED DDT): 11/2012
 	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
 	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
 
