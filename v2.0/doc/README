@@ -1,10 +1,10 @@
 1.  INTRODUCTION
 
-    The Open control plane implements the functions of LISP (Locator/Identifier Separation Protocol) control plane.
-    Please refer to IETF LISP drafts for a description of LISP control plane, its acronyms and 
-    the control-plane functionalities.	
+    The Open control plane implements major LISP (Locator/Identifier Separation Protocol) control plane functions.
+    Please refer to the IETF LISP drafts for a description of the LISP control plane, its acronyms and 
+    functionalities.	
     
-    The Open control plane is compatible and designed to work with the OpenLISP data-plane (http://www.openlisp.org), 
+    The program is compatible and designed to work with the OpenLISP data-plane (http://www.openlisp.org), 
     and is therefore developed in a FreeBSD evnironment.
 
     It includes all basic control-plane functions: xTR, MS, MR/DDT, DDT.
@@ -305,6 +305,6 @@
     Please refer to the INSTALL file in tarball source code.
 
 
-5. COMMENT AND BUG
+5. COMMENTS AND BUGS
     
-    All comment and bug report are welcome!
+    Comment and bug report are welcome! Better if handled via gethub.
