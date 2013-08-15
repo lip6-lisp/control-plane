@@ -1,0 +1,98 @@
+<db>
+	<mapserver>
+		<ms key="lip6-KEY-HERE">193.162.145.50</ms>
+		<ms key="lip6-KEY-HERE">195.50.116.18</ms>
+		<ms family="IPv6" key="lip6-KEY-HERE">2001:67c:21b4:109::b</ms>
+	</mapserver>
+	
+	<mapresolve>
+		<mr>193.162.145.50</mr>
+		<mr family="IPv6">2001:67c:21b4:109::b</mr>
+	</mapresolve>
+	
+	<eid prefix="153.16.38.0/24" ttl="60" act="0" a="0" version="1" active="true">
+		<rloc>
+			<address family="IPv4">132.227.62.243</address>
+			<priority>2</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<rloc-probing>false</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv4">132.227.62.242</address>
+			<priority>4</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<rloc-probing>true</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::242</address>
+			<priority>5</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<rloc-probing>true</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::243</address>
+			<priority>6</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<rloc-probing>false</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid family="IPv6" prefix="2610:D0:2121::/48" ttl="60" act="0" a="0" version="1"	active="true">
+		<rloc>
+			<address family="IPv4">132.227.62.243</address>
+			<priority>1</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<rloc-probing>false</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv4">132.227.62.242</address>
+			<priority>2</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<rloc-probing>true</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::242</address>
+			<priority>5</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<rloc-probing>true</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::243</address>
+			<priority>3</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<rloc-probing>false</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+</db>
