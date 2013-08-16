@@ -326,6 +326,223 @@
     Please refer to the INSTALL file in tarball source code.
 
 
-5. COMMENT AND BUG
+5. CHANGE LOG
+
+
+#Version 01.00 (LISP-CP): 16/08/2011
+	By Guruprasad K. Rao - George Mason University <grao2@gmu.edu>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+
+#Version 01.01 (LISP-CP): 12/04/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Patrick Raad - NSS & LIP6 <patrick.raad@lip6.fr> 
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+  * Support draft-ietf-lisp-22.txt
+  * Change format of configure file
+  * Change to allow working with multi EID: register multi EID, answer to map request with multi EID
+  * Change to allow working with ECM (encapsulated Control Message)
+  * Add debug functions
+  * Add make nonce function
+  * Fix bugs
+
+#Version 01.02 (LISP-CP): 24/04/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Patrick Raad - NSS & LIP6 <patrick.raad@lip6.fr> 
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+  * Support IPv6
+  * Change format of configure file to easy define
+  * Support multi map server with multi key
+  * Change Makefile to allow set up program as service in rc.conf
+  * Upgrade search EID function
+  * Add more debug functions
+
+#Version 01.9 (DDT-NODE): 06/2012
+	By Damien Saucez, Lorand Jackab - Université catholique de Louvain
+
+#Version 02.00 (MERGE LISP-CP WITH AN UPDATED DDT-NODE): 11/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+
+  * New design
+  * Support RFC 6830
+  * Support RFC 6833
+  * Support IPv6
+  * Add xTR functions
+  * Change format of configure file
+  * Support defined site with EID range, key to authen...
+  * Support map-register with sub-prefix of site
+  * Support authentication and validate EID when process map-register
+  * Support proxy-map-reply bit set
+  * Support answer with negative of: 
+  *	LISP_REFERRAL_MS_NOT_REGISTERED, 
+  *	LISP_REFERRAL_DELEGATION_HOLE,
+	LISP_REFERRAL_NOTE_AUTHORITATIVE
+  * Fix bugs	
+
+#Version 02.01: 12/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+
+  * Rearrange functions
+  * Support LCAF (type=2)
+  * Support M bit set in map-register
+  * Add IID to configure file
+  * Fix bugs
+
+#Version 02.2 (MULTI-THREAD): 08/2013
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+
+  * Change architech of thread, new thread was added to 
+  *	manage the children thread. Euser can customize the max/min number
+  *	of thread 
+  * Using open control-plane queue to improve system.
+  * User can define size of this queue
+  * Fix bugs	
+	
+
+
+6. FORMAT OF IMPLEMENTED LISP CONTROL-PLANE MESSAGES 
+
+##Map-Request message
+	
+	
+	0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=1 |A|M|P|S|p|s|    Reserved     |   IRC   | Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |         Source-EID-AFI        |   Source EID Address  ...     |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |         ITR-RLOC-AFI 1        |    ITR-RLOC Address 1  ...    |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                              ...                              |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |         ITR-RLOC-AFI n        |    ITR-RLOC Address n  ...    |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |   Reserved    | EID mask-len  |        EID-prefix-AFI         |
+   Rec +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     \ |                       EID-prefix  ...                         |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                   Map-Reply Record  ...                       |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##Map-reply message
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=2 |P|E|S|          Reserved               | Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   |                          Record  TTL                          |
+   |   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   R   | Locator Count | EID mask-len  | ACT |A|      Reserved         |
+   e   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   c   | Rsvd  |  Map-Version Number   |       EID-prefix-AFI          |
+   o   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   r   |                          EID-prefix                           |
+   d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  /|    Priority   |    Weight     |  M Priority   |   M Weight    |
+   | L +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | o |        Unused Flags     |L|p|R|           Loc-AFI             |
+   | c +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  \|                             Locator                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##Map-Register message
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=3 |P|            Reserved               |M| Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |            Key ID             |  Authentication Data Length   |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       ~                     Authentication Data                       ~
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   |                          Record  TTL                          |
+   |   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   R   | Locator Count | EID mask-len  | ACT |A|      Reserved         |
+   e   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   c   | Rsvd  |  Map-Version Number   |        EID-prefix-AFI         |
+   o   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   r   |                          EID-prefix                           |
+   d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  /|    Priority   |    Weight     |  M Priority   |   M Weight    |
+   | L +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | o |        Unused Flags     |L|p|R|           Loc-AFI             |
+   | c +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  \|                             Locator                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##Encapsulated Control Message
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |                       IPv4 or IPv6 Header                     |
+   OH  |                      (uses RLOC addresses)                    |
+     \ |                                                               |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |       Source Port = xxxx      |       Dest Port = 4342        |
+   UDP +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     \ |           UDP Length          |        UDP Checksum           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   LH  |Type=8 |S|D|                Reserved                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |                       IPv4 or IPv6 Header                     |
+   IH  |                  (uses RLOC or EID addresses)                 |
+     \ |                                                               |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |       Source Port = xxxx      |       Dest Port = yyyy        |
+   UDP +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     \ |           UDP Length          |        UDP Checksum           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   LCM |                      LISP Control Message                     |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+"D" is the "DDT-originated" flag and is set by a DDT client to
+indicate that the receiver can and should return Map-Referral
+messages as appropriate.
+
+##Map-Referral Message
+
+	0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=6 |                Reserved               | Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   |                          Record  TTL                          |
+   |   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   R   | Referral Count| EID mask-len  | ACT |A|I|     Reserved        |
+   e   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   c   |SigCnt |   Map Version Number  |            EID-AFI            |
+   o   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   r   |                          EID-prefix ...                       |
+   d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  /|    Priority   |    Weight     |  M Priority   |   M Weight    |
+   | L +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | o |        Unused Flags         |R|         Loc/LCAF-AFI          |
+   | c +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  \|                             Locator ...                       |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+6. COMMENT AND BUG
     
     All comment and bug report are welcome! The best is via https://github.com/lip6-lisp/control-plane.
