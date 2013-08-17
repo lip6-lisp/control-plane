@@ -543,6 +543,6 @@ messages as appropriate.
    |  \|                             Locator ...                       |
    +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-6. COMMENT AND BUG
+7. COMMENTS AND BUG REPORT
     
-    All comment and bug report are welcome! The best is via https://github.com/lip6-lisp/control-plane.
+    Comments and bug report are welcome! The best is via https://github.com/lip6-lisp/control-plane.
