@@ -379,7 +379,7 @@
 	LISP_REFERRAL_NOTE_AUTHORITATIVE
   * Fix bugs	
 
-#Version 02.01: 12/2012
+#Version 02.1: 12/2012
 	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
 	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
 
@@ -400,7 +400,12 @@
   * User can define size of this queue
   * Fix bugs	
 	
+#Version 02.3 (Bug fix): 10/2013
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn> 
 
+  * Improvement of DDT root mngt
+  * Fix memory management bugs	
+	
 
 6. FORMAT OF IMPLEMENTED LISP CONTROL-PLANE MESSAGES 
 
