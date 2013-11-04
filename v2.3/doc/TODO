@@ -1,6 +1,6 @@
 Action
 ======
-Change map_entry and mapping_flags to referral_entry and referral_falgs for all
+Change map_entry and mapping_flags to referral_entry and referral_flags for all
 the code related to referral.
 
 Reason
@@ -11,9 +11,9 @@ change in the future.
 
 Action
 ======
-Implement syslog insteal console and allow user to set debug level
+Implement syslog instead of console and allow user to set debug level
 
 Reason
 ======
-for the moment, log information is push to console, make a bottleneck
+for the moment, log information is pushed to the console, creating a bottleneck
 
