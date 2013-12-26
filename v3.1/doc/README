@@ -23,8 +23,8 @@
     #functions = mr ms ddt
 
     #Set debug level:
-    # 0 - not debug nothing will printed to consol
-    # 1 - simple debug, with little information
+    # 0 - not debug nothing will printed to console
+    # 1 - simple debug, with little information printed to console
     # 2 - full debug
     debug_level = 2
 
