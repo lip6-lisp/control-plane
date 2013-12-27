@@ -121,6 +121,7 @@ get_my_addr(int afi, union sockunion *sk)
 				goto exit_fnc;						
 		}		
 	}
+	return -1;
 exit_fnc:	
 	freeifaddrs(ifap);
 	return 0;
@@ -907,6 +908,7 @@ ms_getElementValue(void *userData, const XML_Char *s, int len)
 }
 
 /* Parse for map-resolve configure */
+struct map_entry rtr_entry;
 
 	static void XMLCALL
 rtr_startElement(void *userData, const char *name, const char **atts)
@@ -942,6 +944,7 @@ rtr_startElement(void *userData, const char *name, const char **atts)
 				bzero(&_mflags, sizeof(struct mapping_flags));
 				_mflags.range = _MAPP_XTR;
 				list_insert(etr_db, _mapping, NULL);
+				generic_mapping_add_rloc(_mapping, &rtr_entry);
 			}
 			/* ACT bits */
 			if(0 == strcasecmp(*atts, "act")){
@@ -972,7 +975,15 @@ rtr_startElement(void *userData, const char *name, const char **atts)
 		_prefix = NULL;
 		_mapping = NULL;
 	} 
-
+	if(0 == strcasecmp(name, "mr")) {
+		_fam = AF_INET;
+		while(*atts){
+			if(0 == strcasecmp(*atts, "family")){
+				atts++;
+				_fam = (0 == strcasecmp(*atts, "IPv6"))?AF_INET6:AF_INET;
+			}
+		}
+	}
 	_xml_name = name;
 }
 
@@ -1058,6 +1069,16 @@ mr_parser_config(const char * filename)
 rtr_parser_config(const char * filename)
 {	
 	xtr_mr = list_init();
+	rtr_entry.rloc.sa.sa_family= AF_INET;
+	memcpy(&rtr_entry.rloc.sin.sin_addr,src_addr[0],sizeof(struct in_addr));
+	rtr_entry.priority= 1;
+	rtr_entry.weight= 100;
+	rtr_entry.m_priority= 0;
+	rtr_entry.m_weight= 0;
+	rtr_entry.L= 1;
+	rtr_entry.p= 0;
+	rtr_entry.r= 0;
+	
 	xml_configure(filename, rtr_startElement, rtr_endElement, rtr_getElementValue);
 	return 0;
 }
@@ -1165,9 +1186,10 @@ _parser_config(const char * filename)
 				close(sk);
 			}
 			else{
-				get_my_addr(AF_INET,&my_ip);
-				src_addr[0] = calloc(1,sizeof(struct in_addr));
-				memcpy(src_addr[0], &my_ip.sin.sin_addr, sizeof(struct in_addr));								
+				if(get_my_addr(AF_INET,&my_ip) == 0){
+					src_addr[0] = calloc(1,sizeof(struct in_addr));
+					memcpy(src_addr[0], &my_ip.sin.sin_addr, sizeof(struct in_addr));								
+				}	
 			}
 		}	
 		
@@ -1194,9 +1216,10 @@ _parser_config(const char * filename)
 				memcpy(src_addr6[0], &((struct sockaddr_in6 *)(res->ai_addr))->sin6_addr, sizeof(struct in6_addr));	
 			}
 			else{
-				get_my_addr(AF_INET6,&my_ip);
-				src_addr6[0] = calloc(1,sizeof(struct in6_addr));
-				memcpy(src_addr6[0], &my_ip.sin6.sin6_addr, sizeof(struct in6_addr));		
+				if(get_my_addr(AF_INET6,&my_ip) == 0){
+					src_addr6[0] = calloc(1,sizeof(struct in6_addr));
+					memcpy(src_addr6[0], &my_ip.sin6.sin6_addr, sizeof(struct in6_addr));		
+				}
 			}
 		}
 		if( 0 == strcasecmp(data[0], "lisp_te")){
