@@ -399,8 +399,8 @@
 		<mr>193.162.145.50</mr>
 		<mr family="IPv6">2001:67c:21b4:109::b</mr>
 	</mapresolver>
-	<eid prefix="132.227.120.176/28" version="1" active="true">
-	<eid prefix="132.227.120.192/28" version="1" active="true">		
+	<eid prefix="132.227.120.176/28" version="1" active="true" />
+	<eid prefix="132.227.120.192/28" version="1" active="true" />		
     </db>
 
 3. DEBUG
