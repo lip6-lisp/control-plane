@@ -560,7 +560,7 @@ read_rec(union map_reply_record_generic * rec)
 				if not lisp_te --> get last hop				
 			*/
 			if(_debug == LDEBUG){
-				fprintf(OUTPUT_STREAM, "\t•[rloc=ELP, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+				fprintf(OUTPUT_STREAM, "\tâ€¢[rloc=ELP, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 						entry->priority, \
 						entry->weight, \
 						entry->m_priority, \
@@ -573,14 +573,14 @@ read_rec(union map_reply_record_generic * rec)
 						case LISP_AFI_IP:
 							if(_debug == LDEBUG){
 								inet_ntop(AF_INET, (void *)&hop->rloc.hop_addr, buf, BSIZE);
-								fprintf(OUTPUT_STREAM, "\t\t•[hop=%s]\n",buf);
+								fprintf(OUTPUT_STREAM, "\t\tâ€¢[hop=%s]\n",buf);
 							}							
 							hop = CO(hop,sizeof(struct rloc_te));
 							break;						
 						case LISP_AFI_IPV6:
 							if(_debug == LDEBUG){
 								inet_ntop(AF_INET6, (void *)&hop->rloc6.hop_addr, buf, BSIZE);
-								fprintf(OUTPUT_STREAM, "\t\t•[hop=%s]\n",buf);
+								fprintf(OUTPUT_STREAM, "\t\tâ€¢[hop=%s]\n",buf);
 							}							
 							hop = (union rloc_te_generic *)CO(hop,sizeof(struct rloc6_te));
 							break;
@@ -690,7 +690,7 @@ read_rec(union map_reply_record_generic * rec)
 			}
 			if(_debug == LDEBUG){
 				inet_ntop(entry->rloc.sin.sin_family, (void *)&loc->rloc.rloc, buf, BSIZE);
-				fprintf(OUTPUT_STREAM, "\t•[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+				fprintf(OUTPUT_STREAM, "\tâ€¢[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 						buf, \
 						entry->priority, \
 						entry->weight, \
@@ -898,7 +898,7 @@ plugin_openlisp(void *data)
 	struct list_entry_t * ptr;
 	struct db_node * node;
 	ptr = etr_db->head.next;
-	if(_fncs & _FNC_XTR){
+	if(_fncs & (_FNC_XTR | _FNC_RTR)){
 		while(ptr != &etr_db->tail){
 			if( (node = (struct db_node *)(ptr->data))){
 				opl_update(openlispsck, node, 1);			
