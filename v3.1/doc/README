@@ -498,25 +498,25 @@
   * Fix bugs	
 	
 #Version 02.3 (Bug fix): 10/2013
-	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn> 
+	By Dung Chi Phung - VNU Hanoi & LIP6 <Chi-Dung.Phung@lip6.fr> 
 
   * Improvement of DDT root mngt
   * Fix memory management bugs	
 	
 #Version 03.0 : 12/2013
-	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn> 
+	By Dung Chi Phung -  LIP6 <Chi-Dung.Phung@lip6.fr> 
 
-  * Very basic LISP-TE functions
-  * New node function: Reencapsulating Tunnel Router (RTR)
-  * Allow set debug level from configuration file
-  * Improvement queue management
+  * Addition of basic LISP-TE functions
+  * Addition of a new node function: Reencapsulating Tunnel Router (RTR) -- see related update of the OpenLISP data-plane
+  * Option to set the debug levels from the configuration file
+  * Improvement of input/output queue management
 
 #Version 03.1 : 12/2013
-	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn> 
+	By Dung Chi Phung -  LIP6 <Chi-Dung.Phung@lip6.fr> 
 
-  * New seperation configuration file for MR and NODE
-  * Improvement LISP-TE functions with new configuration file	
-  * Fix bugs
+  * Separated configuration file for MR and DDT-NODE functions
+  * Improvement of LISP-TE functions and addition of a specific configuration file	
+  * Bug fix
 
 6. FORMAT OF IMPLEMENTED LISP CONTROL-PLANE MESSAGES 
 
