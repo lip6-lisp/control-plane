@@ -1,4 +1,3 @@
-
 #include "lib.h"
 #include "udp.h"
 
@@ -1536,7 +1535,7 @@ udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 			ih->ip_sum        = 0;         
 			ih->ip_src.s_addr = afi_addr_src.ip.address.s_addr;
 			ih->ip_dst.s_addr = afi_addr_dst.ip.address.s_addr;
-			ih->ip_sum 		  = ip_checksum((unsigned short *)ih, ip_len);
+			ih->ip_sum 		  = htons(ip_checksum((unsigned short *)ih, (ih->ip_hl)*2));
 			break;
 		case AF_INET6:
 			ip_len = (uint8_t *)rpk->curs - (uint8_t *) udp;
