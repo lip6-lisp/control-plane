@@ -2,7 +2,7 @@
 #INSTALL
 #
 
-**Require: expat library (need expat.h expat_external.h in /usr/local/include/)
+**Require: expat library
 
 1. Make sure that you have the gcc compiler.
 
@@ -10,17 +10,15 @@
 
 3. From source code directory, run 'make'. This will make binary file 'opencp'.
 
-4. Still from source code directory, run 'make install' to install service script to /etc/rc.d/. 
+4. Still from source code directory, run 'make install' to install service script to /etc/init.d/. 
 It also copy the main configure file (opencp.conf) and 05 sample configures 
 file 'opencp_xtr.xml, opencp_ms.xml, opencp_mr.xml, opencp_node.xml, opencp_rtr.xml' to /etc/. Please edit 
 the configure files to suit before go to next step. The opencp_mr-sample-configure-of-ddt-root.xml file 
 is an example of configuration for DDT root. The opencp_xtr-sample-configure-of-lisp-te.xml file is an examle
 of configuration for rtr node.
 
-5. To start the program at first time, use '/etc/rc.d/opencp_service start' command or run manual
+5. To start the program at first time, use '/etc/init.d/opencp_service start' command or run manual
 by ./opencp [<path_to_opencp.conf>]
 
-6. To make program auto start when reboot, edit the /etc/rc.conf and add the flow line:
-	opencp_service_enable="YES"
 
 
