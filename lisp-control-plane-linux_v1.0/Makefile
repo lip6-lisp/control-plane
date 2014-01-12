@@ -26,8 +26,8 @@ all:
 install:
 	/bin/cp ${EXE} /sbin/
 	/bin/chmod a+x /sbin/${EXE}
-	/bin/cp opencp_service /etc/rc.d/
-	/bin/chmod a+x /etc/rc.d/opencp_service
+	/bin/cp opencp_service /etc/init.d/
+	/bin/chmod a+x /etc/init.d/opencp_service
 	/bin/cp opencp.conf opencp_xtr.xml opencp_ms.xml opencp_mr.xml opencp_node.xml opencp_rtr.xml /etc/ 
 
 clean:
