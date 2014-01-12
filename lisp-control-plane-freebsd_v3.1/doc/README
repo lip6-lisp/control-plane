@@ -4,7 +4,7 @@
     Please refer to IETF LISP drafts for a description of LISP control plane, its acronyms and 
     the control-plane functionalities.	
     
-    The OpenLISP control-plane is compatible and designed to work with the OpenLISP data-plane (http://www.openlisp.org), and is therefore developed in a FreeBSD evnironment.
+    The OpenLISP control-plane is compatible and designed to work with the OpenLISP data-plane (http://www.openlisp.org), and is therefore developed in a FreeBSD environment.
 
     It includes all basic control-plane functions: xTR, MS, MR/DDT, DDT.
 
@@ -196,7 +196,7 @@
 	</eid>
     </db>
 
-    **** opencp_mr.xml - DDT node configuration file
+    **** opencp_node.xml - DDT node configuration file
 
     * <geid> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap. 
       NB: if the node is a DDT root, then it is here configured as being delegated for 0.0.0.0/0 (IPv4) 
