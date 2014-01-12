@@ -1,0 +1,42 @@
+<db>
+	 <geid>
+		<arrange>10.100.0.0/16</arrange>
+		<arrange>10.200.0.0/16</arrange>
+		<arrange family="IPv6">2000:D0:2::/47</arrange>
+	 </geid>
+	 
+	<site>
+		<name>unirome</name>
+		<key>uniroma-KEY-HERE</key>
+		<contact>admin@uniroma.it</contact>
+		<active>yes</active>
+
+		<eid>
+			<addr family="IPv4">10.100.0.0/24</addr>
+			<active>yes</active>
+		</eid>
+
+		<eid>
+			<addr family="IPv4">10.200.0.0/24</addr>
+			<active>yes</active>
+		</eid>
+
+		<eid>
+			<addr family="IPv6">2000:D0:2::/48</addr>
+			<active>yes</active>
+		</eid>
+	</site>
+
+	<site>
+		<name>vnu</name>
+		<key>uet-KEY-HERE</key>
+		<contact>admin@vnu.edu.vn</contact>
+		<active>yes</active>
+
+		<eid>
+			<addr family="IPv4">10.100.1.0/24</addr>
+			<active>yes</active>
+		</eid>
+	</site>
+
+</db>

@@ -1,0 +1,25 @@
+<db>
+	<mapserver>
+		<ms key="lip6-KEY-HERE">193.162.145.50</ms>
+		<ms key="lip6-KEY-HERE">195.50.116.18</ms>
+		<ms family="IPv6" key="lip6-KEY-HERE">2001:67c:21b4:109::b</ms>
+	</mapserver>
+
+	<mapresolver>
+		<mr>193.162.145.50</mr>
+		<mr family="IPv6">2001:67c:21b4:109::b</mr>
+	</mapresolver>
+		
+	<eid prefix="132.227.120.176/28" ttl="60" act="0" a="0" version="1" active="true">
+		<rloc>
+			<address family="IPv4">132.227.62.251</address>
+			<priority>1</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<rloc-probing>false</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+</db>

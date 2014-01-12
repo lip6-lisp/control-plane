@@ -1,0 +1,310 @@
+1.  INTRODUCTION
+
+    The Open control plane implements major LISP (Locator/Identifier Separation Protocol) control plane functions.
+    Please refer to the IETF LISP drafts for a description of the LISP control plane, its acronyms and 
+    functionalities.	
+    
+    The program is compatible and designed to work with the OpenLISP data-plane (http://www.openlisp.org), 
+    and is therefore developed in a FreeBSD evnironment.
+
+    It includes all basic control-plane functions: xTR, MS, MR/DDT, DDT.
+
+2. CONFIGURATION FILES
+
+    The configuration relies on a main configuration file named "opencp.conf" that points to specific xml files: 
+    one for the xTR part, one for the MS part and one for the MR/DDT part.
+    xml files include many sections using tags <db> and </db>.
+
+
+    *** opencp.conf - main configuration file
+
+    # Functions: xTR, MS (Map-Server), MR/DDT (DDT Map-Resolver or DDT-only node)
+    # NB: as of current implementation, there may be bugs when running MS and xTR functions in the same node
+    
+    functions = ms mr ddt
+    #functions = xTR
+
+    #Enable ipv6 or not, default is yes
+    #ipv6_support = yes
+
+    #Choose source IP for map-response packet
+    #Default is auto select
+
+    source_ipv4 = auto
+    source_ipv6 = auto
+
+    ##
+    ## xTR specific settings
+    ##
+
+    xtr_configure = opencp_xtr.xml
+    ms_configure = opencp_ms.xml
+    mr_configure = opencp_mr.xml
+
+
+    *** opencp_ms.xml - map-server configuration
+
+    * The <geid> section defines the IP prefixes the map-server allows ETR to register to. 
+      The IP ranges must not overlap.
+    
+    * One or more <site> sections. Each section includes the information for one site: 
+      site name, key for map-register messages, EID IP prefixes the site can register. 
+      NB: the key is case sensitive and must not include spaces.
+
+    * Here is a sample file
+
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<db>
+	 <geid>
+		<arrange>153.16.38.0/24</arrange>
+		<arrange>153.16.44.0/24</arrange>
+		<arrange>153.16.70.0/24</arrange>
+		<arrange>192.168.0.0/16</arrange>
+		<arrange family="IPv6">2610:D0::/32</arrange>
+	 </geid>
+	 
+	 <site>
+		<name>SITE1</name>
+		<key>SITE1-KEY-HERE</key>
+		<contact>SITE1-EMAIL-HERE</contact>
+		<active>yes</active>
+
+		<eid>
+			<addr family="IPv4">A.B.C.D/24</addr>
+			<active>yes</active>
+		</eid>
+
+		<eid>
+			<addr family="IPv6">A:B:C::/48</addr>
+			<active>yes</active>
+		</eid>
+	</site>
+	
+	<site>
+		<name>SITE2</name>
+		<key>SITE2-KEY-HERE</key>
+		<contact>SITE2-EMAIL-HERE</contact>
+		<active>yes</active>
+
+		<eid>
+			<addr family="IPv4">E.F.G.H/28</addr>
+			<active>yes</active>
+		</eid>
+
+		<eid>
+			<addr family="IPv6">E:F:G::/48</addr>
+			<active>yes</active>
+		</eid>
+	</site>
+
+</db>
+
+    
+    **** opencp_mr.xml - DDT node and MR configuration file
+
+    * <geid> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap. 
+      NB: if the node is a DDT root, then it is here configured as being delegated for 0.0.0.0/0 (IPv4) 
+      and 0::/0 (IPv6).
+
+    * One or more <eid> sections. Each section containes the information for one delegated prefix.
+
+    * Special <eid> sections with prefix equal 0.0.0.0/0 or 0::/0 is for DDT root nodes. 
+      For the lisp4.net testbed, the root nodes are documented here: http://ddt-root.org/
+
+    * For more information about prefix delegation and DDT, please refer to the IETF drafts.
+
+    * Here is a sample file
+
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<db>
+	<geid>
+		<arrange>153.17.0.0/16</arrange>
+		<arrange>153.18.0.0/16</arrange>
+		<arrange>192.0.0.0/8</arrange>
+		<arrange family="IPv6">2610:d0::/32</arrange>
+	 </geid>
+
+	<eid prefix="153.17.0.0/16" ttl="1440" a="true" referral="true">
+		<rloc>
+			<address>112.137.129.44</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>112.137.129.45</address>
+			<priority>10</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid prefix="192.100.0.0/16" ttl="1440" a="true" referral="true">
+		<rloc>
+			<address>112.137.129.44</address>
+			<priority>10</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>112.137.129.45</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid prefix="0.0.0.0/0" referral="true" incomplete="false">
+		<rloc>
+			<address>192.149.252.136</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid prefix="2610:d0::/16" referral="true" incomplete="false">
+		<rloc>
+			<address>2001:67c:2980::2980</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+</db>
+
+
+
+    *** opencp_xtr.xml - xTR configuration file
+
+    * The <mapserver> section defines the list of MSs the xTR registers to.  Each MS needs a key to authenticate.
+
+    * The <mapresolve> section defines the list of MRs the xTR can send map-requests.
+
+    * One or more <eid> sections. Each section gives the information for one EID IP prefix to register.
+
+    * For more information about xTR functions, please refer to the IETF drafts.
+
+    * Here is a sample file
+
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<db>
+	<mapserver>
+		<ms key="KEY-HERE">193.162.145.50</ms>
+		<ms key="KEY-HERE">195.50.116.18</ms>
+		<ms family="IPv6" key="KEY-HERE">2001:67c:21b4:109::b</ms>
+	</mapserver>
+	
+	<mapresolve>
+		<mr>193.162.145.50</mr>
+		<mr family="IPv6">2001:67c:21b4:109::b</mr>
+	</mapresolve>
+	
+	<eid prefix="153.16.38.0/24" ttl="60" act="0" a="0" version="1" active="true">
+		<rloc>
+			<address>132.227.62.243</address>
+			<priority>2</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<rloc-probing>false</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>132.227.62.242</address>
+			<priority>4</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<rloc-probing>true</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::242</address>
+			<priority>5</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<rloc-probing>true</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::243</address>
+			<priority>6</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<rloc-probing>false</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid family="IPv6" prefix="2610:D0:2121::/48" ttl="60" act="0" a="0" version="1"	active="true">
+		<rloc>
+			<address>132.227.62.243</address>
+			<priority>1</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<rloc-probing>false</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>132.227.62.242</address>
+			<priority>2</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<rloc-probing>true</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::242</address>
+			<priority>5</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<rloc-probing>true</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::243</address>
+			<priority>3</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<rloc-probing>false</rloc-probing>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+</db>
+
+3. DEBUG
+    When running, the program prints debug information to the console so you can follow the processing. 
+    It also includes another method to debug by interacting with the program using the console. 
+    At this version, supported commands are:
+	
+	map-database
+
+	map-register <EID-prefix> version <version_number>  A <true|false> TTL <time_to_live> /
+	  < -rloc address <rloc_addr>  priority <rloc_priority> weight <rloc_weight> m_weight <rloc_m_weight> /
+	  m_priority <rloc_m_priority> reachable <true|false> ...>
+
+	map-request <EID-prefix>  <nonce>
+		   
+4. INSTALL
+    
+    Please refer to the INSTALL file in tarball source code.
+
+
+5. COMMENTS AND BUGS
+    
+    Comment and bug report are welcome! Better if handled via gethub.
