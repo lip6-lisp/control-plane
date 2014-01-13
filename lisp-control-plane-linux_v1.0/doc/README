@@ -4,9 +4,9 @@
     Please refer to IETF LISP drafts for a description of LISP control plane, its acronyms and 
     the control-plane functionalities. 	
     
-    With version for FreeBSD enviroment, the OpenLISP control-plane is compatible and designed to work with the OpenLISP data-plane1 (http://www.openlisp.org), so it can do xTR function. With current version for Linux enviroment, it only support control-plane functions as  DDT/MS/MR. 
+    Please be aware that, differently than with the version for FreeBSD enviroment this Linux version only support control-plane functions as  DDT/MS/MR, because the OpenLISP data-plane has not been ported to Linux, yet.. 
 
-    It includes all basic control-plane functions: xTR, MS, MR/DDT, DDT.
+    This linux version includes all basic control-plane functions: xTR, MS, MR/DDT, DDT.
 
 2. CONFIGURATION FILES
 
