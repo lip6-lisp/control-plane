@@ -1,8 +1,8 @@
 <db>
 	<mapserver>
-		<ms key="lip6-KEY-HERE">193.162.145.50</ms>
-		<ms key="lip6-KEY-HERE">195.50.116.18</ms>
-		<ms family="IPv6" key="lip6-KEY-HERE">2001:67c:21b4:109::b</ms>
+		<ms key="lip6-KEY-HERE" proxy="no">193.162.145.50</ms>
+		<ms key="lip6-KEY-HERE" proxy="no">195.50.116.18</ms>
+		<ms family="IPv6" key="lip6-KEY-HERE" proxy="no">2001:67c:21b4:109::b</ms>
 	</mapserver>
 
 	<mapresolver>
