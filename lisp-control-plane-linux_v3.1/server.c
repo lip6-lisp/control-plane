@@ -322,7 +322,7 @@ _request_reply(void *data, struct communication_fct * fct, \
 	
 	/*PCD */
 	overlap = list_init();
-	ms_get_tree(rn,overlap,_MAPP);
+	ms_get_tree(rn,overlap,_MAPP|_MAPP_XTR);
 	nptr = overlap->head.next;
 	while(nptr != &overlap->tail){
 		rn = (struct db_node *)nptr->data;

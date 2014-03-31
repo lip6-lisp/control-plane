@@ -107,10 +107,10 @@ _get_sock_size(union sockunion * eid)
 {
 	size_t ss_len;
 	switch (eid->sa.sa_family){
-		case LISP_AFI_IP:
+		case AF_INET:
 			ss_len = sizeof(struct sockaddr_in);
 			break;
-		case LISP_AFI_IPV6:
+		case AF_INET6:
 			ss_len = sizeof(struct sockaddr_in6);
 			break;
 		default:
@@ -151,8 +151,8 @@ _get_mr()
 	struct list_entry_t *rt;
 	
 	nms =xtr_mr->count;
-	rn = ((random()^time(NULL) ) % nms)+1;
-	rt = &xtr_mr->head.next;
+	rn = ((random()^time(NULL) ) % nms);
+	rt = xtr_mr->head.next;
 	while(rt != &xtr_mr->tail && rn-- > 0)
 		rt = rt->next;
 		
@@ -188,8 +188,7 @@ check_eid(union sockunion *eid)
 	
 	for (i = 1; i < MAX_LOOKUPS; i++)
         if (lookups[i].active)
-            if (!memcmp(eid, &lookups[i].eid, _get_sock_size(eid))){
-				printf("match:%d\n",i);
+            if (!memcmp(eid, &lookups[i].eid, _get_sock_size(eid))){				
 				return 0;				
 			}
     return 1;
@@ -216,7 +215,8 @@ new_lookup(union sockunion *eid,  union sockunion * mr)
 	
 	/*new socket for map-request */
 	if ((r = socket(mr->sa.sa_family, SOCK_DGRAM, udpproto)) < 0) {
-		fprintf(OUTPUT_ERROR, "Socket\n");
+		fprintf(OUTPUT_ERROR, "Error when create new socket\n");
+		return;
     }
 
     /*random source port of map-request */
@@ -351,7 +351,7 @@ send_mr(int idx)
 	itr_size = SA_LEN(afi_addr_src.ip.afi);
 	memcpy(itr_rloc, &afi_addr_src, itr_size);
 	/* set source ITR */
-	switch(eid->sa.sa_family){
+	switch(afi_addr_src.ip.afi){
 		case AF_INET:
 			itr_rloc->ip.afi = htons(LISP_AFI_IP);
 			itr_size = sizeof(struct afi_address);
@@ -436,9 +436,10 @@ send_mr(int idx)
 						&(lookups[idx].mr->sa), sockaddr_len) < 0) {
         return 0;
     } else {
-        cnt = ++lookups[idx].count;
+        cnt = lookups[idx].count;
         lookups[idx].nonce0[cnt] = nonce0;
         lookups[idx].nonce1[cnt] = nonce1;
+		lookups[idx].count++;
 		char ip2[INET6_ADDRSTRLEN];
 		if(_debug == LLOG || _debug == LDEBUG){
 			fprintf(OUTPUT_STREAM, "\n#Send Map-Request to %s:%d <nonce=0x%x - 0x%x>\n", \
@@ -898,7 +899,7 @@ plugin_openlisp(void *data)
 	struct list_entry_t * ptr;
 	struct db_node * node;
 	ptr = etr_db->head.next;
-	if(_fncs & _FNC_XTR){
+	if(_fncs & (_FNC_XTR | _FNC_RTR)){
 		while(ptr != &etr_db->tail){
 			if( (node = (struct db_node *)(ptr->data))){
 				opl_update(openlispsck, node, 1);			
