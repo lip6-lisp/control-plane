@@ -2,23 +2,61 @@
 #INSTALL
 #
 
-**Require: expat library
+**Require: expat library (need expat.h expat_external.h in /usr/local/include/)
+	Installation of the expat library using ports collection (on FreeBSD) or packaging tool (on Linux).
+	On FreeBSD:
+		#cd /usr/ports/textproc/expat2
+		#make clean install
+	On Linux:(example for Ubuntu)
+		#apt-get install libexpat1-dev
 
-1. Make sure that you have the gcc compiler.
+1. Make sure that you have the gcc compiler. 
+If you use other compiler, modify the Makefile to assign CC variable to your compiler.
+(Note: default FreeBSD 10 use clang instead gcc)
+	CC = gcc  --> CC = your_complier
 
-2. Unpack the tarball soure code.
+2. From source code directory, run 'make'. This will make binary file 'opencp'.
 
-3. From source code directory, run 'make'. This will make binary file 'opencp'.
-
-4. Still from source code directory, run 'make install' to install service script to /etc/init.d/. 
+3. Still from source code directory, run 'make install' to install service script to /etc/rc.d/. 
 It also copy the main configure file (opencp.conf) and 05 sample configures 
 file 'opencp_xtr.xml, opencp_ms.xml, opencp_mr.xml, opencp_node.xml, opencp_rtr.xml' to /etc/. Please edit 
 the configure files to suit before go to next step. The opencp_mr-sample-configure-of-ddt-root.xml file 
 is an example of configuration for DDT root. The opencp_xtr-sample-configure-of-lisp-te.xml file is an examle
 of configuration for rtr node.
 
-5. To start the program at first time, use '/etc/init.d/opencp_service start' command or run manual
+a.  The configuration relies on a main configuration file named "opencp.conf" that allow you setup what function of 
+control-plane you want and also points to specific xml configuration files of each functions.
+
+b.  xTR configuration file (opencp_xtr.xml) includes:
+	+ The <mapserver> section defines the list of MSs the xTR registers to. 
+	Each MS needs a key to authenticate.
+	+ The <mapresolve> section defines the list of MRs the xTR can send map-requests.
+	+ One or more <eid> sections. Each section gives the information for one EID IP prefix to register.
+
+c. Map server configuration file (opencp_ms.xml) includes:
+	+ The <geid> section defines the IP prefixes the map-server allows ETR to register to. 
+	The IP ranges must not be overlapped.
+	+ One or more <site> sections. Each section includes the information for one site:
+		+ site name,
+		+ key for map-register messages (NB: the key is case sensitive and must not include spaces),
+		+ EID IP prefixes the site can register.
+
+d. DDT node and MR configuration file (opencp_mr.xml) includes:
+	+ The <geid> section defines the IP prefix(es) the node is delegated. 
+	The IP ranges must not be overlapped. 
+	NB: if the node is a DDT root, 
+	then it is here configured as being delegated for 0.0.0.0/0 (IPv4) and 0::/0 (IPv6).
+	+ One or more <eid> sections. Each section contains the information for one delegated prefix. 
+	Special <eid> sections with prefix equal 0.0.0.0/0 or 0::/0 is for DDT root nodes.
+
+e. RTR configuration file (pencp_rtr.xml) includes:
+	+ The <mapresolve> section defines the list of MRs the RTR can send map-requests.
+	+ One or more <eid> sections. Each section includes the information for EID-prefix pass over RTR.
+	
+4. To start the program at first time, use '/etc/rc.d/opencp_service start' command or run manual
 by ./opencp [<path_to_opencp.conf>]
 
+5. To make program auto start when reboot, edit the /etc/rc.conf and add the flow line:
+	opencp_service_enable="YES"
 
 
