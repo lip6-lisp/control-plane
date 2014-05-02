@@ -1,4 +1,3 @@
-
 #include <expat.h>
 #include "lib.h"
 #include <sys/stat.h>
@@ -1077,7 +1076,7 @@ rtr_parser_config(const char * filename)
 	rtr_entry.m_weight= 0;
 	rtr_entry.L= 1;
 	rtr_entry.p= 0;
-	rtr_entry.r= 0;
+	rtr_entry.r= 1;
 	
 	xml_configure(filename, rtr_startElement, rtr_endElement, rtr_getElementValue);
 	return 0;
