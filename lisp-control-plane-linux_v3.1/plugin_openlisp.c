@@ -416,7 +416,7 @@ send_mr(int idx)
 			ih->ip_p          = IPPROTO_UDP;
 			ih->ip_sum        = 0;         
 			ih->ip_src.s_addr = afi_addr_src.ip.address.s_addr;
-			ih->ip_dst.s_addr = afi_addr_dst.ip.address.s_addr;
+			ih->ip_dst.s_addr = eid->sin.sin_addr.s_addr;
 			ih->ip_sum = ip_checksum((unsigned short *)ih, ip_len);
 			break;
 		case AF_INET6:
@@ -426,7 +426,7 @@ send_mr(int idx)
 			ih6->ip6_nxt      = IPPROTO_UDP;//nex header
 			ih6->ip6_hlim     = 64; //hop limit      
 			memcpy(&ih6->ip6_src, &afi_addr_src.ip6.address, sizeof(struct in6_addr));
-			memcpy(&ih6->ip6_dst, &afi_addr_dst.ip6.address, sizeof(struct in6_addr));			
+			memcpy(&ih6->ip6_dst, &eid->sin6.sin6_addr, sizeof(struct in6_addr));
 			break;		
 	}
 
@@ -561,7 +561,7 @@ read_rec(union map_reply_record_generic * rec)
 				if not lisp_te --> get last hop				
 			*/
 			if(_debug == LDEBUG){
-				fprintf(OUTPUT_STREAM, "\t•[rloc=ELP, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+				fprintf(OUTPUT_STREAM, "\tï¿½[rloc=ELP, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 						entry->priority, \
 						entry->weight, \
 						entry->m_priority, \
@@ -574,14 +574,14 @@ read_rec(union map_reply_record_generic * rec)
 						case LISP_AFI_IP:
 							if(_debug == LDEBUG){
 								inet_ntop(AF_INET, (void *)&hop->rloc.hop_addr, buf, BSIZE);
-								fprintf(OUTPUT_STREAM, "\t\t•[hop=%s]\n",buf);
+								fprintf(OUTPUT_STREAM, "\t\tï¿½[hop=%s]\n",buf);
 							}							
 							hop = CO(hop,sizeof(struct rloc_te));
 							break;						
 						case LISP_AFI_IPV6:
 							if(_debug == LDEBUG){
 								inet_ntop(AF_INET6, (void *)&hop->rloc6.hop_addr, buf, BSIZE);
-								fprintf(OUTPUT_STREAM, "\t\t•[hop=%s]\n",buf);
+								fprintf(OUTPUT_STREAM, "\t\tï¿½[hop=%s]\n",buf);
 							}							
 							hop = (union rloc_te_generic *)CO(hop,sizeof(struct rloc6_te));
 							break;
@@ -691,7 +691,7 @@ read_rec(union map_reply_record_generic * rec)
 			}
 			if(_debug == LDEBUG){
 				inet_ntop(entry->rloc.sin.sin_family, (void *)&loc->rloc.rloc, buf, BSIZE);
-				fprintf(OUTPUT_STREAM, "\t•[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+				fprintf(OUTPUT_STREAM, "\tï¿½[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 						buf, \
 						entry->priority, \
 						entry->weight, \
