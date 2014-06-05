@@ -321,14 +321,11 @@ send_mr(int idx)
 	/*build message header*/
 	/* set all the LISP flags  */
 	uint64_t nonce;
-	if(!lookups[idx].count){
-		_make_nonce(&nonce);
-		nonce0 = (uint32_t)(*(uint32_t *)&nonce);
-		nonce1 = (uint32_t)(*(uint32_t *)(&nonce0+1));
-	}else{
-		nonce0 = lookups[idx].nonce0[lookups[idx].count];
-		nonce1 = lookups[idx].nonce1[lookups[idx].count];		
-	}
+	
+	_make_nonce(&nonce);
+	nonce0 = (uint32_t)(*(uint32_t *)&nonce);
+	nonce1 = (uint32_t)(*(uint32_t *)(&nonce0+1));
+	
 	lh->type = LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE;
 	lh->security_bit = 0;
 	lh->ddt_originated = 0;
@@ -1142,9 +1139,9 @@ opl_add(int s, struct db_node *mapp, int db)
 	
 	buf = opl_new_msg(MAPM_VERSION, \
 						MAPM_ADD,\
-						(db == 1? MAPF_DB: 0) | MAPF_STATIC | MAPF_UP,\
-						MAPA_EID | ( (lcount <= 0 )? 0 : MAPA_RLOC),\
-						lcount);
+						 ((db == 1? MAPF_DB: 0) | MAPF_STATIC | MAPF_UP) | (lcount == 0? MAPF_NEGATIVE:0),\
+                                                MAPA_EID | ( (lcount <= 0 )? 0 : MAPA_RLOC),\
+                                                lcount);
 	
 	if( (l=opl_add_mapp(buf, mapp)) <= 0)
 		return -1;
