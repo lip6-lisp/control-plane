@@ -324,7 +324,7 @@ send_mr(int idx)
 	
 	_make_nonce(&nonce);
 	nonce0 = (uint32_t)(*(uint32_t *)&nonce);
-	nonce1 = (uint32_t)(*(uint32_t *)(&nonce0+1));
+	nonce1 = (uint32_t)(*((uint32_t *)(((uint8_t *)(&nonce))+4)));
 	
 	lh->type = LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE;
 	lh->security_bit = 0;
