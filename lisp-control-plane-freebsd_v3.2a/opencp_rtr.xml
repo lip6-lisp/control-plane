@@ -1,0 +1,8 @@
+<db>
+	<mapresolver>
+		<mr>132.227.62.246</mr>
+	</mapresolver>
+	<eid prefix="132.227.120.176/28" active="true" />
+	<eid prefix="132.227.120.192/28" active="true" />
+	<eid prefix="2a03:9180:2:16::/64" active="true" />		
+</db>
