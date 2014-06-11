@@ -1,0 +1,83 @@
+<db>
+	<geid>
+		<arrange>0.0.0.0/0</arrange>
+		<arrange family="IPv6">0::/0</arrange>
+	 </geid>
+	<eid prefix="0.0.0.0/0" a="true" referral="true" incomplete="false">
+		<rloc>
+			  <address>199.119.73.8</address>
+			  <priority>1</priority>
+			  <weight>15</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address>217.8.98.10</address>
+			  <priority>1</priority>
+			  <weight>15</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address>192.149.252.136</address>
+			  <priority>1</priority>
+			  <weight>10</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address>193.0.0.170</address>
+			  <priority>1</priority>
+			  <weight>10</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address>132.227.62.247</address>
+			  <priority>1</priority>
+			  <weight>15</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address>194.33.96.96</address>
+			  <priority>1</priority>
+			  <weight>15</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address>72.13.36.141</address>
+			  <priority>1</priority>
+			  <weight>10</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address>69.58.178.141</address>
+			  <priority>1</priority>
+			  <weight>10</weight>
+			  <reachable>true</reachable>
+		</rloc>
+	</eid>
+
+	<eid prefix="0::/0" a="true" referral="true" incomplete="false">
+		 <rloc>
+			  <address family="IPv6">2607:1f00:0:4::8</address>
+			  <priority>1</priority>
+			  <weight>25</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address family="IPv6">2001:67c:21b4:8954::10</address>
+			  <priority>1</priority>
+			  <weight>25</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address family="IPv6">2001:660:3302:282c:240::247</address>
+			  <priority>1</priority>
+			  <weight>25</weight>
+			  <reachable>true</reachable>
+		</rloc>
+		<rloc>
+			  <address family="IPv6">2001:67c:2980::2980</address>
+			  <priority>1</priority>
+			  <weight>25</weight>
+			  <reachable>true</reachable>
+		</rloc>		
+	</eid>	
+</db>

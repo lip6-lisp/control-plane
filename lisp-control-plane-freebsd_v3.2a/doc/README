@@ -1,0 +1,662 @@
+1.  INTRODUCTION
+
+    The OpenLISP control-plane implements the functions of LISP (Locator/Identifier Separation Protocol) control plane.
+    Please refer to IETF LISP drafts for a description of LISP control plane, its acronyms and 
+    the control-plane functionalities.	
+    
+    The OpenLISP control-plane is compatible and designed to work with the OpenLISP data-plane (http://www.openlisp.org), and is therefore developed in a FreeBSD environment.
+
+    It includes all basic control-plane functions: xTR, MS, MR/DDT, DDT.
+
+2. CONFIGURATION FILES
+
+    The configuration relies on a main configuration file named "opencp.conf" that points to specific xml files: 
+    one for the xTR part, one for the MS part and one for the MR/DDT part.
+    xml files include many sections using tags <db> and </db>.
+
+
+    *** opencp.conf - main configuration file
+    # Functions: xTR, RTR, MS (Map-Server), MR (DDT Map-Resolver) or DDT(DDT-only node)
+    # NB: as of current implementation, there may be bugs when running xTR/RTR and other functions in the same node
+    # NB: End of file with an empty line
+    functions = xTR
+    #functions = mr ms ddt
+
+    #Set debug level:
+    # 0 - not debug nothing will printed to console
+    # 1 - simple debug, with little information printed to console
+    # 2 - full debug
+    debug_level = 2
+
+    #Support LISP-TE or not
+    #With LISP-TE, you can set ELP for each RLOC
+    lisp_te = No
+
+    #Choose source IP for map-request packet
+    #Default is auto, by select the ip of the first interface
+    source_ipv4 = auto
+    source_ipv6 = auto
+
+    #Set size of open control-plane queue size
+    #default is 1000
+    queue_size = default
+
+
+    #Parameter to setup worker pool
+    #min_threads:    the minimum number of threads kept in the pool,
+    #	         always available to perform work requests.
+    #		 Default: 1
+    min_thread = default
+    #max_threads:    the maximum number of threads that can be
+    #		 in the pool, performing work requests.
+    #		 Default: 2
+    max_thread = default
+
+    #linger:        the number of seconds excess idle worker threads
+    #		(greater than min_threads) linger before exiting.
+    #		Default: 10 seconds    
+    linger_thread = default
+
+    ##
+    ## Specific settings for each functions
+    ##
+
+    xtr_configure = opencp_xtr.xml
+    ms_configure = opencp_ms.xml
+    node_configure = opencp_node.xml
+    mr_configure = opencp_mr.xml
+    rtr_configure = opencp_rtr.xml
+
+
+        			
+    *** opencp_ms.xml - map-server configuration
+
+    * The <geid> section defines the IP prefixes the map-server allows ETR to register to. 
+      The IP ranges must not overlap.
+    
+    * One or more <site> sections. Each section includes the information for one site: 
+      site name, key for map-register messages, EID IP prefixes the site can register. 
+      NB: the key is case sensitive and must not include spaces.
+
+    * Here is a sample file
+
+    <?xml version="1.0" encoding="ISO-8859-1"?>
+    <db>
+	 <geid>
+		<arrange>153.16.38.0/24</arrange>
+		<arrange>153.16.44.0/24</arrange>
+		<arrange>153.16.70.0/24</arrange>
+		<arrange>192.168.0.0/16</arrange>
+		<arrange family="IPv6">2610:D0::/32</arrange>
+	 </geid>
+	 
+	 <site>
+		<name>SITE1</name>
+		<key>SITE1-KEY-HERE</key>
+		<contact>SITE1-EMAIL-HERE</contact>
+		<active>yes</active>
+
+		<eid>
+			<addr family="IPv4">A.B.C.D/24</addr>
+			<active>yes</active>
+		</eid>
+
+		<eid>
+			<addr family="IPv6">A:B:C::/48</addr>
+			<active>yes</active>
+		</eid>
+	</site>
+	
+	<site>
+		<name>SITE2</name>
+		<key>SITE2-KEY-HERE</key>
+		<contact>SITE2-EMAIL-HERE</contact>
+		<active>yes</active>
+
+		<eid>
+			<addr family="IPv4">E.F.G.H/28</addr>
+			<active>yes</active>
+		</eid>
+
+		<eid>
+			<addr family="IPv6">E:F:G::/48</addr>
+			<active>yes</active>
+		</eid>
+	</site>
+
+    </db>
+
+    **** opencp_mr.xml - MR configuration file
+
+    * <geid> section defines the IP prefix(es) MR accepts map-request for. 
+	The IP ranges must not be overlap. 
+    
+    * One or more <eid> sections. Each section containes the information for one delegated prefix node
+	which MR with follow to find the correct ETR to answer a Map-Request.
+
+    * For more information about DDT Map Resolver, please refer to the IETF drafts.
+    
+    * Here is a sample file
+
+    <?xml version="1.0" encoding="ISO-8859-1"?>
+    <db>
+	<geid>
+		<arrange>153.17.0.0/16</arrange>
+		<arrange>153.18.0.0/16</arrange>
+		<arrange>192.0.0.0/8</arrange>
+		<arrange family="IPv6">2610:d0::/32</arrange>
+	 </geid>
+
+	<eid prefix="153.17.0.0/16" ttl="1440" a="true" referral="true">
+		<rloc>
+			<address>112.137.129.44</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>112.137.129.45</address>
+			<priority>10</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid prefix="192.100.0.0/16" ttl="1440" a="true" referral="true">
+		<rloc>
+			<address>112.137.129.44</address>
+			<priority>10</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>112.137.129.45</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid prefix="0.0.0.0/0" referral="true" incomplete="false">
+		<rloc>
+			<address>192.149.252.136</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid prefix="2610:d0::/16" referral="true" incomplete="false">
+		<rloc>
+			<address>2001:67c:2980::2980</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+    </db>
+
+    **** opencp_node.xml - DDT node configuration file
+
+    * <geid> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap. 
+      NB: if the node is a DDT root, then it is here configured as being delegated for 0.0.0.0/0 (IPv4) 
+      and 0::/0 (IPv6).
+
+    * One or more <eid> sections. Each section containes the information for one delegated prefix.
+
+    * Special <eid> sections with prefix equal 0.0.0.0/0 or 0::/0 is for DDT root nodes. 
+      For the lisp4.net testbed, the root nodes are documented here: http://ddt-root.org/
+
+    * For more information about prefix delegation and DDT, please refer to the IETF drafts.
+
+    * Here is a sample file
+
+    <?xml version="1.0" encoding="ISO-8859-1"?>
+    <db>
+	<geid>
+		<arrange>153.17.0.0/16</arrange>
+		<arrange>153.18.0.0/16</arrange>
+		<arrange>192.0.0.0/8</arrange>
+		<arrange family="IPv6">2610:d0::/32</arrange>
+	 </geid>
+
+	<eid prefix="153.17.0.0/16" ttl="1440" a="true" referral="true">
+		<rloc>
+			<address>112.137.129.44</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>112.137.129.45</address>
+			<priority>10</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid prefix="192.100.0.0/16" ttl="1440" a="true" referral="true">
+		<rloc>
+			<address>112.137.129.44</address>
+			<priority>10</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>112.137.129.45</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid prefix="0.0.0.0/0" referral="true" incomplete="false">
+		<rloc>
+			<address>192.149.252.136</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid prefix="2610:d0::/16" referral="true" incomplete="false">
+		<rloc>
+			<address>2001:67c:2980::2980</address>
+			<priority>1</priority>
+			<weight>100</weight>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+    </db>
+
+
+
+    *** opencp_xtr.xml - xTR configuration file
+
+    * The <mapserver> section defines the list of MSs the xTR registers to.  Each MS needs a key to authenticate.
+
+    * The <mapresolve> section defines the list of MRs the xTR can send map-requests.
+
+    * One or more <eid> sections. Each section gives the information for one EID IP prefix to register.
+
+    * For more information about xTR functions, please refer to the IETF drafts.
+
+    * Here is a sample file
+
+    <?xml version="1.0" encoding="ISO-8859-1"?>
+    <db>
+	<mapserver>
+		<ms key="KEY-HERE">193.162.145.50</ms>
+		<ms key="KEY-HERE">195.50.116.18</ms>
+		<ms family="IPv6" key="KEY-HERE">2001:67c:21b4:109::b</ms>
+	</mapserver>
+	
+	<mapresolver>
+		<mr>193.162.145.50</mr>
+		<mr family="IPv6">2001:67c:21b4:109::b</mr>
+	</mapresolver>
+	
+	<eid prefix="153.16.38.0/24" ttl="60" version="0" active="true">
+		<rloc>
+			<address>132.227.62.243</address>
+			<priority>2</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>132.227.62.242</address>
+			<priority>4</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::242</address>
+			<priority>5</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::243</address>
+			<priority>6</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+	
+	<eid family="IPv6" prefix="2610:D0:2121::/48" ttl="60" version="0" active="true">
+		<rloc>
+			<address>132.227.62.243</address>
+			<priority>1</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address>132.227.62.242</address>
+			<priority>2</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::242</address>
+			<priority>5</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>true</local>
+			<reachable>true</reachable>
+		</rloc>
+		<rloc>
+			<address family="IPv6">2001:660:3302:282C:240::243</address>
+			<priority>3</priority>
+			<m_priority>0</m_priority>
+			<weight>100</weight>
+			<m_weight>0</m_weight>
+			<local>false</local>
+			<reachable>true</reachable>
+		</rloc>
+	</eid>
+    </db>
+
+*** opencp_rtr.xml - RTR configuration file
+
+
+    * The <mapresolve> section defines the list of MRs the RTR can send map-requests.
+
+    * One or more <eid> sections. Each section gives the information for one EID IP prefix to allow 
+      tunnel over RTR.
+
+    * For more information about RTR functions, please refer to the IETF drafts.
+
+    * Here is a sample file
+    <db>
+	<mapresolver>
+		<mr>193.162.145.50</mr>
+		<mr family="IPv6">2001:67c:21b4:109::b</mr>
+	</mapresolver>
+	<eid prefix="132.227.120.176/28"  active="true" />
+	<eid prefix="132.227.120.192/28"  active="true" />		
+    </db>
+
+3. DEBUG
+    When running, the program prints debug information to the console or log file so you can follow the processing. 
+    It also includes another method to debug by interacting with the program using the console. 
+    At this version, supported commands are:
+	
+	map-database
+
+	reload 
+	
+	map-register <EID-prefix> version <version_number>  A <true|false> TTL <time_to_live> /
+	  < -rloc address <rloc_addr>  priority <rloc_priority> weight <rloc_weight> m_weight <rloc_m_weight> /
+	  m_priority <rloc_m_priority> reachable <true|false> ...>
+
+	map-request <EID-prefix>  <nonce>
+		   
+4. INSTALL
+    
+    Please refer to the INSTALL file in tarball source code.
+
+
+5. CHANGE LOG
+
+
+#Version 01.00 (LISP-CP): 16/08/2011
+	By Guruprasad K. Rao - George Mason University <grao2@gmu.edu>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+
+#Version 01.01 (LISP-CP): 12/04/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Patrick Raad - NSS & LIP6 <patrick.raad@lip6.fr> 
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+  * Support draft-ietf-lisp-22.txt
+  * Change format of configure file
+  * Change to allow working with multi EID: register multi EID, answer to map request with multi EID
+  * Change to allow working with ECM (encapsulated Control Message)
+  * Add debug functions
+  * Add make nonce function
+  * Fix bugs
+
+#Version 01.02 (LISP-CP): 24/04/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Patrick Raad - NSS & LIP6 <patrick.raad@lip6.fr> 
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+  * Support IPv6
+  * Change format of configure file to easy define
+  * Support multi map server with multi key
+  * Change Makefile to allow set up program as service in rc.conf
+  * Upgrade search EID function
+  * Add more debug functions
+
+#Version 01.9 (DDT-NODE): 06/2012
+	By Damien Saucez, Lorand Jackab - Université catholique de Louvain
+
+#Version 02.00 (MERGE LISP-CP WITH AN UPDATED DDT-NODE): 11/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+
+  * New design
+  * Support RFC 6830
+  * Support RFC 6833
+  * Support IPv6
+  * Add xTR functions
+  * Change format of configure file
+  * Support defined site with EID range, key to authen...
+  * Support map-register with sub-prefix of site
+  * Support authentication and validate EID when process map-register
+  * Support proxy-map-reply bit set
+  * Support answer with negative of: 
+  *	LISP_REFERRAL_MS_NOT_REGISTERED, 
+  *	LISP_REFERRAL_DELEGATION_HOLE,
+	LISP_REFERRAL_NOTE_AUTHORITATIVE
+  * Fix bugs	
+
+#Version 02.1: 12/2012
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+
+  * Rearrange functions
+  * Support LCAF (type=2)
+  * Support M bit set in map-register
+  * Add IID to configure file
+  * Fix bugs
+
+#Version 02.2 (MULTI-THREAD): 08/2013
+	By Dung Chi Phung - VNU Hanoi & LIP6 <dungpc@vnu.edu.vn>
+	   Stefano Secci - LIP6 <stefano.secci@lip6.fr>
+
+  * Change architech of thread, new thread was added to 
+  *	manage the children thread. Euser can customize the max/min number
+  *	of thread 
+  * Using open control-plane queue to improve system.
+  * User can define size of this queue
+  * Fix bugs	
+	
+#Version 02.3 (Bug fix): 10/2013
+	By Dung Chi Phung - VNU Hanoi & LIP6 <Chi-Dung.Phung@lip6.fr> 
+
+  * Improvement of DDT root mngt
+  * Fix memory management bugs	
+	
+#Version 03.0 : 12/2013
+	By Dung Chi Phung -  LIP6 <Chi-Dung.Phung@lip6.fr> 
+
+  * Addition of basic LISP-TE functions
+  * Addition of a new node function: Reencapsulating Tunnel Router (RTR) -- see related update of the OpenLISP data-plane
+  * Option to set the debug levels from the configuration file
+  * Improvement of input/output queue management
+
+#Version 03.1 : 12/2013
+	By Dung Chi Phung -  LIP6 <Chi-Dung.Phung@lip6.fr> 
+
+  * Separated configuration file for MR and DDT-NODE functions
+  * Improvement of LISP-TE functions and addition of a specific configuration file	
+  * Bug fix
+
+#Version 03.1 : 06/2014
+        By Dung Chi Phung -  LIP6 <Chi-Dung.Phung@lip6.fr>
+
+  * Allow xTR register difference EID-prefix(es) to difference Map-Server(s)
+  * Bug fix
+
+6. FORMAT OF IMPLEMENTED LISP CONTROL-PLANE MESSAGES 
+
+##Map-Request message
+	
+	
+	0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=1 |A|M|P|S|p|s|    Reserved     |   IRC   | Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |         Source-EID-AFI        |   Source EID Address  ...     |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |         ITR-RLOC-AFI 1        |    ITR-RLOC Address 1  ...    |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                              ...                              |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |         ITR-RLOC-AFI n        |    ITR-RLOC Address n  ...    |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |   Reserved    | EID mask-len  |        EID-prefix-AFI         |
+   Rec +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     \ |                       EID-prefix  ...                         |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                   Map-Reply Record  ...                       |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##Map-reply message
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=2 |P|E|S|          Reserved               | Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   |                          Record  TTL                          |
+   |   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   R   | Locator Count | EID mask-len  | ACT |A|      Reserved         |
+   e   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   c   | Rsvd  |  Map-Version Number   |       EID-prefix-AFI          |
+   o   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   r   |                          EID-prefix                           |
+   d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  /|    Priority   |    Weight     |  M Priority   |   M Weight    |
+   | L +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | o |        Unused Flags     |L|p|R|           Loc-AFI             |
+   | c +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  \|                             Locator                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##Map-Register message
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=3 |P|            Reserved               |M| Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |            Key ID             |  Authentication Data Length   |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       ~                     Authentication Data                       ~
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   |                          Record  TTL                          |
+   |   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   R   | Locator Count | EID mask-len  | ACT |A|      Reserved         |
+   e   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   c   | Rsvd  |  Map-Version Number   |        EID-prefix-AFI         |
+   o   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   r   |                          EID-prefix                           |
+   d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  /|    Priority   |    Weight     |  M Priority   |   M Weight    |
+   | L +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | o |        Unused Flags     |L|p|R|           Loc-AFI             |
+   | c +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  \|                             Locator                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##Encapsulated Control Message
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |                       IPv4 or IPv6 Header                     |
+   OH  |                      (uses RLOC addresses)                    |
+     \ |                                                               |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |       Source Port = xxxx      |       Dest Port = 4342        |
+   UDP +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     \ |           UDP Length          |        UDP Checksum           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   LH  |Type=8 |S|D|                Reserved                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |                       IPv4 or IPv6 Header                     |
+   IH  |                  (uses RLOC or EID addresses)                 |
+     \ |                                                               |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     / |       Source Port = xxxx      |       Dest Port = yyyy        |
+   UDP +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     \ |           UDP Length          |        UDP Checksum           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   LCM |                      LISP Control Message                     |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+"D" is the "DDT-originated" flag and is set by a DDT client to
+indicate that the receiver can and should return Map-Referral
+messages as appropriate.
+
+##Map-Referral Message
+
+	0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |Type=6 |                Reserved               | Record Count  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         Nonce . . .                           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                         . . . Nonce                           |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   |                          Record  TTL                          |
+   |   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   R   | Referral Count| EID mask-len  | ACT |A|I|     Reserved        |
+   e   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   c   |SigCnt |   Map Version Number  |            EID-AFI            |
+   o   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   r   |                          EID-prefix ...                       |
+   d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  /|    Priority   |    Weight     |  M Priority   |   M Weight    |
+   | L +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | o |        Unused Flags         |R|         Loc/LCAF-AFI          |
+   | c +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  \|                             Locator ...                       |
+   +-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+7. COMMENTS AND BUG REPORT
+    
+    Comments and bug report are welcome! The best is via https://github.com/lip6-lisp/control-plane.
