@@ -3,7 +3,7 @@
 		<arrange>0.0.0.0/0</arrange>
 		<arrange family="IPv6">0::/0</arrange>
 	 </geid>
-	<eid prefix="37.77.56.0/21" a="true" referral="true" incomplete="false">
+	<eid prefix="37.77.56.0/21" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address family="IPv6">2001:9e0:411:1::10</address>
 			  <priority>1</priority>
@@ -31,7 +31,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="38.125.5.0/24" a="true" referral="true" incomplete="false">
+	<eid prefix="38.125.5.0/24" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>199.119.73.6</address>
 			  <priority>1</priority>
@@ -46,7 +46,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="85.184.3.0/24" a="true" referral="true" incomplete="false">
+	<eid prefix="85.184.3.0/24" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>193.162.145.50</address>
 			  <priority>1</priority>
@@ -73,7 +73,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="85.184.64.0/23" a="true" referral="true" incomplete="false">
+	<eid prefix="85.184.64.0/23" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>193.162.145.50</address>
 			  <priority>1</priority>
@@ -100,7 +100,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="153.16.0.0/16" a="true" referral="true" incomplete="false">
+	<eid prefix="153.16.0.0/16" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>158.38.1.91</address>
 			  <priority>1</priority>
@@ -121,7 +121,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="194.226.139.0/24" a="true" referral="true" incomplete="false">
+	<eid prefix="194.226.139.0/24" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>194.149.90.118</address>
 			  <priority>1</priority>
@@ -130,7 +130,7 @@
 		 </rloc>		 
 	</eid>
 
-	<eid prefix="199.119.72.0/24" a="true" referral="true" incomplete="false">
+	<eid prefix="199.119.72.0/24" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>199.119.73.6</address>
 			  <priority>1</priority>
@@ -145,7 +145,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="199.119.75.0/24" a="true" referral="true" incomplete="false">
+	<eid prefix="199.119.75.0/24" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>199.119.73.6</address>
 			  <priority>1</priority>
@@ -160,7 +160,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="199.212.124.0/24" a="true" referral="true" incomplete="false">
+	<eid prefix="199.212.124.0/24" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>149.20.48.61</address>
 			  <priority>1</priority>
@@ -187,7 +187,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="2001:67c:208c::/48" a="true" referral="true" incomplete="false">
+	<eid prefix="2001:67c:208c::/48" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>193.162.145.50</address>
 			  <priority>1</priority>
@@ -214,7 +214,7 @@
 		 </rloc>		 
 	</eid>
 
-	<eid prefix="2001:6e0:5::/48" a="true" referral="true" incomplete="false">
+	<eid prefix="2001:6e0:5::/48" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>193.162.145.50</address>
 			  <priority>1</priority>
@@ -241,7 +241,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="2604:a800:1::0/48" a="true" referral="true" incomplete="false">
+	<eid prefix="2604:a800:1::0/48" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>149.20.48.61</address>
 			  <priority>1</priority>
@@ -268,7 +268,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="2610:d0::/32" a="true" referral="true" incomplete="false">
+	<eid prefix="2610:d0::/32" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>158.38.1.91</address>
 			  <priority>1</priority>
@@ -289,7 +289,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="2620:EE:8000::/48" a="true" referral="true" incomplete="false">
+	<eid prefix="2620:EE:8000::/48" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>149.20.48.61</address>
 			  <priority>1</priority>
@@ -316,7 +316,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="2706:1F00:1::/48" a="true" referral="true" incomplete="false">
+	<eid prefix="2706:1F00:1::/48" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>199.119.73.6</address>
 			  <priority>1</priority>
@@ -331,7 +331,7 @@
 		 </rloc>		 
 	</eid>
 
-	<eid prefix="2a00:8640::/32" a="true" referral="true" incomplete="false">
+	<eid prefix="2a00:8640::/32" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address family="IPv6">2001:9e0:411:1::10</address>
 			  <priority>1</priority>
@@ -358,7 +358,7 @@
 		 </rloc>
 	</eid>
 
-	<eid prefix="2a01:111:300b::/64" a="true" referral="true" incomplete="false">
+	<eid prefix="2a01:111:300b::/64" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>149.20.48.61</address>
 			  <priority>1</priority>
@@ -384,7 +384,7 @@
 			  <reachable>true</reachable>
 		 </rloc>
 	</eid>
-	<eid prefix="147.83.131.192/26" a="true" referral="true" incomplete="false">
+	<eid prefix="147.83.131.192/26" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>147.83.131.32</address>
 			  <priority>1</priority>
@@ -398,7 +398,7 @@
 			  <reachable>true</reachable>
 		 </rloc>		  
 	</eid>
-	<eid family="IPv6" prefix="2001:40B0:7500:27C::/62" a="true" referral="true" incomplete="false">
+	<eid family="IPv6" prefix="2001:40B0:7500:27C::/62" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>147.83.131.32</address>
 			  <priority>1</priority>
@@ -413,7 +413,7 @@
 		 </rloc>		  
 	</eid>
 
-	<eid prefix="132.227.120.0/24" a="true" referral="true" incomplete="false">
+	<eid prefix="132.227.120.0/24" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>132.227.62.246</address>
 			  <priority>1</priority>
@@ -439,7 +439,7 @@
 			  <reachable>true</reachable>
 		 </rloc>
 	</eid>
-	<eid family="IPv6" prefix="2a03:9180:2::/48" a="true" referral="true" incomplete="false">
+	<eid family="IPv6" prefix="2a03:9180:2::/48" a="true" referral="true" incomplete="true">
 		 <rloc>
 			  <address>132.227.62.246</address>
 			  <priority>1</priority>
