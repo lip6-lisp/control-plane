@@ -9,15 +9,15 @@
 		<name>unirome</name>
 		<key>uniroma-KEY-HERE</key>
 		<contact>admin@uniroma.it</contact>		
-		<delegate_eid_prefix>10.100.0.0/24</delegate_eid_prefix>
-		<delegate_eid_prefix>10.200.0.0/24</delegate_eid_prefix>
-		<delegate_eid_prefix family="IPv6">2000:D0:2::/48</delegate_eid_prefix>
+		<delegated_eid_prefix>10.100.0.0/24</delegated_eid_prefix>
+		<delegated_eid_prefix>10.200.0.0/24</delegated_eid_prefix>
+		<delegated_eid_prefix family="IPv6">2000:D0:2::/48</delegated_eid_prefix>
 	</site>
 
 	<site>
 		<name>vnu</name>
 		<key>uet-KEY-HERE</key>
 		<contact>admin@vnu.edu.vn</contact>
-		<delegate_eid_prefix>10.100.1.0/24</delegate_eid_prefix>
+		<delegated_eid_prefix>10.100.1.0/24</delegated_eid_prefix>
 	</site>
 </db>

@@ -92,16 +92,16 @@
 		<name>unirome</name>
 		<key>uniroma-KEY-HERE</key>
 		<contact>admin@uniroma.it</contact>		
-		<delegate_eid_prefix>10.100.0.0/24</delegate_eid_prefix>
-		<delegate_eid_prefix>10.200.0.0/24</delegate_eid_prefix>
-		<delegate_eid_prefix family="IPv6">2000:D0:2::/48</delegate_eid_prefix>
+		<delegated_eid_prefix>10.100.0.0/24</delegated_eid_prefix>
+		<delegated_eid_prefix>10.200.0.0/24</delegated_eid_prefix>
+		<delegated_eid_prefix family="IPv6">2000:D0:2::/48</delegated_eid_prefix>
 	</site>
 
 	<site>
 		<name>vnu</name>
 		<key>uet-KEY-HERE</key>
 		<contact>admin@vnu.edu.vn</contact>
-		<delegate_eid_prefix>10.100.1.0/24</delegate_eid_prefix>
+		<delegated_eid_prefix>10.100.1.0/24</delegated_eid_prefix>
 	</site>
     </db>
 
@@ -154,9 +154,9 @@
       NB: if the node is a DDT root, then it is here configured as being delegated for 0.0.0.0/0 (IPv4) 
       and 0::/0 (IPv6).
 
-    * One or more <delegate_eid_prefix> sections. Each section containes the information for one delegated prefix.
+    * One or more <delegated_eid_prefix> sections. Each section containes the information for one delegated prefix.
 
-    * Special <delegate_eid_prefix> sections with prefix equal 0.0.0.0/0 or 0::/0 is for DDT root nodes. 
+    * Special <delegated_eid_prefix> sections with prefix equal 0.0.0.0/0 or 0::/0 is for DDT root nodes. 
       For the lisp4.net testbed, the root nodes are documented here: http://ddt-root.org/
 
     * For more information about prefix delegation and DDT, please refer to the IETF drafts.
@@ -170,102 +170,102 @@
 		<eid_prefix family="IPv6">0::/0</eid_prefix>
 	</authoritative_eid_prefix>
 	
-	<delegate_eid_prefix prefix="37.77.56.0/21">
-		 <delegate_node>
+	<delegated_eid_prefix prefix="37.77.56.0/21">
+		 <ddt_node>
 			  <address family="IPv6">2001:9e0:411:1::10</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-		 <delegate_node>
+		 </ddt_node>
+		 <ddt_node>
 			  <address family="IPv6">2001:9e0:810:1::10</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-		 <delegate_node>
+		 </ddt_node>
+		 <ddt_node>
 			  <address>83.247.10.218</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
+		 </ddt_node>
 
-		 <delegate_node>
+		 <ddt_node>
 			  <address>87.195.109.18</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-	</delegate_eid_prefix>
+		 </ddt_node>
+	</delegated_eid_prefix>
 
-	<delegate_eid_prefix prefix="38.125.5.0/24" >
-		 <delegate_node>
+	<delegated_eid_prefix prefix="38.125.5.0/24" >
+		 <ddt_node>
 			  <address>199.119.73.6</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-		 <delegate_node>
+		 </ddt_node>
+		 <ddt_node>
 			  <address family="IPv6">2607:1F00:0:4::6</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-	</delegate_eid_prefix>
+		 </ddt_node>
+	</delegated_eid_prefix>
 	
-	<delegate_eid_prefix prefix="2001:67c:208c::/48" >
-		 <delegate_node>
+	<delegated_eid_prefix prefix="2001:67c:208c::/48" >
+		 <ddt_node>
 			  <address>193.162.145.50</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-		 <delegate_node>
+		 </ddt_node>
+		 <ddt_node>
 			  <address>195.50.116.18</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-		 <delegate_node>
+		 </ddt_node>
+		 <ddt_node>
 			  <address>217.8.98.42</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-		 <delegate_node>
+		 </ddt_node>
+		 <ddt_node>
 			  <address>217.8.98.46</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>		 
-	</delegate_eid_prefix>
+		 </ddt_node>		 
+	</delegated_eid_prefix>
 
-	<delegate_eid_prefix prefix="2001:6e0:5::/48" >
-		 <delegate_node>
+	<delegated_eid_prefix prefix="2001:6e0:5::/48" >
+		 <ddt_node>
 			  <address>193.162.145.50</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-		 <delegate_node>
+		 </ddt_node>
+		 <ddt_node>
 			  <address>195.50.116.18</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-		 <delegate_node>
+		 </ddt_node>
+		 <ddt_node>
 			  <address>217.8.98.42</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-		 <delegate_node>
+		 </ddt_node>
+		 <ddt_node>
 			  <address>217.8.98.46</address>
 			  <priority>1</priority>
 			  <weight>100</weight>
 			  <reachable>true</reachable>
-		 </delegate_node>
-	</delegate_eid_prefix>	
+		 </ddt_node>
+	</delegated_eid_prefix>	
     </db>
 
 

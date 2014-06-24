@@ -896,7 +896,7 @@ node_startElement(void *userData, const char *name, const char **atts)
 {
 	int len;
 	struct map_entry * entry;
-	if(0 == strcasecmp(name, "delegate_eid_prefix") ) {
+	if(0 == strcasecmp(name, "delegated_eid_prefix") ) {
 		_mflags.iid = 0;
 		while(*atts){
 			/* EID prefix */
@@ -992,11 +992,11 @@ node_endElement(void *userData, const char *name)
 {
 	struct map_entry * entry;
 	
-	if(0 == strcasecmp(name, "delegate_node")){
+	if(0 == strcasecmp(name, "ddt_node")){
 		entry = (struct map_entry*)userData;
 		XML_SetUserData(parser, NULL);
 		generic_mapping_add_rloc(_mapping, entry);
-	}else if( 0 == strcasecmp(name, "delegate_eid_prefix")){
+	}else if( 0 == strcasecmp(name, "delegated_eid_prefix")){
 		generic_mapping_set_flags(_mapping, &_mflags);
 		bzero(&_mflags, sizeof(struct mapping_flags));		
 		free(_prefix);
@@ -1074,7 +1074,7 @@ ms_startElement(void *userData, const char *name, const char **atts)
 			exit(0);
 		}
 		site_entry = ms_new_site(site_db);		
-	} else if((0 == strcasecmp(name, "delegate_eid_prefix")) || 
+	} else if((0 == strcasecmp(name, "delegated_eid_prefix")) || 
 	          (0 == strcasecmp(name, "eid"))){
 		if ((site_entry == NULL) || eid_node != NULL){
 			_err_config("mismatch tag");
@@ -1104,7 +1104,7 @@ ms_endElement(void *userData, const char *name)
 {
 	if(0 == strcasecmp(name, "site")){
 		site_entry = NULL;		
-	}else if(0 == strcasecmp(name, "delegate_eid_prefix")){	
+	}else if(0 == strcasecmp(name, "delegated_eid_prefix")){	
 		generic_mapping_set_flags(eid_node,&_mflags);		
 		bzero(&_mflags,sizeof(struct mapping_flags));
 		eid_node = NULL;
@@ -1147,7 +1147,7 @@ ms_getElementValue(void *userData, const XML_Char *s, int len)
 		}
 	}
 	if(site_entry){
-		if(0 == strcasecmp(_xml_name, "delegate_eid_prefix")){
+		if(0 == strcasecmp(_xml_name, "delegated_eid_prefix")){
 			if (str2prefix(buf, &pf) == 1){
 				apply_mask(&pf);
 				if ( _valid_prefix(&pf, _EID) && (db = ms_get_db_table(ms_db, &pf) ) && (eid_node = db_node_get(db, &pf)) ){
