@@ -1,0 +1,469 @@
+<db>
+	<authoritative_eid_prefix>
+		<eid_prefix>0.0.0.0/0</eid_prefix>
+		<eid_prefix family="IPv6">0::/0</eid_prefix>
+	</authoritative_eid_prefix>
+	
+	<delegate_eid_prefix prefix="37.77.56.0/21">
+		 <delegate_node>
+			  <address family="IPv6">2001:9e0:411:1::10</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address family="IPv6">2001:9e0:810:1::10</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>83.247.10.218</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+
+		 <delegate_node>
+			  <address>87.195.109.18</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="38.125.5.0/24" >
+		 <delegate_node>
+			  <address>199.119.73.6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address family="IPv6">2607:1F00:0:4::6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="85.184.3.0/24" >
+		 <delegate_node>
+			  <address>193.162.145.50</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>195.50.116.18</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.42</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.46</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="85.184.64.0/23" >
+		 <delegate_node>
+			  <address>193.162.145.50</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>195.50.116.18</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.42</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.46</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="153.16.0.0/16" >
+		 <delegate_node>
+			  <address>158.38.1.91</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>173.36.254.167</address>
+			  <priority>10</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>208.217.187.20</address>
+			  <priority>100</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="194.226.139.0/24" >
+		 <delegate_node>
+			  <address>194.149.90.118</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>		 
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="199.119.72.0/24" >
+		 <delegate_node>
+			  <address>199.119.73.6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address family="IPv6">2607:1F00:0:4::6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="199.119.75.0/24" >
+		 <delegate_node>
+			  <address>199.119.73.6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address family="IPv6">2607:1F00:0:4::6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="199.212.124.0/24" >
+		 <delegate_node>
+			  <address>149.20.48.61</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>173.36.254.164</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>198.6.255.37</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>206.223.132.89</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="2001:67c:208c::/48" >
+		 <delegate_node>
+			  <address>193.162.145.50</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>195.50.116.18</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.42</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.46</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>		 
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="2001:6e0:5::/48" >
+		 <delegate_node>
+			  <address>193.162.145.50</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>195.50.116.18</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.42</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.46</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="2604:a800:1::0/48" >
+		 <delegate_node>
+			  <address>149.20.48.61</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>173.36.254.164</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>198.6.255.37</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>206.223.132.89</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="2610:d0::/32" >
+		 <delegate_node>
+			  <address>158.38.1.91</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>173.36.254.167</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>208.217.187.20</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="2620:EE:8000::/48" >
+		 <delegate_node>
+			  <address>149.20.48.61</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>173.36.254.164</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>198.6.255.37</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>206.223.132.89</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="2706:1F00:1::/48" >
+		 <delegate_node>
+			  <address>199.119.73.6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address family="IPv6">2607:1F00:0:4::6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>		 
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="2a00:8640::/32" >
+		 <delegate_node>
+			  <address family="IPv6">2001:9e0:411:1::10</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address family="IPv6">2001:9e0:810:1::10</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>83.247.10.218</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>87.195.109.18</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="2a01:111:300b::/64" >
+		 <delegate_node>
+			  <address>149.20.48.61</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>173.36.254.164</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>198.6.255.37</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>206.223.132.89</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+	<delegate_eid_prefix prefix="147.83.131.192/26" >
+		 <delegate_node>
+			  <address>147.83.131.32</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>		
+		 <delegate_node>
+			  <address family="IPv6">2001:40B0:7500:205::9353:8320</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>		  
+	</delegate_eid_prefix>
+	<delegate_eid_prefix family="IPv6" prefix="2001:40B0:7500:27C::/62" >
+		 <delegate_node>
+			  <address>147.83.131.32</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>		
+		 <delegate_node>
+			  <address family="IPv6">2001:40B0:7500:205::9353:8320</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>		  
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="132.227.120.0/24" >
+		 <delegate_node>
+			  <address>132.227.62.246</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		<delegate_node>
+			  <address>132.227.121.5</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		  <delegate_node>
+			  <address family="IPv6">2001:660:3302:282c:240::246</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		  <delegate_node>
+			  <address family="IPv6">2a03:9180:3:23::5</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+	<delegate_eid_prefix family="IPv6" prefix="2a03:9180:2::/48" >
+		 <delegate_node>
+			  <address>132.227.62.246</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		<delegate_node>
+			  <address>132.227.121.5</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		  <delegate_node>
+			  <address family="IPv6">2001:660:3302:282c:240::246</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		  <delegate_node>
+			  <address family="IPv6">2a03:9180:3:23::5</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+</db>
