@@ -71,7 +71,7 @@
         			
     *** opencp_ms.xml - map-server configuration
 
-    * The <geid> section defines the IP prefixes the map-server allows ETR to register to. 
+    * The <authoritative_eid_prefix> section defines the IP prefixes the map-server allows ETR to register to. 
       The IP ranges must not overlap.
     
     * One or more <site> sections. Each section includes the information for one site: 
@@ -82,56 +82,32 @@
 
     <?xml version="1.0" encoding="ISO-8859-1"?>
     <db>
-	 <geid>
-		<arrange>153.16.38.0/24</arrange>
-		<arrange>153.16.44.0/24</arrange>
-		<arrange>153.16.70.0/24</arrange>
-		<arrange>192.168.0.0/16</arrange>
-		<arrange family="IPv6">2610:D0::/32</arrange>
-	 </geid>
+	<authoritative_eid_prefix>
+		<eid_prefix>10.100.0.0/16</eid_prefix>
+		<eid_prefix>10.200.0.0/16</eid_prefix>
+		<eid_prefix family="IPv6">2000:D0:2::/47</eid_prefix>
+	</authoritative_eid_prefix>
 	 
-	 <site>
-		<name>SITE1</name>
-		<key>SITE1-KEY-HERE</key>
-		<contact>SITE1-EMAIL-HERE</contact>
-		<active>yes</active>
-
-		<eid>
-			<addr family="IPv4">A.B.C.D/24</addr>
-			<active>yes</active>
-		</eid>
-
-		<eid>
-			<addr family="IPv6">A:B:C::/48</addr>
-			<active>yes</active>
-		</eid>
-	</site>
-	
 	<site>
-		<name>SITE2</name>
-		<key>SITE2-KEY-HERE</key>
-		<contact>SITE2-EMAIL-HERE</contact>
-		<active>yes</active>
-
-		<eid>
-			<addr family="IPv4">E.F.G.H/28</addr>
-			<active>yes</active>
-		</eid>
-
-		<eid>
-			<addr family="IPv6">E:F:G::/48</addr>
-			<active>yes</active>
-		</eid>
+		<name>unirome</name>
+		<key>uniroma-KEY-HERE</key>
+		<contact>admin@uniroma.it</contact>		
+		<delegate_eid_prefix>10.100.0.0/24</delegate_eid_prefix>
+		<delegate_eid_prefix>10.200.0.0/24</delegate_eid_prefix>
+		<delegate_eid_prefix family="IPv6">2000:D0:2::/48</delegate_eid_prefix>
 	</site>
 
+	<site>
+		<name>vnu</name>
+		<key>uet-KEY-HERE</key>
+		<contact>admin@vnu.edu.vn</contact>
+		<delegate_eid_prefix>10.100.1.0/24</delegate_eid_prefix>
+	</site>
     </db>
 
     **** opencp_mr.xml - MR configuration file
-
-    * <geid> section defines the IP prefix(es) MR accepts map-request for. 
-	The IP ranges must not be overlap. 
     
-    * One or more <eid> sections. Each section containes the information for one delegated prefix node
+    * One or more <eid_prefix> sections. Each section containes the information for one delegated prefix node
 	which MR with follow to find the correct ETR to answer a Map-Request.
 
     * For more information about DDT Map Resolver, please refer to the IETF drafts.
@@ -140,71 +116,47 @@
 
     <?xml version="1.0" encoding="ISO-8859-1"?>
     <db>
-	<geid>
-		<arrange>153.17.0.0/16</arrange>
-		<arrange>153.18.0.0/16</arrange>
-		<arrange>192.0.0.0/8</arrange>
-		<arrange family="IPv6">2610:d0::/32</arrange>
-	 </geid>
+	<eid_prefix prefix="0.0.0.0/0">
+		<ddt_node>
+			  <address>199.119.73.8</address>
+			  <priority>1</priority>
+			  <weight>15</weight>
+			  <reachable>true</reachable>
+		</ddt_node>
+		<ddt_node>
+			  <address>217.8.98.10</address>
+			  <priority>1</priority>
+			  <weight>15</weight>
+			  <reachable>true</reachable>
+		</ddt_node>		
+	</eid_prefix>
 
-	<eid prefix="153.17.0.0/16" ttl="1440" a="true" referral="true">
-		<rloc>
-			<address>112.137.129.44</address>
-			<priority>1</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-		<rloc>
-			<address>112.137.129.45</address>
-			<priority>10</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-	</eid>
-	
-	<eid prefix="192.100.0.0/16" ttl="1440" a="true" referral="true">
-		<rloc>
-			<address>112.137.129.44</address>
-			<priority>10</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-		<rloc>
-			<address>112.137.129.45</address>
-			<priority>1</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-	</eid>
-	
-	<eid prefix="0.0.0.0/0" referral="true" incomplete="false">
-		<rloc>
-			<address>192.149.252.136</address>
-			<priority>1</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-	</eid>
-	
-	<eid prefix="2610:d0::/16" referral="true" incomplete="false">
-		<rloc>
-			<address>2001:67c:2980::2980</address>
-			<priority>1</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-	</eid>
+	<eid_prefix prefix="0::/0" >
+		 <ddt_node>
+			  <address family="IPv6">2607:1f00:0:4::8</address>
+			  <priority>1</priority>
+			  <weight>25</weight>
+			  <reachable>true</reachable>
+		</ddt_node>
+		<ddt_node>
+			  <address family="IPv6">2001:67c:21b4:8954::10</address>
+			  <priority>1</priority>
+			  <weight>25</weight>
+			  <reachable>true</reachable>
+		</ddt_node>				
+	</eid_prefix>	
     </db>
 
     **** opencp_node.xml - DDT node configuration file
+    **** opencp_ddnode.xml - DDT ROOT node configuration file
 
-    * <geid> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap. 
+    * <authoritative_eid_prefix> section defines the IP prefix(es) the node is delegated. The IP ranges must not be overlap. 
       NB: if the node is a DDT root, then it is here configured as being delegated for 0.0.0.0/0 (IPv4) 
       and 0::/0 (IPv6).
 
-    * One or more <eid> sections. Each section containes the information for one delegated prefix.
+    * One or more <delegate_eid_prefix> sections. Each section containes the information for one delegated prefix.
 
-    * Special <eid> sections with prefix equal 0.0.0.0/0 or 0::/0 is for DDT root nodes. 
+    * Special <delegate_eid_prefix> sections with prefix equal 0.0.0.0/0 or 0::/0 is for DDT root nodes. 
       For the lisp4.net testbed, the root nodes are documented here: http://ddt-root.org/
 
     * For more information about prefix delegation and DDT, please refer to the IETF drafts.
@@ -213,62 +165,108 @@
 
     <?xml version="1.0" encoding="ISO-8859-1"?>
     <db>
-	<geid>
-		<arrange>153.17.0.0/16</arrange>
-		<arrange>153.18.0.0/16</arrange>
-		<arrange>192.0.0.0/8</arrange>
-		<arrange family="IPv6">2610:d0::/32</arrange>
-	 </geid>
+	<authoritative_eid_prefix>
+		<eid_prefix>0.0.0.0/0</eid_prefix>
+		<eid_prefix family="IPv6">0::/0</eid_prefix>
+	</authoritative_eid_prefix>
+	
+	<delegate_eid_prefix prefix="37.77.56.0/21">
+		 <delegate_node>
+			  <address family="IPv6">2001:9e0:411:1::10</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address family="IPv6">2001:9e0:810:1::10</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>83.247.10.218</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
 
-	<eid prefix="153.17.0.0/16" ttl="1440" a="true" referral="true">
-		<rloc>
-			<address>112.137.129.44</address>
-			<priority>1</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-		<rloc>
-			<address>112.137.129.45</address>
-			<priority>10</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-	</eid>
+		 <delegate_node>
+			  <address>87.195.109.18</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="38.125.5.0/24" >
+		 <delegate_node>
+			  <address>199.119.73.6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address family="IPv6">2607:1F00:0:4::6</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>
 	
-	<eid prefix="192.100.0.0/16" ttl="1440" a="true" referral="true">
-		<rloc>
-			<address>112.137.129.44</address>
-			<priority>10</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-		<rloc>
-			<address>112.137.129.45</address>
-			<priority>1</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-	</eid>
-	
-	<eid prefix="0.0.0.0/0" referral="true" incomplete="false">
-		<rloc>
-			<address>192.149.252.136</address>
-			<priority>1</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-	</eid>
-	
-	<eid prefix="2610:d0::/16" referral="true" incomplete="false">
-		<rloc>
-			<address>2001:67c:2980::2980</address>
-			<priority>1</priority>
-			<weight>100</weight>
-			<reachable>true</reachable>
-		</rloc>
-	</eid>
+	<delegate_eid_prefix prefix="2001:67c:208c::/48" >
+		 <delegate_node>
+			  <address>193.162.145.50</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>195.50.116.18</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.42</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.46</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>		 
+	</delegate_eid_prefix>
+
+	<delegate_eid_prefix prefix="2001:6e0:5::/48" >
+		 <delegate_node>
+			  <address>193.162.145.50</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>195.50.116.18</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.42</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+		 <delegate_node>
+			  <address>217.8.98.46</address>
+			  <priority>1</priority>
+			  <weight>100</weight>
+			  <reachable>true</reachable>
+		 </delegate_node>
+	</delegate_eid_prefix>	
     </db>
-
 
 
     *** opencp_xtr.xml - xTR configuration file
@@ -277,7 +275,9 @@
 
     * The <mapresolve> section defines the list of MRs the xTR can send map-requests.
 
-    * One or more <eid> sections. Each section gives the information for one EID IP prefix to register.
+    * The <proxy_etr> section defines the list of PETR.
+
+    * One or more <eid_prefix> sections. Each section gives the information for one EID IP prefix to register.
 
     * For more information about xTR functions, please refer to the IETF drafts.
 
@@ -286,9 +286,9 @@
     <?xml version="1.0" encoding="ISO-8859-1"?>
     <db>
 	<mapserver>
-		<ms key="KEY-HERE">193.162.145.50</ms>
-		<ms key="KEY-HERE">195.50.116.18</ms>
-		<ms family="IPv6" key="KEY-HERE">2001:67c:21b4:109::b</ms>
+		<ms key="lip6-KEY-HERE" proxy="no">132.227.62.246</ms>
+		<ms key="lip6-KEY-HERE" proxy="no">195.50.116.18</ms>
+		<ms family="IPv6" key="lip6-KEY-HERE" proxy="no">2001:67c:21b4:109::b</ms>
 	</mapserver>
 	
 	<mapresolver>
@@ -296,9 +296,14 @@
 		<mr family="IPv6">2001:67c:21b4:109::b</mr>
 	</mapresolver>
 	
-	<eid prefix="153.16.38.0/24" ttl="60" version="0" active="true">
+	<proxy_etr>
+		<petr>193.162.145.50</petr>
+		<petr family="IPv6">2001:67c:21b4:109::b</petr>
+	</proxy_etr>
+
+	<eid_prefix prefix="153.16.38.0/24" ttl="60" version="0">
 		<rloc>
-			<address>132.227.62.243</address>
+			<address family="IPv4">132.227.62.243</address>
 			<priority>2</priority>
 			<m_priority>0</m_priority>
 			<weight>100</weight>
@@ -307,7 +312,7 @@
 			<reachable>true</reachable>
 		</rloc>
 		<rloc>
-			<address>132.227.62.242</address>
+			<address family="IPv4">132.227.62.242</address>
 			<priority>4</priority>
 			<m_priority>0</m_priority>
 			<weight>100</weight>
@@ -333,11 +338,11 @@
 			<local>false</local>
 			<reachable>true</reachable>
 		</rloc>
-	</eid>
-	
-	<eid family="IPv6" prefix="2610:D0:2121::/48" ttl="60" version="0" active="true">
+	</eid_prefix>	
+
+	<eid_prefix family="IPv6" prefix="2610:D0:2121::/48" ttl="60" version="0">
 		<rloc>
-			<address>132.227.62.243</address>
+			<address family="IPv4">132.227.62.243</address>
 			<priority>1</priority>
 			<m_priority>0</m_priority>
 			<weight>100</weight>
@@ -346,7 +351,7 @@
 			<reachable>true</reachable>
 		</rloc>
 		<rloc>
-			<address>132.227.62.242</address>
+			<address family="IPv4">132.227.62.242</address>
 			<priority>2</priority>
 			<m_priority>0</m_priority>
 			<weight>100</weight>
@@ -372,7 +377,7 @@
 			<local>false</local>
 			<reachable>true</reachable>
 		</rloc>
-	</eid>
+	</eid_prefix>
     </db>
 
 *** opencp_rtr.xml - RTR configuration file
