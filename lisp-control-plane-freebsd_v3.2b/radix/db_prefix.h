@@ -93,8 +93,7 @@
 extern u_char maskbit[];
 
 /* IPv4 and IPv6 unified prefix structure. */
-struct prefix
-{
+struct prefix {
 	u_char family;
 	u_char prefixlen;
 	union
@@ -108,8 +107,7 @@ struct prefix
 };
 
 /* IPv4 prefix structure. */
-struct prefix_ipv4
-{
+struct prefix_ipv4 {
 	u_char family;
 	u_char prefixlen;
 	struct in_addr prefix __attribute__ ((aligned (8)));
@@ -117,8 +115,7 @@ struct prefix_ipv4
 
 /* IPv6 prefix structure. */
 #ifdef HAVE_IPV6
-struct prefix_ipv6
-{
+struct prefix_ipv6 {
 	u_char family;
 	u_char prefixlen;
 	struct in6_addr prefix __attribute__ ((aligned (8)));
@@ -134,7 +131,6 @@ int str2prefix_ipv4 (const char *str, struct prefix_ipv4 *p);
 int str2prefix_ipv6 (const char *str, struct prefix_ipv6 *p);
 #endif
 
-
 /* Generic function for conversion string to struct prefix. */
 int str2prefix (const char *str, struct prefix *p);
 
@@ -149,9 +145,9 @@ void str2in6_addr (const char *str, struct in6_addr *addr);
 
 void apply_mask (struct prefix *p);
 
-struct prefix * new_prefix(u_char preflen, struct in_addr * prefix);
+struct prefix *new_prefix(u_char preflen, struct in_addr *prefix);
 
-void * prefix2str(struct prefix * p);
+void *prefix2str(struct prefix *p);
 
 int prefix_match (const struct prefix *n, const struct prefix *p);
 

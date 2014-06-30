@@ -10,25 +10,25 @@
 #include        <netdb.h>
 #include        <ifaddrs.h>
 #include        <strings.h>
-#include 		<signal.h>
-#include 		<pthread.h>
-#include 		<poll.h>
-#include		<assert.h>
+#include 	<signal.h>
+#include 	<pthread.h>
+#include 	<poll.h>
+#include	<assert.h>
 #include        <sys/types.h>
 #include        <sys/param.h>
 #include        <sys/socket.h>
-#include 		<sys/select.h>
+#include 	<sys/select.h>
 #include        <sys/ioctl.h>
-#include 		<sys/uio.h>
-#include 		<sys/errno.h>
+#include 	<sys/uio.h>
+#include 	<sys/errno.h>
 #include        <netinet/in.h>
 #include        <netinet/udp.h>
 #include        <netinet/ip.h>
 #include        <netinet/ip6.h>
-//#include 		<netinet6/in6_var.h>
 #include        <arpa/inet.h>
 #include        <net/if.h>
-#include 		<net/route.h>
+#include	<net/route.h>
+#include	<ifaddrs.h>
 
 #include "radix/db.h"
 #include "radix/db_table.h"
@@ -56,6 +56,7 @@
 #define COUNT		3
 #define MIN_COUNT		1
 #define	MAX_COUNT		3
+#define MR_MAX_LOOKUP	10
 #define MAX_LOOKUPS     100 
 #define MAP_REPLY_TIMEOUT	2
 #define	MIN_EPHEMERAL_PORT	32768
@@ -88,11 +89,11 @@
 #define SA_LEN(a) ((a == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6))
 #define SIN_LEN(a) ((a == AF_INET) ? sizeof(struct in_addr) : sizeof(struct in6_addr))
 
-extern struct db_table * table;
+extern struct db_table *table;
 extern u_char _fncs;
 extern u_char lisp_te;
 extern u_char srcport_rand;
-extern char * config_file[];
+extern char *config_file[];
 int PK_POOL_MAX;
 int min_thread;
 int max_thread;
@@ -107,13 +108,13 @@ char ip[INET6_ADDRSTRLEN];
 
 pthread_mutex_t ipq_mutex;
 pthread_cond_t ipq_cv;
-uint32_t ipq_no;
+unsigned int ipq_no;
 
 /* communication abstraction */
 struct communication_fct {
         /* communication management */
-        void * (*start_communication)(void * context);
-        void * (*stop_communication)(void * context);
+        void *(*start_communication)(void *context);
+        void *(*stop_communication)(void *context);
 
         /* Map-Reply */
 	/* create a new reply
@@ -125,13 +126,13 @@ struct communication_fct {
 	   @param id reply identifier
 	   @return TRUE on success, otherwise a FALSE is returned
 	 */
-        int (*reply_add_record)(void *data, struct prefix * p, uint32_t ttl, uint8_t lcount, uint32_t version, uint8_t A, uint8_t act);
+        int (*reply_add_record)(void *data, struct prefix *p, uint32_t ttl, uint8_t lcount, uint32_t version, uint8_t A, uint8_t act);
 	/* add a locator to the current record
 	   @param id reply identifier
 	   @param e map-entry information (locator, priority...)
 	   @return TRUE on success, otherwise a FALSE is returned
 	 */
-        int (*reply_add_locator)(void *data, struct map_entry * e);
+        int (*reply_add_locator)(void *data, struct map_entry *e);
 	/* something wrong happened */
         int (*reply_error)(void *data);
 	/* Indicates that the reply construction is finished, post-processing
@@ -148,13 +149,13 @@ struct communication_fct {
 	   @param id referral identifier
 	   @return TRUE on success, otherwise a FALSE is returned
 	 */
-        int (*referral_add_record)(void *data, uint32_t iid, struct prefix * p, uint32_t ttl, uint8_t lcount, uint32_t version, uint8_t A, uint8_t act, uint8_t i, uint8_t sigcnt);
+        int (*referral_add_record)(void *data, uint32_t iid, struct prefix *p, uint32_t ttl, uint8_t lcount, uint32_t version, uint8_t A, uint8_t act, uint8_t i, uint8_t sigcnt);
 	/* add a locator to the current record
 	   @param id referral identifier
 	   @param e map-entry information (locator, priority...)
 	   @return TRUE on success, otherwise a FALSE is returned
 	 */
-        int (*referral_add_locator)(void *data, struct map_entry * e);
+        int (*referral_add_locator)(void *data, struct map_entry *e);
 	/* something wrong happened */
         int (*referral_error)(void *data);
 	/* Indicates that the referral construction is finished, post-processing
@@ -167,7 +168,7 @@ struct communication_fct {
 	   @param p eid prefix in the request
 	   @return TRUE on success, otherwise a FALSE is returned
 	 */
-        int (*request_get_eid)(void *data, struct prefix * p);
+        int (*request_get_eid)(void *data, struct prefix *p);
 	/* Obtain the nonce associated to the request. nonce is set to the
 	   nonce found in the request
 	   @param id request identifier
@@ -175,28 +176,28 @@ struct communication_fct {
 	   @return TRUE on success, otherwise a FALSE is returned
 	   XXX nonce is given in network byte order
 	 */
-    int (*request_get_nonce)(void *data, uint64_t * nonce);
-	int (*request_is_ddt)(void *data, int * is_ddt);
+	int (*request_get_nonce)(void *data, uint64_t *nonce);
+	int (*request_is_ddt)(void *data, int *is_ddt);
 	/* Obtain a source ITR address of the request
 	   @param id request identifier
 	   @param itr ITR address in the request
 	   @return TRUE on success, otherwise a FALSE is returned
 	 */
-	int (*request_get_itr)(void *data, union sockunion * itr, int afi);
+	int (*request_get_itr)(void *data, union sockunion *itr, int afi);
 	/* Obtain the UDP source port from the Map-Request
 	   @param id request identifier
 	   @param port port of the request
 	   @return TRUE on success, otherwise a FALSE is returned
 	 */
-	int (*request_get_port)(void *data, uint16_t * port);
+	int (*request_get_port)(void *data, uint16_t *port);
 	void *(*request_add)(void *data, uint8_t security, uint8_t ddt,\
 			uint8_t A, uint8_t M, uint8_t P, uint8_t S,\
 			uint8_t p, uint8_t s,\
 			uint32_t nonce0, uint32_t nonce1,\
-			const union sockunion * src, \
-			const union sockunion * dst, \
+			const union sockunion *src, \
+			const union sockunion *dst, \
 			uint16_t source_port,\
-			const struct prefix * eid );
+			const struct prefix *eid );
 	/* Indicates that the request has been processed completely */
         int (*request_terminate)(void *data);
 	/* Indicates that the DDT request construction is finished,
@@ -205,27 +206,26 @@ struct communication_fct {
 	   @param server server where to send the DDT request
 	   return TRUE on success, otherwise a FALSE is returned
 	 */
-	int (*request_ddt_terminate)(void *data, const union sockunion * server, char terminal);
+	int (*request_ddt_terminate)(void *data, const union sockunion *server, char terminal);
 };
 /* ! communication abstraction */
 
-int generic_process_request(void *data, struct communication_fct * fct);
-void * generic_mapping_new(struct prefix * eid);
-int generic_mapping_set_flags(void * mapping, const struct mapping_flags * mflags);
-int generic_mapping_add_rloc(void * mapping, struct map_entry * entry);
-int xtr_generic_process_request(void *data, struct communication_fct * fct);
-int pending_request(void *data, struct communication_fct * fct, struct db_node *rn);
+int generic_process_request(void *data, struct communication_fct *fct);
+void *generic_mapping_new(struct prefix *eid);
+int generic_mapping_set_flags(void *mapping, const struct mapping_flags *mflags);
+int generic_mapping_add_rloc(void *mapping, struct map_entry *entry);
+int xtr_generic_process_request(void *data, struct communication_fct *fct);
+int pending_request(void *data, struct communication_fct *fct, struct db_node *rn);
 int udp_init_socket();
 int udp_preparse_pk(void *data);
-extern void * plugin_openlisp(void *data);
+extern void *plugin_openlisp(void *data);
 
-char * sk_get_ip(union sockunion * sk, char * ip);
-int sk_get_port(union sockunion * sk);
-void sk_set_ip(union sockunion * sk, char * ip);
-void sk_set_port(union sockunion * sk, int port);
-void reconfigure(int signum);
-void _make_nonce(uint64_t * nonce);
-int _parser_config(const char * filename);
+char *sk_get_ip(union sockunion *sk, char *ip);
+int sk_get_port(union sockunion *sk);
+void sk_set_port(union sockunion *sk, int port);
+void reconfigure();
+void _make_nonce(uint64_t *nonce);
+int _parser_config(const char *filename);
 int timespec_subtract(struct timespec *res, struct timespec *x, struct timespec *y);
 int entrycmp(void *esrc, void *edst);
 int _insert_ip_ordered(void *data, void *entry);

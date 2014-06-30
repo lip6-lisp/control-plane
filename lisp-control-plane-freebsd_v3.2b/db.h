@@ -30,16 +30,16 @@ struct lisp_db {
 };
 
 /*second db: db of sites */
-struct site_info{
-		char * name;
-		char * key;
-		char * contact;
+struct site_info {
+		char *name;
+		char *key;
+		char *contact;
 		u_char active;
-		char * hashing;
-		struct list_t  * eid;		 		
+		char *hashing;
+		struct list_t  *eid;		 		
 };
 
-struct mapping_flags{
+struct mapping_flags {
 	uint32_t iid;	/*InstanceID */
 	uint16_t act:3,			/* Action bit */
 		 A:1,			/* Authoritative bit */
@@ -50,15 +50,15 @@ struct mapping_flags{
 	uint8_t incomplete:1;		/* incomplete DDT entry */
 	uint8_t range;	/*range of EID: an mapping, a global EID-range */
 	uint8_t active:1;
-	void * rsvd;
+	void *rsvd;
 };
 
-struct hop_entry{
+struct hop_entry {
 	uint8_t L:1, P:1, S:1;
 	union sockunion addr;
 };
 
-struct pe_entry{
+struct pe_entry {
 	uint8_t priority;		/* priority */
 	uint8_t weight;			/* weight */
 	uint8_t m_priority;		/* multicast priority */
@@ -67,7 +67,7 @@ struct pe_entry{
 	struct list_t *hop;		/* chain of next hop, each nex hop is an sockunion */
 };
 
-struct map_entry{
+struct map_entry {
 	union sockunion rloc;		/* RLOC address */
 	uint8_t priority;		/* priority */
 	uint8_t weight;			/* weight */
@@ -79,7 +79,7 @@ struct map_entry{
 	struct list_t *pe;	/* list of pe, each pe is an pe_entry */	
 };
 
-struct pk_req_entry{	
+struct pk_req_entry {	
 	uint8_t ecm:1;		/*Encapsulate Message Control*/
 	uint8_t ddt:1;		/*Encapsulate Message Control*/
 	uint8_t type;  	/*type of lisp message*/
@@ -102,26 +102,26 @@ struct pk_req_entry{
 	uint8_t hop; /* number of recue - use for map-request */
 };
 
-struct pk_rpl_entry{
-	void * buf; /*package content */
+struct pk_rpl_entry {
+	void *buf; /*package content */
 	uint16_t buf_len;
-	void * curs;
+	void *curs;
 	void *request_id;
 };
 
 struct ms_entry {
 	union sockunion addr;
 	uint8_t id;
-	char * key;
+	char *key;
 	int proxy;
 	struct list_t *eids; /* list of mapping register to this MS */
 };
 
-struct mr_entry{
+struct mr_entry {
 	union sockunion addr;
 };
 
-struct petr_entry{
+struct petr_entry {
 	union sockunion addr;
 };
 
@@ -136,43 +136,43 @@ extern struct in_addr *src_addr[];
 extern struct in6_addr *src_addr6[];
 
 /*make new node with pre-set type */
-struct mapping_flags * ms_new_node_ex(u_char n_type);
+struct mapping_flags *ms_new_node_ex(u_char n_type);
 
 /*add type to node. Note that: one node can have many roles (types) */
-void ms_node_update_type(struct db_node * node, u_char n_type);
+void ms_node_update_type(struct db_node *node, u_char n_type);
 
 /*get a real parent of node (real parent = node with type not null) */
-struct db_node * ms_get_target(struct db_node * node);
+struct db_node *ms_get_target(struct db_node *node);
 
 /*delete a node*/
-void ms_free_node(void * node);
+void ms_free_node(void *node);
 
 /*create a new site info*/
-struct site_info * ms_new_site_info();
+struct site_info *ms_new_site_info();
 
 /*create a new site in list of site*/
-struct list_entry_t * ms_new_site();
+struct list_entry_t *ms_new_site();
 
 /*check type of node */
-u_char ms_node_is_type(struct db_node * node, u_char n_type);
+u_char ms_node_is_type(struct db_node *node, u_char n_type);
 
 /*check if a node has referrall flag or not*/
-u_char ms_node_is_referral(struct db_node * node);
+u_char ms_node_is_referral(struct db_node *node);
 
 /*check if a mapping is proxy-map-reply or not */
-u_char ms_node_is_proxy_reply(struct db_node * node);
+u_char ms_node_is_proxy_reply(struct db_node *node);
 
 /*load configure to database */
 void ms_load_config();
 
 /*init database */
-struct lisp_db * ms_init_db();
+struct lisp_db *ms_init_db();
 
 /*finish database */
 void ms_finish_db(struct lisp_db *db);
 
 /*select db_table base on AF */
-struct db_table * ms_get_db_table(const struct lisp_db * db, struct prefix * pf);
+struct db_table *ms_get_db_table(const struct lisp_db *db, struct prefix *pf);
 
 /*parser configure file */
 int ms_parser_config();
@@ -211,19 +211,19 @@ int ms_parser_config();
 //void ms_insert_mapping(struct list_entry_t * site_entry, void * mr_id);
 
 /*show database */
-void list_db(struct db_table * db);
+void list_db(struct db_table *db);
 
 /*show site's database */
 void list_site(struct list_t *list);
 
 /*run over a list */
-void explore_list(struct list_t * list, int (* data_process)(void *));
+void explore_list(struct list_t *list, int (*data_process)(void *));
 
 /*show node info */
 int show_eid_info(void *data);
 
 /*show site info */
-int show_site_info(void * data);
+int show_site_info(void *data);
 
-int  ms_get_tree(struct db_node * node, struct list_t *rt, int flag);
+int  ms_get_tree(struct db_node *node, struct list_t *rt, int flag);
 #endif
