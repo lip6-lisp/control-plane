@@ -100,22 +100,18 @@ prefix_copy (struct prefix *dest, const struct prefix *src)
 	dest->family = src->family;
 	dest->prefixlen = src->prefixlen;
 
-	if (src->family == AF_INET){
+	if (src->family == AF_INET) {
 		dest->u.prefix4 = src->u.prefix4;
 	}
 #ifdef HAVE_IPV6
-	else if (src->family == AF_INET6){
+	else if (src->family == AF_INET6) {
 		dest->u.prefix6 = src->u.prefix6;
 	}
 #endif /* HAVE_IPV6 */
-	else
-	{
+	else {
 		assert (0);
 	}
 }
-
-
-
 
 /* If n includes p prefix then return 1 else return 0. */
 	int
@@ -153,7 +149,7 @@ db_table_free (struct db_table *rt);
 
 
 	struct db_table *
-db_table_init (void (*remove_fct)(void * ))
+db_table_init (void (*remove_fct)(void *))
 {
 	struct db_table *rt;
 
@@ -197,7 +193,7 @@ db_node_set (struct db_table *table, struct prefix *prefix)
 	static void
 db_node_free (struct db_node *node)
 {
-	if(node && node->table && node->table->remove_fct){
+	if (node && node->table && node->table->remove_fct) {
 		node->table->remove_fct(node->info);
 	}
 	free(node);
@@ -215,16 +211,13 @@ db_table_free (struct db_table *rt)
 
 	node = rt->top;
 
-	while (node)
-	{
-		if (node->l_left)
-		{
+	while (node) {
+		if (node->l_left) {
 			node = node->l_left;
 			continue;
 		}
 
-		if (node->l_right)
-		{
+		if (node->l_right) {
 			node = node->l_right;
 			continue;
 		}
@@ -232,8 +225,7 @@ db_table_free (struct db_table *rt)
 		tmp_node = node;
 		node = node->parent;
 
-		if (node != NULL)
-		{
+		if (node != NULL) {
 			if (node->l_left == tmp_node)
 				node->l_left = NULL;
 			else
@@ -241,8 +233,7 @@ db_table_free (struct db_table *rt)
 
 			db_node_free (tmp_node);
 		}
-		else
-		{
+		else {
 			db_node_free (tmp_node);
 			break;
 		}
@@ -264,8 +255,7 @@ route_common (struct prefix *n, struct prefix *p, struct prefix *new)
 	u_char *pp = (u_char *)&p->u.prefix;
 	u_char *newp = (u_char *)&new->u.prefix;
 
-	for (i = 0; i < p->prefixlen / 8; i++)
-	{
+	for (i = 0; i < p->prefixlen / 8; i++) {
 		if (np[i] == pp[i])
 			newp[i] = np[i];
 		else
@@ -274,12 +264,10 @@ route_common (struct prefix *n, struct prefix *p, struct prefix *new)
 
 	new->prefixlen = i * 8;
 
-	if (new->prefixlen != p->prefixlen)
-	{
+	if (new->prefixlen != p->prefixlen) {
 		diff = np[i] ^ pp[i];
 		mask = 0x80;
-		while (new->prefixlen < p->prefixlen && !(mask & diff))
-		{
+		while (new->prefixlen < p->prefixlen && !(mask & diff)) {
 			mask >>= 1;
 			new->prefixlen++;
 		}
@@ -349,8 +337,7 @@ db_node_match (struct db_table *table, struct prefix *p)
 	/* Walk down tree.  If there is matched route then store it to
 	   matched. */
 	while (node && node->p.prefixlen <= p->prefixlen && 
-			prefix_match (&node->p, p))
-	{
+			prefix_match (&node->p, p)) {
 		if (node->info)
 			matched = node;
 		node = node->link[check_bit(&p->u.prefix, node->p.prefixlen)];
@@ -374,17 +361,11 @@ db_node_match_prefix (struct db_table *table, struct prefix *p)
 	node = table->top;
 
 	assert(node->p.family == p->family);
-	/* char buf[512];
-	inet_ntop(p->family, (void *)&p->u.prefix, buf, 512);
-	printf("P: %s/%d\n", buf, p->prefixlen ); 
- */	/* Walk down tree.  If there is matched route then store it to
+	/* Walk down tree.  If there is matched route then store it to
 	   matched. */
 	while (node && node->p.prefixlen <= p->prefixlen && 
-			prefix_match (&node->p, p))
-	{
+			prefix_match (&node->p, p)) {
 		matched = node;
-		//printf("node::%p::%p::%p\n",node, node->l_left, node->l_right);
-		//printf("node->link[0] = %p, node->link[1]=%p\n",node->link[0],node->link[1]);
 		node = node->link[check_bit(&p->u.prefix, node->p.prefixlen)];
 	}
 	
@@ -433,8 +414,7 @@ db_node_match_exact(struct db_table *table, struct prefix *p)
 	assert(node->p.family == p->family);
 
 	while (node && node->p.prefixlen <= p->prefixlen && 
-			prefix_match (&node->p, p))
-	{
+			prefix_match (&node->p, p)) {
 		if (node->p.prefixlen == p->prefixlen && node->info)
 			return db_lock_node (node);
 
@@ -458,10 +438,8 @@ db_node_get (struct db_table *table, struct prefix *p)
 	assert((node && node->p.family == p->family) || !node);
 
 	while (node && node->p.prefixlen <= p->prefixlen && 
-			prefix_match (&node->p, p))
-	{
-		if (node->p.prefixlen == p->prefixlen)
-		{
+			prefix_match (&node->p, p)) {
+		if (node->p.prefixlen == p->prefixlen) 	{
 			db_lock_node (node);
 			return node;
 		}
@@ -469,18 +447,14 @@ db_node_get (struct db_table *table, struct prefix *p)
 		node = node->link[check_bit(&p->u.prefix, node->p.prefixlen)];
 	}
 
-	if (node == NULL)
-	{
+	if (node == NULL) {
 		new = db_node_set (table, p);
 		if (match)
 			set_link (match, new);
-		else{
-			//printf("new root:%p\n",new);
-			table->top = new;
-		}
+		else			
+			table->top = new;		
 	}
-	else
-	{
+	else {
 		new = db_node_create ();
 		route_common (&node->p, p, &new->p);
 		new->p.family = p->family;
@@ -492,8 +466,7 @@ db_node_get (struct db_table *table, struct prefix *p)
 		else
 			table->top = new;
 
-		if (new->p.prefixlen != p->prefixlen)
-		{
+		if (new->p.prefixlen != p->prefixlen) {
 			match = new;
 			new = db_node_set (table, p);
 			set_link (match, new);
@@ -529,16 +502,16 @@ db_node_delete (struct db_node *node)
 	if (child)
 		child->parent = parent;
 
-	if (parent)
-	{
+	if (parent) {
 		if (parent->l_left == node)
 			parent->l_left = child;
 		else
 			parent->l_right = child;
 	}
-	else
+	else {
 		node->table->top = child;
-
+	}
+	
 	node->table->count--;
 
 	db_node_free (node);
@@ -572,15 +545,14 @@ db_route_next (struct db_node *node)
 	/* Node may be deleted from db_unlock_node so we have to preserve
 	   next node's pointer. */
 
-	if (node->l_left)
-	{
+	if (node->l_left) {
 		next = node->l_left;
 		db_lock_node (next);
 		db_unlock_node (node);
 		return next;
 	}
-	if (node->l_right)
-	{
+	
+	if (node->l_right) {
 		next = node->l_right;
 		db_lock_node (next);
 		db_unlock_node (node);
@@ -588,10 +560,8 @@ db_route_next (struct db_node *node)
 	}
 
 	start = node;
-	while (node->parent)
-	{
-		if (node->parent->l_left == node && node->parent->l_right)
-		{
+	while (node->parent) {
+		if (node->parent->l_left == node && node->parent->l_right) {
 			next = node->parent->l_right;
 			db_lock_node (next);
 			db_unlock_node (start);
@@ -613,15 +583,14 @@ db_route_next_until (struct db_node *node, struct db_node *limit)
 	/* Node may be deleted from db_unlock_node so we have to preserve
 	   next node's pointer. */
 
-	if (node->l_left)
-	{
+	if (node->l_left) {
 		next = node->l_left;
 		db_lock_node (next);
 		db_unlock_node (node);
 		return next;
 	}
-	if (node->l_right)
-	{
+	
+	if (node->l_right) {
 		next = node->l_right;
 		db_lock_node (next);
 		db_unlock_node (node);
@@ -629,10 +598,8 @@ db_route_next_until (struct db_node *node, struct db_node *limit)
 	}
 
 	start = node;
-	while (node->parent && node != limit)
-	{
-		if (node->parent->l_left == node && node->parent->l_right)
-		{
+	while (node->parent && node != limit) {
+		if (node->parent->l_left == node && node->parent->l_right) {
 			next = node->parent->l_right;
 			db_lock_node (next);
 			db_unlock_node (start);
@@ -651,11 +618,11 @@ db_table_count (struct db_table *table)
 }
 
 
-	void * 
-db_node_set_info(struct db_node * node, void * info){
-	void * old = NULL;
+	void *
+db_node_set_info(struct db_node *node, void *info) {
+	void *old = NULL;
 	
-	if(!node){
+	if (!node) {
 		return (NULL);
 	}
 
@@ -665,9 +632,9 @@ db_node_set_info(struct db_node * node, void * info){
 	return (old);
 }
 
-	void * 
-db_node_get_info(struct db_node * node){
-	if(!node){
+	void *
+db_node_get_info(struct db_node *node) {
+	if (!node) {
 		return (NULL);
 	}
 

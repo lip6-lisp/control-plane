@@ -84,7 +84,7 @@ d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
 
-struct map_referral_lcaf_afi{
+struct map_referral_lcaf_afi {
 uint16_t	afi;	
 uint8_t		rsvd1;
 uint8_t		flags;
@@ -426,11 +426,11 @@ struct map_reply_locator_te {
 /* Map-Referral handling code */
 void * udp_referral_add(void *data);
 
-int udp_referral_add_record(void *data, uint32_t iid, struct prefix * p, 
+int udp_referral_add_record(void *data, uint32_t iid, struct prefix *p, 
 							uint32_t ttl, uint8_t lcount, uint32_t version, 
 							uint8_t A, uint8_t act, uint8_t i, uint8_t sigcnt);
 
-int udp_referral_add_locator(void *data, struct map_entry * e);
+int udp_referral_add_locator(void *data, struct map_entry *e);
 
 int udp_referral_error(void *data);
 
@@ -443,11 +443,11 @@ int udp_referral_terminate(void *data);
 /* Map-Reply handling code */
 void *udp_reply_add(void *data);
 
-int udp_reply_add_record(void *data, struct prefix * p, 
+int udp_reply_add_record(void *data, struct prefix *p, 
 						uint32_t ttl, uint8_t lcount, 
 						uint32_t version, uint8_t A, uint8_t act);
 
-int udp_reply_add_locator(void *data, struct map_entry * e);
+int udp_reply_add_locator(void *data, struct map_entry *e);
 
 int udp_reply_error(void *data);
 
@@ -457,42 +457,42 @@ int udp_reply_terminate(void *data);
 
 /* Map-Request handling code */
 struct map_request{
-	char * eid;
+	char *eid;
 	uint64_t nonce;
 };
 
 int udp_request_terminate(void *data);
 
-int udp_request_get_eid(void *data, struct prefix * p);
+int udp_request_get_eid(void *data, struct prefix *p);
 
-int udp_request_get_nonce(void *data, uint64_t * nonce);
+int udp_request_get_nonce(void *data, uint64_t *nonce);
 
-int udp_request_is_ddt(void *data, int * is_ddt);
+int udp_request_is_ddt(void *data, int *is_ddt);
 
-int udp_request_get_itr(void *data, union sockunion * itr, int afi);
+int udp_request_get_itr(void *data, union sockunion *itr, int afi);
 
-int udp_request_get_port(void *data, uint16_t * port);
+int udp_request_get_port(void *data, uint16_t *port);
 
 void *udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		uint8_t A, uint8_t M, uint8_t P, uint8_t S,\
 		uint8_t p, uint8_t s,\
 		uint32_t nonce0, uint32_t nonce1,\
-		const union sockunion * src, \
-		const union sockunion * dst, \
+		const union sockunion *src, \
+		const union sockunion *dst, \
 		uint16_t source_port,\
-		const struct prefix * eid );
+		const struct prefix *eid );
 
-int udp_request_ddt_terminate(void *data, const union sockunion * server, 
+int udp_request_ddt_terminate(void *data, const union sockunion *server, 
 							char terminal);
 
-uint32_t _forward_to_etr(void *data, struct db_node * rn);
+uint32_t _forward_to_etr(void *data, struct db_node *rn);
 
 /* ! Map-Request handling code */
 
 /* Communication handling code */
-void * udp_start_communication(void * context);
+void *udp_start_communication(void *context);
 
-void * udp_stop_communication(void * context);
+void *udp_stop_communication(void *context);
 
 
 

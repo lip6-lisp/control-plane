@@ -5,21 +5,21 @@
 #include "lib.h"
 #include "plumbing.h"
 
-uint32_t _forward_to_etr(void *data,struct db_node * rn);
+uint32_t _forward_to_etr(void *data,struct db_node *rn);
 FILE *flog;
 int _daemon;
 /* support function */
 
 /* create new mapping */
 
-	void * 
-generic_mapping_new(struct prefix * eid)
+	void *
+generic_mapping_new(struct prefix *eid)
 {
-	struct db_node * rn;
-	struct list_t * locs;
-	struct db_table * table;
+	struct db_node *rn;
+	struct list_t *locs;
+	struct db_table *table;
 	
-	if(((table = ms_get_db_table(ms_db,eid)) == NULL) ||
+	if (((table = ms_get_db_table(ms_db,eid)) == NULL) ||
 		((rn = db_node_get(table, eid)) == NULL))
 			return (NULL);
 	
@@ -31,35 +31,36 @@ generic_mapping_new(struct prefix * eid)
 
 /* assign flags */
 	int 
-generic_mapping_set_flags(void * mapping, const struct mapping_flags * mflags)
+generic_mapping_set_flags(void *mapping, const struct mapping_flags *mflags)
 {
-	struct db_node * rn;
+	struct db_node *rn;
 	uint8_t fns = 0;
-	void * rsvd = NULL; 
+	void *rsvd = NULL; 
 	
 	assert(mapping);
 	rn = (struct db_node *)mapping;
 		
-	if(!(rn->flags))
+	if (!(rn->flags)) {
 		rn->flags = (struct mapping_flags *)calloc(1, sizeof(struct mapping_flags));
+	}	
 	else{
 		fns = ((struct mapping_flags *)rn->flags)->range;
 		rsvd = ((struct mapping_flags *)rn->flags)->rsvd;		
 	}	
 	
 	memcpy(rn->flags, mflags, sizeof(struct mapping_flags));
-	((struct mapping_flags *)rn->flags)->range = ((struct mapping_flags *)rn->flags)->range | fns;
-	if(!mflags->rsvd)
+		((struct mapping_flags *)rn->flags)->range = ((struct mapping_flags *)rn->flags)->range | fns;
+	if (!mflags->rsvd)
 		((struct mapping_flags *)rn->flags)->rsvd = rsvd;
 	return (TRUE);
 }
 
 /* add rloc to mapping */
 	int 
-generic_mapping_add_rloc(void * mapping, struct map_entry * entry)
+generic_mapping_add_rloc(void *mapping, struct map_entry *entry)
 {
-	struct db_node * rn;
-	struct list_t * locs;
+	struct db_node *rn;
+	struct list_t *locs;
 
 	assert(mapping);
 	rn = (struct db_node *)mapping;
@@ -73,21 +74,21 @@ generic_mapping_add_rloc(void * mapping, struct map_entry * entry)
 }
 
 	int 
-_request_ddt(void *data, struct communication_fct * fct, \
+_request_ddt(void *data, struct communication_fct *fct, \
 			struct db_node *rn)
 {
 	struct prefix eid;		/* requested EID prefix */
-	union sockunion * best_rloc = NULL;	/* best rloc */
+	union sockunion *best_rloc = NULL;	/* best rloc */
 	uint8_t best_priority = 0xff;	/* priority of the best RLOC*/
 	uint64_t nonce;
-	uint32_t * nonce_ptr;		/* pointer to nonce ( cause network byte order) */
-	struct list_entry_t * _iter;
-	struct list_t * l = NULL;
-	struct map_entry * e;
+	uint32_t *nonce_ptr;		/* pointer to nonce (cause network byte order) */
+	struct list_entry_t *_iter;
+	struct list_t *l = NULL;
+	struct map_entry *e;
 	union sockunion dst;		/* inner packet destination header */
 	union sockunion itr;		/* ITR address*/
 	uint16_t sport;			/* ITR source port */
-	struct mapping_flags * mflags;
+	struct mapping_flags *mflags;
 	struct pk_req_entry *pke = data;
 	
 	/* get the EID prefix to request */
@@ -95,18 +96,18 @@ _request_ddt(void *data, struct communication_fct * fct, \
 	/* consider the destination IP address of the inner packet to send as
 	   the first EID in the requested EID prefix */
 	bzero(&dst, sizeof(union sockunion));
-	switch(eid.family){
-		case AF_INET:
-			dst.sin.sin_family = AF_INET;
-			memcpy(&dst.sin.sin_addr, &(eid.u.prefix4), sizeof(struct in_addr));
-			break;
-		case AF_INET6:
-			dst.sin6.sin6_family = AF_INET6;
-			memcpy(&dst.sin6.sin6_addr, &(eid.u.prefix6), sizeof(struct in6_addr));
-			break;
-		default:
-			fct->referral_error(pke);
-			return (FALSE);
+	switch (eid.family) {
+	case AF_INET:
+		dst.sin.sin_family = AF_INET;
+		memcpy(&dst.sin.sin_addr, &(eid.u.prefix4), sizeof(struct in_addr));
+		break;
+	case AF_INET6:
+		dst.sin6.sin6_family = AF_INET6;
+		memcpy(&dst.sin6.sin6_addr, &(eid.u.prefix6), sizeof(struct in6_addr));
+		break;
+	default:
+		fct->referral_error(pke);
+		return (FALSE);
 	}
 
 	/* determine the ITR address */
@@ -125,12 +126,12 @@ _request_ddt(void *data, struct communication_fct * fct, \
 	
 	mflags = (struct mapping_flags *)rn->flags;
 	
-	if(!_iter){
+	if (!_iter) {
 		fct->referral_error(pke);
 		return (FALSE);
 	}
 	/* negative reply */
-	if(_iter == &l->tail){
+	if (_iter == &l->tail) {
 		return (TRUE);
 	}
 
@@ -138,26 +139,26 @@ _request_ddt(void *data, struct communication_fct * fct, \
 	int brloc = random() % 2;
 	
 	/* iterate over the rlocs */
-	while(_iter != &l->tail){
+	while (_iter != &l->tail) {
 		e = (struct map_entry*)_iter->data;
 		/* current read RLOC better than the others */
 		/* choose by best priority */
-		if(e->priority <= best_priority){
-			if(e->priority < best_priority || brloc){
+		if (e->priority <= best_priority) {
+			if (e->priority < best_priority || brloc) {
 				best_priority = e->priority;
 				best_rloc = &e->rloc;
 			}				
 		}
 		
 		/* choose by random */
-		//if(i++ == brloc){
+		//if (i++ == brloc) {
 		//	best_priority = e->priority;
 		//	best_rloc = &e->rloc;
 		//}
 		_iter = _iter->next;
 	}
 	/* stop if no RLOC is available to send the request */
-	if(best_priority == 0xff){
+	if (best_priority == 0xff) {
 		fct->referral_error(pke);
 		return (FALSE);
 	}
@@ -173,16 +174,16 @@ _request_ddt(void *data, struct communication_fct * fct, \
 	 */
 	 struct pk_rpl_entry *rpk;
 	 
-	if( (rpk = fct->request_add(pke, 0, 1, \
+	if ((rpk = fct->request_add(pke, 0, 1, \
 			1, 0, 0, 0, 0, 0,\
 			*nonce_ptr, *(nonce_ptr + 1),\
 			&itr ,  &dst, sport,\
-			&eid)) < 0 ){
+			&eid)) == NULL ) {
 		fct->referral_error(pke);
 		return (FALSE);
 	}
 	
-	if( (mflags->referral == LISP_REFERRAL_MS_REFERRAL+1) || \
+	if ((mflags->referral == LISP_REFERRAL_MS_REFERRAL+1) || \
 	    (mflags->referral == LISP_REFERRAL_MS_ACK+1) || \
 		(pke->hop++ > MTTL))
 		fct->request_ddt_terminate(rpk, best_rloc, 1);
@@ -195,9 +196,9 @@ _request_ddt(void *data, struct communication_fct * fct, \
 /* make a negative referral reply */
 	int 
 _request_referral_negative(void *data, struct communication_fct *fct, \
-		struct db_node * rn, struct prefix *pf, uint32_t ttl, uint8_t A, uint8_t act,uint8_t version, uint8_t incomplete ){
-		
-	struct mapping_flags * mflags;
+		struct db_node *rn, struct prefix *pf, uint32_t ttl, uint8_t A, uint8_t act,uint8_t version, uint8_t incomplete )
+{		
+	struct mapping_flags *mflags;
 	uint32_t iid;
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
@@ -205,7 +206,7 @@ _request_referral_negative(void *data, struct communication_fct *fct, \
 	/* create the referral container  */
 	rpk = fct->referral_add(pke);
 	mflags = rn->flags;
-	if(mflags)
+	if (mflags)
 		iid = mflags->iid;
 	else
 		iid = 0;
@@ -219,12 +220,13 @@ _request_referral_negative(void *data, struct communication_fct *fct, \
 /* make a map-referral reply */
 	int 
 _request_referral(void *data, struct communication_fct *fct, \
-		struct db_node * rn){
-	struct map_entry * e = NULL;
-	struct list_entry_t * _iter;
-	struct list_t * l = NULL;
+		struct db_node *rn)
+{
+	struct map_entry *e = NULL;
+	struct list_entry_t *_iter;
+	struct list_t *l = NULL;
 	uint8_t act;
-	struct mapping_flags * mflags = (struct mapping_flags *)rn->flags;
+	struct mapping_flags *mflags = (struct mapping_flags *)rn->flags;
 	struct pk_rpl_entry *rpk;
 	struct pk_req_entry *pke = data;
 	
@@ -235,13 +237,13 @@ _request_referral(void *data, struct communication_fct *fct, \
 	l = (struct list_t *)db_node_get_info(rn);
 	
 	/* something bad happened */
-	if(!(_iter = l->head.next)){
+	if (!(_iter = l->head.next)) {
 		fct->referral_error(pke);
 		return (FALSE);
 	}
 
 	/* Create one record container to put the locators */
-	if(!mflags->referral && ms_node_is_type(rn,_MAPP)){
+	if (!mflags->referral && ms_node_is_type(rn,_MAPP)) {
 		act = LISP_REFERRAL_MS_ACK;
 	}
 	else{
@@ -252,13 +254,13 @@ _request_referral(void *data, struct communication_fct *fct, \
 								l->count, mflags->version, mflags->A, act, mflags->incomplete, 0);
 
 	/* negative reply */
-	if(_iter == &l->tail){
+	if (_iter == &l->tail) {
 		fct->referral_terminate(rpk);
 		return TRUE;
 	}
 
 	/* add each locator into the record */
-	while(_iter != &l->tail){
+	while (_iter != &l->tail) {
 		e = (struct map_entry*)_iter->data;
 
 		fct->referral_add_locator(rpk, e);
@@ -272,19 +274,19 @@ _request_referral(void *data, struct communication_fct *fct, \
 
 /* make a negative map-reply */
 	int 
-_request_reply_negative(void *data, struct communication_fct * fct, \
-		struct db_node * rn, struct prefix * pf, uint32_t ttl, uint8_t A, uint8_t act,	uint8_t version ){
-	
+_request_reply_negative(void *data, struct communication_fct *fct, \
+		struct db_node *rn, struct prefix *pf, uint32_t ttl, uint8_t A, uint8_t act,	uint8_t version )
+{	
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
 	
 	cp_log(LDEBUG, "Send Map-Reply to ITR\n");
 		
 	rpk = fct->reply_add(pke);
-	if (rn){
+	if (rn) {
 		fct->reply_add_record(rpk, &rn->p, ttl, 0, version, A, act);
 	}
-	else if(pf) {
+	else if (pf) {
 		fct->reply_add_record(rpk, pf, ttl, 0, version, A, act);
 	}
 	else {
@@ -299,17 +301,18 @@ _request_reply_negative(void *data, struct communication_fct * fct, \
 
 /* make a map-reply */
 	int 
-_request_reply(void *data, struct communication_fct * fct, \
-		struct db_node * rn, struct prefix * pf){
-	struct map_entry * e = NULL;
-	struct list_entry_t * _iter;
-	struct list_t * l = NULL;
+_request_reply(void *data, struct communication_fct *fct, \
+		struct db_node *rn)
+{
+	struct map_entry *e = NULL;
+	struct list_entry_t *_iter;
+	struct list_t *l = NULL;
 	struct pk_rpl_entry *rpk;
 	struct pk_req_entry *pke = data;
 	struct list_t *overlap;
 	struct list_entry_t *nptr;
 	
-	struct mapping_flags * mflags = (struct mapping_flags *)rn->flags;
+	struct mapping_flags *mflags = (struct mapping_flags *)rn->flags;
 	int pe=0;
 	
 	cp_log(LDEBUG, "Send Map-Reply to ITR\n");
@@ -320,17 +323,17 @@ _request_reply(void *data, struct communication_fct * fct, \
 	overlap = list_init();
 	ms_get_tree(rn,overlap,_MAPP|_MAPP_XTR);
 	nptr = overlap->head.next;
-	while(nptr != &overlap->tail){
+	while (nptr != &overlap->tail) {
 		rn = (struct db_node *)nptr->data;
 		/* get the RLOCs */
 		l = (struct list_t *)db_node_get_info(rn);
 		assert(l);
 		_iter = l->head.next;
 		pe = 0;
-		if( (_fncs & (_FNC_XTR | _FNC_MS)) && lisp_te){
-			while(_iter != &l->tail){
+		if ((_fncs & (_FNC_XTR | _FNC_MS)) && lisp_te) {
+			while (_iter != &l->tail) {
 				e = (struct map_entry*)_iter->data;
-				if(e->pe)
+				if (e->pe)
 					pe += e->pe->count; 
 				else 
 					pe++;
@@ -342,7 +345,7 @@ _request_reply(void *data, struct communication_fct * fct, \
 			fct->reply_add_record(rpk, &rn->p, mflags->ttl, l->count, mflags->version, mflags->A, mflags->act);
 		
 		_iter = l->head.next;
-		while(_iter != &l->tail){
+		while (_iter != &l->tail) {
 			e = (struct map_entry*)_iter->data;
 
 			fct->reply_add_locator(rpk, e);
@@ -353,6 +356,7 @@ _request_reply(void *data, struct communication_fct * fct, \
 	fct->reply_terminate(rpk);
 	return TRUE;	
 }
+
 /* when request EID (REID) match an negative node (NEGA_NODE)
  * reply contain an EID which
  * less-specific than REID
@@ -373,71 +377,90 @@ get_hole_eid(struct prefix *rs,
 	res_addr = &pf->u.prefix;
 	left_addr = right_addr = NULL;
 	
+	/* debug */
+	// inet_ntop(nega_node->p.family, &nega_node->p.u.prefix, ip, INET6_ADDRSTRLEN);
+	// printf("main node:%s/%d\n",ip, nega_node->p.prefixlen);
+	// if (nega_node->l_left) {
+		// inet_ntop(nega_node->l_left->p.family, &nega_node->l_left->p.u.prefix, ip, INET6_ADDRSTRLEN);
+		// printf("left node:%s/%d\n",ip, nega_node->l_left->p.prefixlen);
+	// }
+	// if (nega_node->l_right) {
+		// inet_ntop(nega_node->l_right->p.family, &nega_node->l_right->p.u.prefix, ip, INET6_ADDRSTRLEN);
+		// printf("right node:%s/%d\n",ip, nega_node->l_right->p.prefixlen);
+	// }
+	// inet_ntop(pf->family, &pf->u.prefix, ip, INET6_ADDRSTRLEN);
+	// printf("search node:%s/%d\n",ip, pf->prefixlen);
+	/* end debug */
+	
 	start = nega_node->p.prefixlen;
 	end = pf->prefixlen;
-	if(nega_node->l_left){
+	offset = start / PNBBY;
+	shift = start % PNBBY;
+	
+	if (nega_node->l_left) {
 		left_addr = &nega_node->l_left->p.u.prefix;
-		if(nega_node->l_left->p.prefixlen < end)
+		left_addr = left_addr + offset;
+		if (nega_node->l_left->p.prefixlen > end)
 			end = nega_node->l_left->p.prefixlen;
 	}
 	
-	if(nega_node->l_right){
+	if (nega_node->l_right) {
 		right_addr = &nega_node->l_right->p.u.prefix;
-		if(nega_node->l_right->p.prefixlen < end)
-			end = nega_node->l_right->p.prefixlen;
+		right_addr = right_addr + offset;
+		if (nega_node->l_right->p.prefixlen > end)
+			end = nega_node->l_right->p.prefixlen;			
 	}	
 		
-	offset = start / PNBBY;
-	shift = start % PNBBY;
-		
-	res_addr = res_addr + offset; 
-	left_addr = left_addr + offset;
-	right_addr = right_addr + offset;
-	
 	/* compare pf and pf of two children of nega_node from
 	 * nega_node prefix until prefix of pf or not match any more
 	 */
-	for(c = start+1; c <= end; c++){
-		if(left_addr && !(upbit[c % PNBBY] & (*res_addr ^ *left_addr)))
-			left_addr = NULL;
-		
-		if(right_addr && !(upbit[c % PNBBY] & (*res_addr ^ *right_addr)))
-				right_addr = NULL;	
-		
-		if(!left_addr && !right_addr)
-				break;
-		
-		if(c > start+1 && (c % PNBBY == 0)){
-			res_addr = res_addr + 1;
-			if(left_addr)
-				left_addr = left_addr + 1;
-			if(right_addr)
-				right_addr = right_addr + 1;
+	if (left_addr || right_addr) {
+		for (c = start+1; c <= end; c++) {
+			if (left_addr && (upbit[c % PNBBY] & (*res_addr ^ *left_addr)))
+				left_addr = NULL;
+			
+			if (right_addr && (upbit[c % PNBBY] & (*res_addr ^ *right_addr)))
+					right_addr = NULL;	
+			
+			if (!left_addr && !right_addr)
+					break;
+			
+			if (c > start+1 && (c % PNBBY == 0)) {
+				res_addr = res_addr + 1;
+				if (left_addr)
+					left_addr = left_addr + 1;
+				if (right_addr)
+					right_addr = right_addr + 1;
+			}
 		}
-	}
 	
-	if(c <= end){
-		*rs = *pf;
-		rs->prefixlen = c;
-		ptr = &(pf->u.prefix) + (c / PNBBY);
-		*ptr = *ptr & maskbit[c % PNBBY];
-		offset = (pf->prefixlen -c) / PNBBY;
-		if(offset)
-			ptr = ptr+1;
-		while(offset--){
-			*ptr = 0;
-			ptr = ptr+1;
+		if (c <= end) {
+			*rs = *pf;		
+			ptr = &(rs->u.prefix) + (c / PNBBY);
+			*ptr = *ptr & maskbit[c % PNBBY];
+			offset = (rs->prefixlen -c) / PNBBY;
+			if (offset)
+				ptr = ptr+1;
+			while (offset--) {
+				*ptr = 0;
+				ptr = ptr+1;
+			}
+			rs->prefixlen = c;
+			return (0);
 		}
+	}else{
+		*rs = nega_node->p;
 		return (0);
-	}
+	}	
 	return 1;
 }	
 
 /* processing with map-request - only MS|NODE|MR function*/
 	int 
-generic_process_request(void *data, struct communication_fct * fct){
-	struct db_table * table;
-	struct db_node * rn = NULL;
+generic_process_request(void *data, struct communication_fct *fct)
+{
+	struct db_table *table;
+	struct db_node *rn = NULL;
 	struct prefix p;
 	int is_ddt;
 	struct db_node *node = NULL;	
@@ -452,28 +475,28 @@ generic_process_request(void *data, struct communication_fct * fct){
 	fct->request_is_ddt(pke, &is_ddt);
 
 	/* Received DDT request */
-	if(is_ddt){
+	if (is_ddt) {
 		/*function of {map-register-with-DDT|DDT-node}*/
-		if(!rn){
+		if (!rn) {
 			/* never happen: at least it must match with root node */				
 			return (TRUE);
 		}
 		
 		node = rn;
 		/* for case eid overlap */
-		if( !rn->flags || !((struct mapping_flags *)rn->flags)->range){
+		if (!rn->flags || !((struct mapping_flags *)rn->flags)->range) {
 			node = ms_get_target(rn);
 		}
 		
 		 
 		/* existing mapping for request */	
-		if (ms_node_is_type(node, _MAPP)){
+		if (ms_node_is_type(node, _MAPP)) {
 			/* not referral node, it must belong to MS */			
-			if( !ms_node_is_referral(node)){
+			if (!ms_node_is_referral(node)) {
 				/* do ms function: reply or foward to ETR */
-				if(_fncs & _FNC_MS){
-					if(ms_node_is_proxy_reply(node)){
-						rt = _request_reply(pke, fct, node, NULL);
+				if (_fncs & _FNC_MS) {
+					if (ms_node_is_proxy_reply(node)) {
+						rt = _request_reply(pke, fct, node);
 						
 						return (TRUE);
 					}
@@ -491,9 +514,9 @@ generic_process_request(void *data, struct communication_fct * fct){
 			}
 			
 			/* referral node, must belong to NODE or MR (caching referral)*/
-			if ( _fncs & _FNC_NODE){
+			if (_fncs & _FNC_NODE) {
 				/*Auth EID referral - return with map-referral*/				
-				if( ((struct mapping_flags *)node->flags)->A ){					
+				if (((struct mapping_flags *)node->flags)->A ) {					
 					rt =  _request_referral(pke, fct, node);	
 					return (TRUE);
 				}else{
@@ -501,43 +524,48 @@ generic_process_request(void *data, struct communication_fct * fct){
 					 *	an authoritative XEID-prefix, then the request is dropped and a
 					 * negative Map-Referral with action code NOT-AUTHORITATIVE is returned.
 					 */
+					get_hole_eid(&p, rn, &p); 
 					rt =  _request_referral_negative(pke, fct, rn, &p, 0, 0, LISP_REFERRAL_NOT_AUTHORITATIVE, 0, 1);					
 					return (TRUE);
 				}				
 			}
 		}
 		else{/* not exist mapping */
-			if ( _fncs & _FNC_MS || _fncs & _FNC_NODE){
+			if (_fncs & _FNC_MS || _fncs & _FNC_NODE) {
 				/* node has type */
 				while (node != table->top && 
-						( !node->flags || 
-						!( ((struct mapping_flags *)node->flags)->range & (_EID | _GEID | _GREID)) ))
+						(!node->flags || 
+						!(((struct mapping_flags *)node->flags)->range & (_EID | _GEID | _GREID)) ))
 					node = node->parent;
 				
-				if(node == table->top){
-					if( node->flags && ms_node_is_type(node, _GEID | _GREID))
-						rt = _request_referral_negative(pke, fct, rn, &p, 60, 0, LISP_REFERRAL_DELEGATION_HOLE,0, 1 );		
+				if (node == table->top) {
+					get_hole_eid(&p, rn, &p); 
+					if (node->flags && ms_node_is_type(node, _GEID | _GREID))
+						rt = _request_referral_negative(pke, fct, rn, &p, 15, 0, LISP_REFERRAL_DELEGATION_HOLE,0, 1 );		
 					else
 						rt =  _request_referral_negative(pke, fct, rn, &p, 0, 0, LISP_REFERRAL_NOT_AUTHORITATIVE, 0, 1);
 					return TRUE;
 				}else{
-					switch (((struct mapping_flags *)node->flags)->range){
+					switch (((struct mapping_flags *)node->flags)->range) {
 						case _EID: /* EID not is registered */
-							if ( _fncs & _FNC_MS){
-								rt =  _request_referral_negative(pke, fct, rn, &p, 60, 1, LISP_REFERRAL_MS_NOT_REGISTERED, 0, 1);	
+							if (_fncs & _FNC_MS) {
+								get_hole_eid(&p, rn, &p); 
+								rt =  _request_referral_negative(pke, fct, rn, &p, 1, 1, LISP_REFERRAL_MS_NOT_REGISTERED, 0, 1);	
 								return TRUE;
 							}
 							break;
 						case _GEID:/* EID not assign for any ETR */
-							if ( _fncs & _FNC_MS){
+							if (_fncs & _FNC_MS) {
 								/* in ieft, this case is same as _EID, but I think TTL must longer*/
-								rt =  _request_referral_negative(pke, fct, rn, &p, 900, 1, LISP_REFERRAL_MS_NOT_REGISTERED, 0, 1);	
+								get_hole_eid(&p, rn, &p); 
+								rt =  _request_referral_negative(pke, fct, rn, &p, 15, 1, LISP_REFERRAL_DELEGATION_HOLE, 0, 1);	
 								return TRUE;
 							}	
 							break;
 						case _GREID:/* EID not delegated */
-							if ( _fncs & _FNC_NODE){
-								rt = _request_referral_negative(pke, fct, rn, &p, 60, 0, LISP_REFERRAL_DELEGATION_HOLE,0, 1 );		
+							if (_fncs & _FNC_NODE) {
+								get_hole_eid(&p, rn, &p); 
+								rt = _request_referral_negative(pke, fct, rn, &p, 15, 0, LISP_REFERRAL_DELEGATION_HOLE,0, 1 );		
 								return TRUE;	
 							}
 							break;						
@@ -554,16 +582,16 @@ generic_process_request(void *data, struct communication_fct * fct){
 	else{
 		/*function of {map-resolver |map-register-with-no-DDD-function} */
 		node = rn;		
-		if(!(rn->flags) || !((struct mapping_flags *)rn->flags)->range){
+		if (!(rn->flags) || !((struct mapping_flags *)rn->flags)->range) {
 			node = ms_get_target(rn);
 		}
 		
-		if ( ms_node_is_type(node, _MAPP)){
+		if (ms_node_is_type(node, _MAPP)) {
 			/* node is MAPP, must belong to MS */
-			if( !ms_node_is_referral(node)){
-				if(_fncs & _FNC_MS){
-					if(ms_node_is_proxy_reply(node)){
-						rt = _request_reply(pke, fct, node, NULL);
+			if (!ms_node_is_referral(node)) {
+				if (_fncs & _FNC_MS) {
+					if (ms_node_is_proxy_reply(node)) {
+						rt = _request_reply(pke, fct, node);
 																	
 						return rt;
 					}
@@ -578,7 +606,7 @@ generic_process_request(void *data, struct communication_fct * fct){
 			}
 			else{
 				/* do MR function */
-				if(_fncs & _FNC_MR){
+				if (_fncs & _FNC_MR) {
 					pending_request(pke, fct, node);					
 					return 2;
 				}
@@ -586,19 +614,20 @@ generic_process_request(void *data, struct communication_fct * fct){
 		}
 		else{/*node is not mapping */
 			while (node != table->top && 
-						( !node->flags || 
-						!( ((struct mapping_flags *)node->flags)->range & (_EID | _GEID)) ))
+						(!node->flags || 
+						!(((struct mapping_flags *)node->flags)->range & (_EID | _GEID)) ))
 				node = node->parent;
-			if(_fncs & _FNC_MS){
-				if(node == table->top)
+			if (_fncs & _FNC_MS) {
+				if (node == table->top)
 					return FALSE;
-				if ( ms_node_is_type(node,_EID))
+				get_hole_eid(&p, rn, &p); 	
+				if (ms_node_is_type(node,_EID))
 					rt = _request_reply_negative(pke, fct, node, &p, 60, 1, 1, 0);	
 				else
 					rt = _request_reply_negative(pke, fct, node, &p, 900, 1, 1, 0);	
 				return TRUE;					
 			}
-			if(_fncs & _FNC_MR){
+			if (_fncs & _FNC_MR) {
 				pending_request(pke, fct, node);					
 				return 2;
 			}
@@ -610,9 +639,10 @@ generic_process_request(void *data, struct communication_fct * fct){
 
 /* processing with map-request for xTR */
 	int 
-xtr_generic_process_request(void *data, struct communication_fct * fct){
-	struct db_table * table;
-	struct db_node * rn = NULL;
+xtr_generic_process_request(void *data, struct communication_fct *fct)
+{
+	struct db_table *table;
+	struct db_node *rn = NULL;
 	struct prefix p;
 	struct db_node *node = NULL;
 	int rt;
@@ -623,9 +653,9 @@ xtr_generic_process_request(void *data, struct communication_fct * fct){
 	table = ms_get_db_table(ms_db,&p);
 	rn = db_node_match_prefix(table, &p);
 	
-	if(pke->ecm){
+	if (pke->ecm) {
 		/*ETR received this packet from MS */
-		if(!rn){
+		if (!rn) {
 			/* this can not happen because ECM is forwared from MS to ETR
 				it mean that MS has an old mapping of ETR
 				drop packet and wait for MS timeout mapping or refesh
@@ -634,12 +664,12 @@ xtr_generic_process_request(void *data, struct communication_fct * fct){
 			return (FALSE);
 		}
 		node = rn;		
-		if(!(rn->flags) || !((struct mapping_flags *)rn->flags)->range){
+		if (!(rn->flags) || !((struct mapping_flags *)rn->flags)->range) {
 			node = ms_get_target(rn);
 		}
 		
-		if ( ms_node_is_type(node, _MAPP_XTR)){
-			rt = _request_reply(pke, fct, node, NULL);			
+		if (ms_node_is_type(node, _MAPP_XTR)) {
+			rt = _request_reply(pke, fct, node);			
 			return rt;
 		}
 		else{
@@ -648,7 +678,7 @@ xtr_generic_process_request(void *data, struct communication_fct * fct){
 		}
 	}else { /* ETR received packet from xTR or PxTR */
 		/* process with SMR...?? */
-		if(!rn){
+		if (!rn) {
 			/*ITR has cached an old mapping. 
 			Drop request and ITR will timeout and send map-request to mapping system
 			*/			
@@ -656,12 +686,12 @@ xtr_generic_process_request(void *data, struct communication_fct * fct){
 		}
 
 		node = rn;
-		if(!(rn->flags) || !((struct mapping_flags *)rn->flags)->range){
+		if (!(rn->flags) || !((struct mapping_flags *)rn->flags)->range) {
 			node = ms_get_target(rn);
 		}
 			
-		if ( ms_node_is_type(node, _MAPP_XTR)){
-			rt = _request_reply(pke, fct, node, NULL);			
+		if (ms_node_is_type(node, _MAPP_XTR)) {
+			rt = _request_reply(pke, fct, node);			
 			return rt;
 		}
 		else{
@@ -675,7 +705,8 @@ xtr_generic_process_request(void *data, struct communication_fct * fct){
 /* load configure file */
 
 	void 
-reconfigure(int signum){
+reconfigure()
+{
 	if (ms_db)
 		ms_finish_db(ms_db);
 	ms_db = ms_init_db();	
@@ -691,7 +722,8 @@ reconfigure(int signum){
 
 /* main function */
 	void 
-reopenlog(int signum){
+reopenlog()
+{
 	FILE *fd;
 
 	fd = freopen("/var/log/opencp.log","a",flog);
@@ -701,12 +733,11 @@ reopenlog(int signum){
 	void 
 cp_log(int level, char *format, ...)
 {
-	
 	va_list args;
 	
-	if(_debug >= level){
+	if (_debug >= level) {
 		va_start(args, format);
-		if(flog != NULL){
+		if (flog != NULL) {
 			vfprintf(flog, format, args);
 			fflush(flog);
 		}	
@@ -715,15 +746,16 @@ cp_log(int level, char *format, ...)
 		va_end(args);
 	}	
 }
+
 	int 
-main(int argc, char ** argv){
-		
+main(int argc, char **argv)
+{		
 	config_file[0] = "opencp.conf";
 	int c;
 	opterr = 0;
 	_daemon = 0;
-	while ((c = getopt (argc, argv, "df:")) != -1){
-		switch (c){
+	while ((c = getopt (argc, argv, "df:")) != -1) {
+		switch (c) {
 		case 'd':
 			_daemon = 1;
 			break;
@@ -745,7 +777,7 @@ main(int argc, char ** argv){
         }
 	}
 	
-	if(_daemon){
+	if (_daemon) {
 		pid_t pid;
  
 		/* Clone child from ourselves */  
@@ -769,7 +801,7 @@ main(int argc, char ** argv){
 		fclose(fpid);
 	}
 	
-	if(_daemon){
+	if (_daemon) {
 		flog = fopen("/var/log/opencp.log","a");
 		signal(SIGUSR1, reopenlog);
 	}else{
@@ -778,9 +810,9 @@ main(int argc, char ** argv){
 	
 	//signal(SIGHUP, reconfigure);
 	reconfigure(SIGHUP);
-	if(!udp_init_socket())
+	if (!udp_init_socket())
 		exit(0);
-	if(_daemon){
+	if (_daemon) {
 		fflush(stdout);
 		close(STDOUT_FILENO);
 		close(STDIN_FILENO);

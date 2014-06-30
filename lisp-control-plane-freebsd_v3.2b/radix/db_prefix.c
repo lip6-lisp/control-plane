@@ -200,8 +200,6 @@ str2prefix (const char *str, struct prefix *p)
 	return 0;
 }
 
-
-
 /* Apply mask to IPv4 prefix. */
 	void
 apply_mask_ipv4 (struct prefix_ipv4 *p)
@@ -284,8 +282,9 @@ apply_mask (struct prefix *p)
 }
 
 	struct prefix *
-new_prefix(u_char preflen, struct in_addr * prefix){
-	struct prefix * p;
+new_prefix(u_char preflen, struct in_addr *prefix)
+{
+	struct prefix *p;
 	p = (struct prefix *)calloc(1, sizeof(struct prefix));
 	p->family = AF_INET;
 	p->prefixlen = preflen; 
@@ -295,9 +294,10 @@ new_prefix(u_char preflen, struct in_addr * prefix){
 }
 
 	void *
-prefix2str(struct prefix * p){
+prefix2str(struct prefix *p)
+{
 	char buf[512];
-	char * rt;
+	char *rt;
 	u_char rt_len;
 	
 	bzero(buf, 512);

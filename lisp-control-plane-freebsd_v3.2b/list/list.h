@@ -28,7 +28,7 @@ struct list_t {
 /**
  * Create a new empty list 
  */
-struct list_t * list_init();
+struct list_t *list_init();
 
 /**
  * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! DANGER, spec change returne the pointer now!
@@ -43,7 +43,8 @@ struct list_t * list_init();
  *      The following entry_cmp_fct implementation keep the list ordered for
  *      integers:
  *
- *      int _simple_list_entry_cmp(void * data, void * entry){
+ *      int _simple_list_entry_cmp(void * data, void * entry)
+ *	{
  *              int _a;
  *              int _b;
  *              _a = *(int *)data;
@@ -59,10 +60,10 @@ struct list_t * list_init();
  *      entries are always appended.
 
  */
-struct list_entry_t * list_insert(struct list_t * list, void * data, int (*entry_cmp_fct)(void *, void *));
+struct list_entry_t *list_insert(struct list_t *list, void *data, int (*entry_cmp_fct)(void *, void *));
 
 
-int list_remove(struct list_t * list, struct list_entry_t * entry, int (* destroy_fct)(void *));
+int list_remove(struct list_t *list, struct list_entry_t *entry, int (*destroy_fct)(void *));
 
 /**
  * Destroy list and clean all the memory used by her. To clean the memory
@@ -78,7 +79,7 @@ int list_remove(struct list_t * list, struct list_entry_t * entry, int (* destro
  * 		return 1;
  * 	}
  */
-int list_destroy(struct list_t * list, int (* destroy_fct)(void *));
+int list_destroy(struct list_t *list, int (*destroy_fct)(void *));
 
 /**
  * Call foreach_fct on each data entry in the list.
@@ -97,13 +98,13 @@ int list_destroy(struct list_t * list, int (* destroy_fct)(void *));
  * 		return (0);
  * 	}
  */
-int list_foreach(struct list_t * list, \
-		int (* foreach_fct)(void *, void *), \
-		void * context);
+int list_foreach(struct list_t *list, \
+		int (*foreach_fct)(void *, void *), \
+		void *context);
 
 /**
  * Search for entry in list
  */		
-struct list_entry_t * list_search(struct list_t * list, void * data, \
+struct list_entry_t * list_search(struct list_t *list, void *data, \
 									int (*entry_cmp_fct)(void *, void *));		
 #endif
