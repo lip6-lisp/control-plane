@@ -263,7 +263,7 @@ send_mr(int idx)
 	char ip[INET6_ADDRSTRLEN];
 	int mask; 
 	eid = &lookups[idx].eid;
-	if (lookups[idx].count >= COUNT) {
+	if (lookups[idx].count >= COUNT && srcport_rand) {
 		lookups[idx].active = 0;
 		close(lookups[idx].rx);
         return 0;
@@ -345,7 +345,7 @@ send_mr(int idx)
 		break;
 	case AF_INET6:
 		itr_rloc->ip6.afi = htons(LISP_AFI_IPV6);			
-		memcpy(&itr_rloc->ip6.address, (struct in6_addr *)(src_addr[1]), sizeof(struct in6_addr));
+		memcpy(&itr_rloc->ip6.address, (struct in6_addr *)(src_addr6[0]), sizeof(struct in6_addr));
 		itr_size = sizeof(struct afi_address6);	
 		break;
 	default:
@@ -791,7 +791,8 @@ read_mr(int idx)
 	}
 	
 	lookups[idx].active = 0;
-    close(lookups[idx].rx);
+    	if (srcport_rand)
+		close(lookups[idx].rx);
 	return 0;
 }
 
