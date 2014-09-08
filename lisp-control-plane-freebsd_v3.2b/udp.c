@@ -3355,7 +3355,14 @@ general_register_process(void *data)
 				sleep(1);
 				continue;
 			}
-					
+			
+			if(lisp_te && (_fncs & _FNC_XTR)){
+				while( !(rpk_ex = udp_register_add(NULL)) ){
+					sleep(1);
+					continue;		
+				}
+			}	
+			
 			/* add mapping to map-register message */
 			ptr = ms->eids->head.next;
 			while (ptr != &ms->eids->tail) {
