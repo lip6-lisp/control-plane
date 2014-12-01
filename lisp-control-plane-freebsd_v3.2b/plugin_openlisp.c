@@ -405,7 +405,7 @@ send_mr(int idx)
 		ih->ip_sum        = 0;         
 		ih->ip_src.s_addr = afi_addr_src.ip.address.s_addr;
 		ih->ip_dst.s_addr = eid->sin.sin_addr.s_addr;
-		ih->ip_sum = ip_checksum((unsigned short *)ih, ip_len);
+		ih->ip_sum        = ip_checksum((uint16_t *)ih, (ih->ip_hl)*2);
 		break;
 	case AF_INET6:
 		ip_len = (uint8_t *)ptr - (uint8_t *)ih;
