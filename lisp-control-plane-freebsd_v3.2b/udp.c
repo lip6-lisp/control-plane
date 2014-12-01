@@ -1357,9 +1357,9 @@ udp_request_get_port(void *data, uint16_t *port)
 	return (TRUE);
 }
 
-/* generate checksum of message */
-	ushort 
-ip_checksum (unsigned short *buf, int nwords)
+/* generate checksum of IP header; nwords is the length of the header measured in 16-bit words */
+	uint16_t
+ip_checksum (uint16_t *buf, int nwords)
 {
 	unsigned long sum;
 
@@ -1522,7 +1522,7 @@ udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		ih->ip_sum        = 0;         
 		ih->ip_src.s_addr = afi_addr_src.ip.address.s_addr;
 		ih->ip_dst.s_addr = afi_addr_dst.ip.address.s_addr;
-		ih->ip_sum 		  = htons(ip_checksum((unsigned short *)ih, (ih->ip_hl)*2));
+		ih->ip_sum 		  = ip_checksum((uint16_t *)ih, (ih->ip_hl)*2);
 		break;
 	case AF_INET6:
 		ip_len = (uint8_t *)rpk->curs - (uint8_t *) udp;
