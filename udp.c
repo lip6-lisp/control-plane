@@ -2133,8 +2133,6 @@ udp_preparse_pk(void *data)
 	case LISP_TYPE_MAP_REFERRAL:
 		pke->lcm = lcm = (struct map_request_hdr *)lh;
 		pke->type = lh->type;
-		pke->nonce_0 = &lcm->lisp_nonce0;
-		pke->nonce_0 = &lcm->lisp_nonce0;
 		pke->nonce0 = ntohl(lcm->lisp_nonce0);
 		pke->nonce1 = ntohl(lcm->lisp_nonce1);
 		break;	

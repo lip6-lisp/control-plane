@@ -93,8 +93,6 @@ struct pk_req_entry {
 	void *udp;	/*IH udp header */
 	void *lcm;	/*Lisp control message */
 	void *buf; /*package content */
-	uint32_t *nonce_0; /*nonce0*/
-	uint32_t *nonce_1;
 	struct list_t *itr;
 	struct list_t *eid;
 	uint16_t buf_len; /*package len */
