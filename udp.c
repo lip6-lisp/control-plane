@@ -847,12 +847,13 @@ udp_reply_add_locator(void *data, struct map_entry *e)
 		loc->rloc.m_priority = e->m_priority;
 		loc->rloc.m_weight = e->m_weight;
 		loc->rloc.L = e->L;
-		if (rhdr->rloc_probe)
+		if (rhdr->rloc_probe) {
 			if (sockunioncmp(&e->rloc, &((struct pk_req_entry *)rpk->request_id)->di) == 0)
 				loc->rloc.p = 1;
-		else
+		} else {
 			loc->rloc.p = 0;
-		
+		}
+
 		loc->rloc.R = e->r;
 
 		switch (e->rloc.sa.sa_family) {
