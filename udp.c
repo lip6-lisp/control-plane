@@ -1961,7 +1961,7 @@ _lisp_process(void *data)
 		/* unsupported */
 	default:			
 		udp_free_pk(pke);
-		cp_log(LDEBUG, "unsupported LISP type\n");			
+		cp_log(LDEBUG, "unsupported LISP type %hhd\n", lh->type);
 	}
 	return NULL;
 }
@@ -2053,7 +2053,7 @@ udp_get_pk(int sockfd, socklen_t slen)
 		thr_pool_queue(cpp, _lisp_process, pke);
 		break;
 	default:
-		cp_log(LDEBUG, "unsupported LISP type\n");
+		cp_log(LDEBUG, "unsupported LISP type %hhu\n", lh->type);
 		return -1;
 	}
 	return 1;
@@ -2139,7 +2139,7 @@ udp_preparse_pk(void *data)
 		pke->nonce1 = ntohl(lcm->lisp_nonce1);
 		break;	
 	default:
-		cp_log(LDEBUG, "unsupported LISP type\n");
+		cp_log(LDEBUG, "unsupported LISP type %hhu\n", lh->type);
 			
 		return -1;
 	}
