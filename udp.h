@@ -13,8 +13,10 @@
 #define LISP_TYPE_MAP_NOTIFY	0x4
 #define	LISP_TYPE_MAP_REFERRAL	0x6
 #define LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE	0x8
+#define LISP_TYPE_INFO_MSG	0x7
 
 #define LCAF_AFI	16387
+#define LCAF_NATT	7
 #define LCAF_TE		10
 /*
  *      CO --
@@ -494,7 +496,9 @@ void *udp_start_communication(void *context);
 
 void *udp_stop_communication(void *context);
 
-
+/* Map Serveur specifique fonctions */
+void *_ms_recal_hashing(const void *packet, int pk_len, void *key, void *rt, int no_nonce);
+int ms_process_info_req(struct pk_req_entry *pke);
 
 
 /*
@@ -713,5 +717,63 @@ struct map_register_hdr {
 	uint8_t		auth_data[0];
 }  __attribute__ ((__packed__));
 
+/*
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Type=7 |R|               Reserved                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                         Nonce . . .                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                      . . . Nonce                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |            Key ID             |  Authentication Data Length   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   ~                     Authentication Data                       ~
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                              TTL                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   Reserved    | EID mask-len  |        EID-prefix-AFI         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                          EID-prefix                           |
++->+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  |           AFI = 16387         |    Rsvd1      |     Flags     |
+|  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  |    Type = 7     |     Rsvd2   |             4 + n             |
+|  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+N  |        MS UDP Port Number     |      ETR UDP Port Number      |
+A  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+T  |              AFI = x          | Global ETR RLOC Address  ...  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+L  |              AFI = x          |       MS RLOC Address  ...    |
+C  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+A  |              AFI = x          | Private ETR RLOC Address ...  |
+F  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  |              AFI = x          |      RTR RLOC Address 1 ...   |
+|  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  |              AFI = x          |       RTR RLOC Address n ...  |
++->+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*/
+
+struct info_msg_hdr {
+#ifdef LITTLE_ENDIAN
+	uint8_t		rsvd:3;
+	uint8_t		R:1;
+	uint8_t		lisp_type:4;
+#else
+	uint8_t		lisp_type:4;
+	uint8_t		R:1;
+	uint8_t		rsvd:3;
+#endif
+	uint8_t		reserved[3];
+	uint32_t	lisp_nonce0;
+	uint32_t	lisp_nonce1;
+	uint16_t	key_id;
+	uint16_t	auth_data_length;
+	uint8_t		auth_data[0];
+}  __attribute__ ((__packed__));
+
+#define info_msg_ttl_t uint32_t
+#define info_msg_eid map_request_record_generic
 
 #endif

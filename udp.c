@@ -1886,6 +1886,7 @@ _lisp_process(void *data)
 {
 	void *buf;
 	struct lisp_control_hdr *lh;
+	struct info_msg_hdr *imh;
 	int rt = 0;
 	struct pk_req_entry *pke = data;	
 	
@@ -1958,6 +1959,15 @@ _lisp_process(void *data)
 #endif			
 		udp_free_pk(pke);
 		break;			
+		/* Info-Request | Info-Reply */
+	case LISP_TYPE_INFO_MSG:
+		imh = (struct info_msg_hdr *)lh;
+		if (_fncs & _FNC_MS && !imh->R)
+			ms_process_info_req(pke);
+		if (_fncs & _FNC_XTR && imh->R)
+			/* TODO */;
+		udp_free_pk(pke);
+		break;
 		/* unsupported */
 	default:			
 		udp_free_pk(pke);
@@ -2044,6 +2054,7 @@ udp_get_pk(int sockfd, socklen_t slen)
 	case LISP_TYPE_MAP_REGISTER:
 	case LISP_TYPE_MAP_NOTIFY:
 	case LISP_TYPE_MAP_REFERRAL:
+	case LISP_TYPE_INFO_MSG:
 		pke  = calloc(1,sizeof(struct pk_req_entry));
 		pke->buf = calloc(pk_len,sizeof(char));			
 		memcpy((char *)pke->buf, (char *)buf, pk_len);
@@ -2133,6 +2144,7 @@ udp_preparse_pk(void *data)
 	case LISP_TYPE_MAP_REGISTER:
 	case LISP_TYPE_MAP_NOTIFY:
 	case LISP_TYPE_MAP_REFERRAL:
+	case LISP_TYPE_INFO_MSG:
 		pke->lcm = lcm = (struct map_request_hdr *)lh;
 		pke->type = lh->type;
 		pke->nonce0 = ntohl(lcm->lisp_nonce0);
