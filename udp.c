@@ -368,7 +368,8 @@ udp_register_add(void *data)
 	 */
 	
 	hdr->lisp_type = LISP_TYPE_MAP_REGISTER;	
-	rpk->curs = CO(hdr,sizeof(struct map_register_hdr)+20);
+	rpk->curs = CO(hdr, sizeof(struct map_register_hdr)
+			    + HMAC_SHA1_DIGEST_LENGTH);
 	rpk->buf_len = (char *)rpk->curs - (char *)rpk->buf;
 	return rpk;
 }
@@ -2555,7 +2556,7 @@ _register_notify(void *data, struct site_info *site )
 	int skt;
 	HMAC_SHA1_CTX	ctx;
 	unsigned char	macbuf[BUFLEN];    	  	    
-	u_char auth_len = 20;
+	uint16_t auth_len = HMAC_SHA1_DIGEST_LENGTH;
 	int i;
 	
 	/* content of map-notify same as map-register except not include P,M bit set*/
@@ -3330,7 +3331,6 @@ general_register_process(void *data)
 	struct ms_entry *ms;
 	struct mapping_flags *mflags;
 	struct map_register_hdr *hr;
-	int i;
 	HMAC_SHA1_CTX	ctx;
 	unsigned char	buf[BUFLEN];
 	struct map_entry *e = NULL;
@@ -3410,7 +3410,7 @@ general_register_process(void *data)
 			buflen = rpk->buf_len;
 			hr->proxy_map_reply = ms->proxy;
 			hr->key_id = htons(01);
-			hr->auth_data_length = htons(20);
+			hr->auth_data_length = htons(HMAC_SHA1_DIGEST_LENGTH);
 			if (!(count %15)) {
 				hr->want_map_notify = 1;
 				count = 0;
@@ -3418,8 +3418,7 @@ general_register_process(void *data)
 			count++;
 			
 			/*Calc auth data */
-			for (i = 0; i < 20; i++)
-				hr->auth_data[i]=0;
+			memset(hr->auth_data, 0, hr->auth_data_length);
 			
 			_make_nonce(&nonce);
 			nonce_trick = (void *)&nonce;
@@ -3432,9 +3431,7 @@ general_register_process(void *data)
 			HMAC_SHA1_StartMessage(&ctx);
 			HMAC_SHA1_UpdateMessage(&ctx, pkbuf,buflen);
 			HMAC_SHA1_EndMessage(buf, &ctx);
-			for (i = 0; i < 20; i++) {
-				hr->auth_data[i]=buf[i];
-			}
+			memcpy(hr->auth_data, buf, hr->auth_data_length);
 			
 			cp_log(LDEBUG, "Map-Register ");
 			cp_log(LDEBUG, " <");
