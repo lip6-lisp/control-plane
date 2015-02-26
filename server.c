@@ -714,6 +714,7 @@ reconfigure()
 	cp_log(LLOG, "Init database ...\n\n");
 	site_db = list_init();	
 	etr_db = list_init();
+	rtr_db = list_init();
 	printf("Parse main configuration file ...\n\n");
 	cp_log(LLOG, "Parse main configuration file ...\n\n");
 	_parser_config(config_file[0]);	

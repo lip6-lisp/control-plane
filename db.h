@@ -123,9 +123,14 @@ struct petr_entry {
 	union sockunion addr;
 };
 
+struct rtr_entry {
+	union sockunion rloc;
+};
+
 extern struct lisp_db *ms_db;
 extern struct list_t *site_db;
 extern struct list_t *etr_db;
+extern struct list_t *rtr_db;
 extern struct list_t *xtr_ms;
 extern struct list_t *xtr_mr;
 extern struct list_t *xtr_petr;

@@ -1094,6 +1094,50 @@ ms_startElement(void *userData, const char *name, const char **atts)
 				_fam = AF_INET;
 			atts++;
 		}
+	} else if (0 == strcasecmp(name, "rtr")) {
+		struct rtr_entry *entry = NULL;
+		_fam = AF_INET;
+		while (*atts) {
+			if (0 == strcasecmp(*atts, "family")) {
+				atts++;
+				_fam = (0 == strcasecmp(*atts, "IPv6"))? AF_INET6:AF_INET;
+			}
+			if (0 == strcasecmp(*atts, "rloc")) {
+				atts++;
+				void *ptr;
+				entry = calloc(1, sizeof(*entry));
+				if (!entry) {
+					_err_config("memory allocation error");
+					exit(1);
+				}
+				entry->rloc.sa.sa_family = _fam;
+				switch (_fam) {
+				case AF_INET:
+					ptr = &entry->rloc.sin.sin_addr;
+					break;
+				case AF_INET6:
+					ptr = &entry->rloc.sin6.sin6_addr;
+					break;
+				default:
+					ptr = &entry->rloc.sa.sa_data;
+					break;
+				}
+				if (inet_pton(_fam, *atts, ptr) <=0) {
+					_err_config("invalid address");
+					exit(1);
+				}
+			}
+
+			atts++;
+		}
+		if (!entry) {
+			_err_config("missing rloc attribut");
+			exit(1);
+		}
+		if (!list_insert(rtr_db, entry, NULL)) {
+			_err_config("memory allocation error");
+			exit(1);
+		}
 	}
 	
 	_xml_name = name;
