@@ -1887,7 +1887,6 @@ _lisp_process(void *data)
 	void *buf;
 	struct lisp_control_hdr *lh;
 	struct info_msg_hdr *imh;
-	int rt = 0;
 	struct pk_req_entry *pke = data;
 
 	udp_preparse_pk(pke);
@@ -1899,57 +1898,39 @@ _lisp_process(void *data)
 		/* Map-Request or DDT Map-Request */
 	case LISP_TYPE_MAP_NOTIFY:
 		//_xtr_notify(request_id);
-		udp_free_pk(pke);
 		break;
 	case LISP_TYPE_MAP_REQUEST:
 		/* Parse request message */
 		if (_fncs & _FNC_XTR) {
-			rt = udp_prc_request(pke);
-			if (rt <= 0) {
+			if (udp_prc_request(pke) <= 0) {
 				cp_log(LDEBUG, "Not correct map-request.....Ignore!\n");
-
-				udp_free_pk(pke);
 				break;
 			}
 			xtr_generic_process_request(pke, &udp_fct);
 		}
-		udp_free_pk(pke);
 		break;
 	case LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE:
 		/* Parse request message */
-		rt = udp_prc_request(pke);
-		if (rt <= 0) {
+		if (udp_prc_request(pke) <= 0) {
 			cp_log(LDEBUG, "Not a map-request.....Ignore!\n");
-
-			udp_free_pk(pke);
 			break;
 		}
 
 		if (_fncs & _FNC_XTR) {
 			xtr_generic_process_request(pke, &udp_fct);
-			udp_free_pk(pke);
-			break;
-		}
-		else{
-			if ((rt = generic_process_request(pke, &udp_fct)) <= 0) {
-				cp_log(LDEBUG, "Forwarding mode\n");
-
-				_forward(pke);
-			}
-			if (rt < 2)
-				udp_free_pk(pke);
+		} else if (generic_process_request(pke, &udp_fct) <= 0) {
+			cp_log(LDEBUG, "Forwarding mode\n");
+			_forward(pke);
 		}
 		break;
 		/* Map-Register */
 	case LISP_TYPE_MAP_REGISTER:
 		if (_fncs & _FNC_MS)
 			_register(pke);
-		udp_free_pk(pke);
 		break;
 		/* Map-Referral */
 	case LISP_TYPE_MAP_REFERRAL:
 		 get_mr_ddt(pke);
-		 udp_free_pk(pke);
 		 break;
 		/* Map-Reply */
 	case LISP_TYPE_MAP_REPLY:
@@ -1957,7 +1938,6 @@ _lisp_process(void *data)
 		if (!srcport_rand)
 			get_mr(pke);
 #endif
-		udp_free_pk(pke);
 		break;
 		/* Info-Request | Info-Reply */
 	case LISP_TYPE_INFO_MSG:
@@ -1966,13 +1946,14 @@ _lisp_process(void *data)
 			ms_process_info_req(pke);
 		if (_fncs & _FNC_XTR && imh->R)
 			/* TODO */;
-		udp_free_pk(pke);
 		break;
 		/* unsupported */
 	default:
-		udp_free_pk(pke);
 		cp_log(LDEBUG, "unsupported LISP type %hhd\n", lh->type);
 	}
+
+	udp_free_pk(pke);
+
 	return NULL;
 }
 
