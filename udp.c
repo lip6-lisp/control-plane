@@ -2083,9 +2083,6 @@ udp_preparse_pk(void *data)
 	union sockunion *ih_si;
 	struct pk_req_entry *pke = data;
 
-	pke->ttl = 0;
-	pke->hop = 0;
-	pke->itr = pke->eid = NULL;
 	lh = (struct lisp_control_hdr *)CO(pke->buf, 0);
 	if (pke->buf_len < sizeof(struct lisp_control_hdr))
 		return -1;
