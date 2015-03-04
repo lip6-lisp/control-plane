@@ -89,6 +89,14 @@
 #define SA_LEN(a) ((a == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6))
 #define SIN_LEN(a) ((a == AF_INET) ? sizeof(struct in_addr) : sizeof(struct in6_addr))
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define htonll(x) (((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
+#define ntohll(x) (((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
+#else
+#define htonll(x) (x)
+#define ntohll(x) (x)
+#endif
+
 extern struct db_table *table;
 extern u_char _fncs;
 extern u_char lisp_te;
@@ -192,8 +200,7 @@ struct communication_fct {
 	int (*request_get_port)(void *data, uint16_t *port);
 	void *(*request_add)(void *data, uint8_t security, uint8_t ddt,\
 			uint8_t A, uint8_t M, uint8_t P, uint8_t S,\
-			uint8_t p, uint8_t s,\
-			uint32_t nonce0, uint32_t nonce1,\
+			uint8_t p, uint8_t s, uint64_t nonce,\
 			const union sockunion *src, \
 			const union sockunion *dst, \
 			uint16_t source_port,\

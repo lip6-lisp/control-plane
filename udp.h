@@ -106,8 +106,7 @@ struct map_referral_hdr {
 #endif
 	uint16_t	reserved;
 	uint8_t		record_count;
-	uint32_t	lisp_nonce0;
-	uint32_t	lisp_nonce1;
+	uint64_t	nonce;
 }  __attribute__ ((__packed__));
 
 struct map_referral_record {
@@ -254,8 +253,7 @@ struct map_reply_hdr {
 #endif
 	uint16_t	reserved;
 	uint8_t		record_count;
-	uint32_t	lisp_nonce0;
-	uint32_t	lisp_nonce1;
+	uint64_t	nonce;
 }  __attribute__ ((__packed__));
 
 struct map_reply_record {
@@ -477,8 +475,7 @@ int udp_request_get_port(void *data, uint16_t *port);
 
 void *udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		uint8_t A, uint8_t M, uint8_t P, uint8_t S,\
-		uint8_t p, uint8_t s,\
-		uint32_t nonce0, uint32_t nonce1,\
+		uint8_t p, uint8_t s, uint64_t nonce,\
 		const union sockunion *src, \
 		const union sockunion *dst, \
 		uint16_t source_port,\
@@ -540,17 +537,17 @@ Rec +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 struct lisp_control_hdr {
 #ifdef LITTLE_ENDIAN
-	uint8_t rsvd:2;
-	uint8_t ddt_originated:1;
-	uint8_t	security_bit:1;
-	uint8_t type:4;
+	uint8_t		rsvd:2;
+	uint8_t		ddt_originated:1;
+	uint8_t		security_bit:1;
+	uint8_t		type:4;
 #else
-	uint8_t type:4;
-	uint8_t security_bit:1;
-	uint8_t ddt_originated:1;
-	uint8_t rsvd:2;
+	uint8_t		type:4;
+	uint8_t		security_bit:1;
+	uint8_t		ddt_originated:1;
+	uint8_t		rsvd:2;
 #endif
-	uint8_t reserved[3];
+	uint8_t		reserved[3];
 } __attribute__ ((__packed__));
 
 
@@ -585,8 +582,7 @@ struct map_request_hdr {
 	uint8_t		irc:5;
 #endif
 	uint8_t		record_count;
-	uint32_t	lisp_nonce0;
-	uint32_t	lisp_nonce1;
+	uint64_t	nonce;
 }  __attribute__ ((__packed__));
 
 
@@ -710,8 +706,7 @@ struct map_register_hdr {
 	uint8_t     want_map_notify:1;
 #endif	
 	uint8_t		record_count;
-	uint32_t        lisp_nonce0;
-	uint32_t        lisp_nonce1;
+	uint64_t        nonce;
 	uint16_t	key_id;
 	uint16_t	auth_data_length;
 	uint8_t		auth_data[0];
@@ -766,8 +761,7 @@ struct info_msg_hdr {
 	uint8_t		rsvd:3;
 #endif
 	uint8_t		reserved[3];
-	uint32_t	lisp_nonce0;
-	uint32_t	lisp_nonce1;
+	uint64_t	nonce;
 	uint16_t	key_id;
 	uint16_t	auth_data_length;
 	uint8_t		auth_data[0];

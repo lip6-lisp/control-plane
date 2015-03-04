@@ -81,7 +81,6 @@ _request_ddt(void *data, struct communication_fct *fct, \
 	union sockunion *best_rloc = NULL;	/* best rloc */
 	uint8_t best_priority = 0xff;	/* priority of the best RLOC*/
 	uint64_t nonce;
-	uint32_t *nonce_ptr;		/* pointer to nonce (cause network byte order) */
 	struct list_entry_t *_iter;
 	struct list_t *l = NULL;
 	struct map_entry *e;
@@ -117,7 +116,6 @@ _request_ddt(void *data, struct communication_fct *fct, \
 
 	/* determine the nonce used by the ITR */
 	fct->request_get_nonce(pke, &nonce);
-	nonce_ptr = (void *)&nonce;
 
 	/* determine the RLOC of the DDT server to send a request to */
 	/* get the RLOCs */
@@ -172,13 +170,11 @@ _request_ddt(void *data, struct communication_fct *fct, \
 	 * inner packet source port: sport
 	 * EID prefix: eid
 	 */
-	 struct pk_rpl_entry *rpk;
+	struct pk_rpl_entry *rpk = fct->request_add(pke, 0, 1, 1, 0, 0, 0,
+						    0, 0, nonce, &itr,
+						    &dst, sport, &eid);
 	 
-	if ((rpk = fct->request_add(pke, 0, 1, \
-			1, 0, 0, 0, 0, 0,\
-			*nonce_ptr, *(nonce_ptr + 1),\
-			&itr ,  &dst, sport,\
-			&eid)) == NULL ) {
+	if (!rpk) {
 		fct->referral_error(pke);
 		return (FALSE);
 	}

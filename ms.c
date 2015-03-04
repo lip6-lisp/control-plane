@@ -140,11 +140,10 @@ ms_process_info_req(struct pk_req_entry *pke)
 	char *s_hmac;
 	int ret;
 
-	cp_log(LDEBUG, "LCM: <type=%u, R=%u, M=%u, nonce=0x%x - 0x%x, key id=%u, auth data length=%u\n", \
+	cp_log(LDEBUG, "LCM: <type=%u, R=%u, M=%u, nonce=0x%lx, key id=%u, auth data length=%u\n", \
 				lcm->lisp_type,
 				lcm->R, \
-				ntohl(lcm->lisp_nonce0), \
-				ntohl(lcm->lisp_nonce1), \
+				ntohll(lcm->nonce), \
 				ntohs(lcm->key_id), \
 				ntohs(lcm->auth_data_length));
 

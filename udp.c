@@ -54,13 +54,7 @@ struct communication_fct udp_fct = {\
 	void
 _make_nonce(uint64_t *nonce)
 {
-    uint32_t *nonce0;
-    uint32_t *nonce1;
-
-	nonce0  = (uint32_t *)nonce;
-	nonce1  = (uint32_t *)(nonce0 + 1);
-	*nonce0 = random() ^ random();
-    *nonce1 = random() ^ time(NULL);
+	*nonce = (random() ^ random()) | ((random() ^ time(NULL)) << 32);
 }
 
 /* compare two ip address
@@ -600,7 +594,6 @@ udp_register_error(void *data)
 udp_reply_add(void *data)
 {
 	struct map_reply_hdr *hdr;
-	uint32_t *nonce_trick;
 	uint64_t nonce;
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
@@ -612,19 +605,13 @@ udp_reply_add(void *data)
 
 	hdr = (struct map_reply_hdr *)rpk->buf;
 
-	/* write the 64-bit nonce in two 32-bit fields
-	 * need this trick because of the LITTLE_ENDIAN
-	*/
-
 	udp_request_get_nonce(pke, &nonce);
-	nonce_trick = (void *)&nonce;
 	hdr->lisp_type = LISP_TYPE_MAP_REPLY;
-	hdr->lisp_nonce0 = htonl(*nonce_trick);
-	hdr->lisp_nonce1 = htonl(*(nonce_trick + 1));
+	hdr->nonce = htonll(nonce);
 	if (_debug == LDEBUG) {
 		/* ================================= */
 		cp_log(LDEBUG, "Map-Reply ");
-		cp_log(LDEBUG, " <nonce=0x%x - 0x%x>\n", ntohl(hdr->lisp_nonce0), ntohl(hdr->lisp_nonce1));
+		cp_log(LDEBUG, "<nonce=0x%llx>\n", ntohll(hdr->nonce));
 		/* ================================= */
 	}
 
@@ -1002,7 +989,6 @@ udp_reply_error(void *data)
 udp_referral_add(void *data)
 {
 	struct map_referral_hdr *hdr;
-	uint32_t *nonce_trick;
 	uint64_t nonce;
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
@@ -1013,20 +999,15 @@ udp_referral_add(void *data)
 	rpk->request_id = pke;
 
 	hdr = (struct map_referral_hdr *)rpk->buf;
-	/* write the 64-bit nonce in two 32-bit fields
-	*  need this trick because of the LITTLE_ENDIAN
-	*/
 	udp_request_get_nonce(pke, &nonce);
-	nonce_trick = (void *)(&nonce);
 	hdr->lisp_type = LISP_TYPE_MAP_REFERRAL;
-	hdr->lisp_nonce0 = htonl(*nonce_trick);
-	hdr->lisp_nonce1 = htonl(*(nonce_trick + 1));
+	hdr->nonce = htonll(nonce);
 
 	if (_debug == LDEBUG) {
 		/* ================================= */
 		cp_log(LDEBUG, "Map-Referral ");
 		cp_log(LDEBUG, " <");
-		cp_log(LDEBUG, "nonce=0x%x - 0x%x", ntohl(hdr->lisp_nonce0), ntohl(hdr->lisp_nonce1));
+		cp_log(LDEBUG, "nonce=0x%llx", ntohll(hdr->nonce));
 		cp_log(LDEBUG, ">\n");
 		/* ================================= */
 	}
@@ -1275,13 +1256,8 @@ udp_request_get_eid(void *data, struct prefix *pr)
 	int
 udp_request_get_nonce(void *data, uint64_t * nonce)
 {
-	uint32_t *nonce_trick;
 	struct pk_req_entry *pke = data;
-
-	nonce_trick = (uint32_t *)nonce;
-	*nonce_trick = pke->nonce0;
-	*(nonce_trick+1) = pke->nonce1;
-
+	*nonce = pke->nonce;
 	return (TRUE);
 }
 
@@ -1377,8 +1353,7 @@ ip_checksum (uint16_t *buf, int nwords)
 	void *
 udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		uint8_t A, uint8_t M, uint8_t P, uint8_t S,\
-		uint8_t p, uint8_t s,\
-		uint32_t nonce0, uint32_t nonce1,\
+		uint8_t p, uint8_t s, uint64_t nonce,\
 		const union sockunion *src,\
 		const union sockunion *dst,\
 		uint16_t source_port,\
@@ -1442,8 +1417,7 @@ udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 	/* XXX dsa hard coded */
 	lcm->irc = 0;
 	lcm->record_count = 1;
-	lcm->lisp_nonce0 = htonl(nonce0);
-	lcm->lisp_nonce1 = htonl(nonce1);
+	lcm->nonce = htonll(nonce);
 
 	/* set no source EID <AFI=0, addres is empty> -> jump of 2 bytes */
 	/* nothing to do as bzero of the packet at init */
@@ -1545,7 +1519,7 @@ udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		/* ================================= */
 		cp_log(LDEBUG, "Map-Request-Referral ");
 		cp_log(LDEBUG, " <");
-		cp_log(LDEBUG, "nonce=0x%x - 0x%x", nonce0, nonce1);
+		cp_log(LDEBUG, "nonce=0x%lx", nonce);
 		cp_log(LDEBUG, ">\n");
 		/* ================================= */
 	}
@@ -2125,8 +2099,7 @@ udp_preparse_pk(void *data)
 	case LISP_TYPE_INFO_MSG:
 		pke->lcm = lcm = (struct map_request_hdr *)lh;
 		pke->type = lh->type;
-		pke->nonce0 = ntohl(lcm->lisp_nonce0);
-		pke->nonce1 = ntohl(lcm->lisp_nonce1);
+		pke->nonce = ntohll(lcm->nonce);
 		break;
 	default:
 		cp_log(LDEBUG, "unsupported LISP type %hhu\n", lh->type);
@@ -2253,7 +2226,7 @@ udp_prc_request(void *data)
 	}
 
 	/* parse LCM */
-	cp_log(LDEBUG, "LCM: <type=%u, A=%u, M=%u, P=%u, S=%u, p=%u, s=%u, IRC=%u, rcount=%u, nonce=0x%x - 0x%x>\n", \
+	cp_log(LDEBUG, "LCM: <type=%u, A=%u, M=%u, P=%u, S=%u, p=%u, s=%u, IRC=%u, rcount=%u, nonce=0x%lx>\n", \
 				lcm->lisp_type,
 				lcm->auth_bit, \
 				lcm->map_data_present, \
@@ -2263,8 +2236,7 @@ udp_prc_request(void *data)
 				lcm->smr_invoke_bit, \
 				lcm->irc, \
 				lcm->record_count, \
-					ntohl(lcm->lisp_nonce0), \
-				ntohl(lcm->lisp_nonce1));
+				ntohll(lcm->nonce));
 
 
 	eid_source = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr));
@@ -2630,13 +2602,12 @@ _register(void *data)
 	int pkg_len = pke->buf_len;
 	lcm = (struct map_register_hdr *)CO(packet, 0);
 	rcount = lcm->record_count;
-	cp_log(LDEBUG, "LCM: <type=%u, P=%u, M=%u, rcount=%u, nonce=0x%x - 0x%x, key id=%u, auth data length=%u\n", \
+	cp_log(LDEBUG, "LCM: <type=%u, P=%u, M=%u, rcount=%u, nonce=0x%lx, key id=%u, auth data length=%u\n", \
 				lcm->lisp_type,
 				lcm->proxy_map_reply, \
 				lcm->want_map_notify,
 				rcount, \
-				ntohl(lcm->lisp_nonce0), \
-				ntohl(lcm->lisp_nonce1), \
+				ntohll(lcm->nonce), \
 				ntohs(lcm->key_id), \
 				ntohs(lcm->auth_data_length));
 
@@ -2697,8 +2668,7 @@ _ms_recal_hashing(const void *packet, int pk_len, void *key, void *rt, int no_no
 
 	if (no_nonce) {
 		/*ignore when hashing */
-		memset((char *)&map_register->lisp_nonce0,0,4);
-		memset((char *)&map_register->lisp_nonce1,0,4);
+		memset(&map_register->nonce, 0, sizeof(map_register->nonce));
 
 	}
 
@@ -3329,7 +3299,6 @@ general_register_process(void *data)
 	struct list_t *l = NULL;
 	u_char pkbuf[PKMSIZE];
 	uint64_t	nonce;
-	uint32_t	*nonce_trick;
 	int count;
 	int buflen;
 
@@ -3412,9 +3381,7 @@ general_register_process(void *data)
 			memset(hr->auth_data, 0, hr->auth_data_length);
 
 			_make_nonce(&nonce);
-			nonce_trick = (void *)&nonce;
-			hr->lisp_nonce0 = htonl((*nonce_trick));
-			hr->lisp_nonce1 = htonl((*(nonce_trick + 1)));
+			hr->nonce = htonll(nonce);
 			memcpy(pkbuf, hr,buflen);
 			HMAC_SHA1_Init(&ctx);
 			HMAC_SHA1_UpdateKey(&ctx, (unsigned char *)ms->key, strlen((char *)ms->key));
@@ -3426,7 +3393,7 @@ general_register_process(void *data)
 
 			cp_log(LDEBUG, "Map-Register ");
 			cp_log(LDEBUG, " <");
-			cp_log(LDEBUG, "nonce=0x%x - 0x%x", ntohl(hr->lisp_nonce0), ntohl(hr->lisp_nonce1));
+			cp_log(LDEBUG, "nonce=0x%lx", ntohll(hr->nonce));
 			cp_log(LDEBUG, ">\n");
 
 			/*Send */
@@ -3531,8 +3498,7 @@ struct eid_pending {
     struct prefix *last_eid;		/* Last eid-prefix received by MR - to prevent loop*/
     int rx;                     /* Receiving socket */
     int rx6;                     /* Receiving socket */
-    uint32_t nonce0;			 /* First half of the nonce */
-    uint32_t nonce1; /* Second half of the nonce */
+	uint64_t nonce;		/* nonce */
     struct timespec start;      /* Start time of lookup */
     int count;                  /* Current count of retries */
     uint64_t active;            /* Unique lookup identifier, 0 if inactive */
@@ -3622,8 +3588,6 @@ mr_new_lookup(void *data,struct communication_fct *fct,struct db_node *rn)
     char sport_str[NI_MAXSERV]; /* source port in string format */
     struct addrinfo hints;
     struct addrinfo *res;
-	uint32_t *nonce0, *nonce1;
-	uint64_t nonce;
 	struct pk_req_entry *pke = data;
 
 	/* Find an inactive slot in the lookup table */
@@ -3716,11 +3680,7 @@ mr_new_lookup(void *data,struct communication_fct *fct,struct db_node *rn)
 	mr_lookups[i].orgi_pkg_len = pkg_len;
 	lh = mr_lookups[i].orgi_pkg;
 	lh->ddt_originated  = 1;
-	fct->request_get_nonce(pke, &nonce);
-	nonce0 = (void *)&nonce;
-	nonce1 = (uint32_t *)(nonce0+1);
-	mr_lookups[i].nonce0  = *nonce0;
-	mr_lookups[i].nonce1  = *nonce1;
+	fct->request_get_nonce(pke, &mr_lookups[i].nonce);
 
 	struct list_t *l,*lr;
 	struct list_entry_t *_iter;
@@ -3750,17 +3710,15 @@ mr_new_lookup(void *data,struct communication_fct *fct,struct db_node *rn)
 pending_request(void *data, struct communication_fct *fct, struct db_node *rn)
 {
 	uint64_t nonce;
-	uint32_t *nonce0, *nonce1;
 	int i, l;
 	struct pk_req_entry *pke = data;
 	fct->request_get_nonce(pke, &nonce);
-	nonce0  = (void *)&nonce;
-	nonce1  = (uint32_t *)(nonce0+1);
+
 	l = -1;
 
 	for (i = 0; i < MAX_LOOKUPS; i++) {
 		if (!(mr_lookups[i].active)) continue;
-		if (*nonce0 == mr_lookups[i].nonce0 && *nonce1 == mr_lookups[i].nonce1) {
+		if (nonce == mr_lookups[i].nonce) {
 			l = i;
 			break;
 		}
@@ -3804,7 +3762,6 @@ read_mr_ddt(void *enid)
 	union sockunion si;
 	struct map_referral_hdr *lcm;
 	union map_referral_record_generic *rec;		/* current record */
-	uint32_t nonce0, nonce1;
 	socklen_t sockaddr_len;
 	size_t lcm_len;
 	uint8_t rcount;
@@ -3845,10 +3802,7 @@ read_mr_ddt(void *enid)
 	}
 
 	/* check nonce for security*/
-	nonce0 = ntohl(lcm->lisp_nonce0);
-	nonce1 = ntohl(lcm->lisp_nonce1);
-
-	if (mr_lookups[idx].nonce0 != nonce0 || mr_lookups[idx].nonce1 != nonce1)
+	if (mr_lookups[idx].nonce != lcm->nonce)
 		return NULL;
 
 
@@ -3858,11 +3812,10 @@ read_mr_ddt(void *enid)
 
 		return NULL;
 	}
-	cp_log(LDEBUG, "LCM: <type=%u, rcount=%u nonce=0x%x - 0x%x>\n", \
+	cp_log(LDEBUG, "LCM: <type=%u, rcount=%u nonce=0x%lx>\n", \
 				lcm->lisp_type, \
 				rcount, \
-				ntohl(lcm->lisp_nonce0), \
-				ntohl(lcm->lisp_nonce1));
+				ntohll(lcm->nonce));
 
 	lcm_len = sizeof(struct map_referral_hdr);
 	rec = (union map_referral_record_generic *)CO(lcm, lcm_len);
@@ -3952,7 +3905,6 @@ get_mr_ddt(void *data)
 	int idx;
 	struct map_referral_hdr *lcm;
 	union map_referral_record_generic *rec;		/* current record */
-	uint32_t nonce0, nonce1;
 	size_t lcm_len;
 	uint8_t rcount;
 	size_t rlen = 0;
@@ -3968,24 +3920,18 @@ get_mr_ddt(void *data)
 	}
 
 	/* check nonce for security*/
-	nonce0 = ntohl(lcm->lisp_nonce0);
-	nonce1 = ntohl(lcm->lisp_nonce1);
 	for (idx = 0 ; idx < mr_nfds - 1; idx++) {
 		if (_debug == LDEBUG) {
-			fprintf(OUTPUT_STREAM, "idx=%d, nonce=0x%x - 0x%x>\n", \
-				idx, \
-				mr_lookups[idx].nonce0, \
-				mr_lookups[idx].nonce1);
+			fprintf(OUTPUT_STREAM, "idx=%d, nonce=0x%lx>\n", \
+				idx, mr_lookups[idx].nonce);
 		}
-		if (mr_lookups[idx].nonce0 == nonce0 && mr_lookups[idx].nonce1 == nonce1)
+		if (mr_lookups[idx].nonce == ntohll(lcm->nonce))
 			break;
 	}
 	printf("Match with idx:%d\n",idx);
 	if (_debug == LDEBUG) {
-		fprintf(OUTPUT_STREAM, "LCM: <type=%u, nonce=0x%x - 0x%x>\n", \
-				lcm->lisp_type, \
-				ntohl(lcm->lisp_nonce0), \
-				ntohl(lcm->lisp_nonce1));
+		fprintf(OUTPUT_STREAM, "LCM: <type=%u, nonce=0x%lx>\n", \
+			lcm->lisp_type, ntohll(lcm->nonce));
 	}
 
 	if (idx >= mr_nfds -1)
@@ -3999,11 +3945,8 @@ get_mr_ddt(void *data)
 		return NULL;
 	}
 	if (_debug == LDEBUG) {
-		fprintf(OUTPUT_STREAM, "LCM: <type=%u, rcount=%u nonce=0x%x - 0x%x>\n", \
-				lcm->lisp_type, \
-				rcount, \
-				ntohl(lcm->lisp_nonce0), \
-				ntohl(lcm->lisp_nonce1));
+		fprintf(OUTPUT_STREAM, "LCM: <type=%u, rcount=%u nonce=0x%lx>\n", \
+			lcm->lisp_type, rcount, ntohll(lcm->nonce));
 	}
 
 	lcm_len = sizeof(struct map_referral_hdr);
