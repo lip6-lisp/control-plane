@@ -309,7 +309,7 @@ send_mr(int idx)
 
 	/*build message header*/
 	/* set all the LISP flags  */
-	_make_nonce(&nonce);
+	nonce = _make_nonce();
 	lh->type = LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE;
 	lh->security_bit = 0;
 	lh->ddt_originated = 0;

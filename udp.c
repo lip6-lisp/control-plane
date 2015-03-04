@@ -51,10 +51,10 @@ struct communication_fct udp_fct = {\
 /* Make new nonce base on random function
  * future need new method
  */
-	void
-_make_nonce(uint64_t *nonce)
+	uint64_t
+_make_nonce()
 {
-	*nonce = (random() ^ random()) | ((random() ^ time(NULL)) << 32);
+    return ((random() ^ random()) | ((random() ^ time(NULL)) << 32));
 }
 
 /* compare two ip address
@@ -594,7 +594,6 @@ udp_register_error(void *data)
 udp_reply_add(void *data)
 {
 	struct map_reply_hdr *hdr;
-	uint64_t nonce;
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
 
@@ -605,9 +604,8 @@ udp_reply_add(void *data)
 
 	hdr = (struct map_reply_hdr *)rpk->buf;
 
-	udp_request_get_nonce(pke, &nonce);
 	hdr->lisp_type = LISP_TYPE_MAP_REPLY;
-	hdr->nonce = htonll(nonce);
+	hdr->nonce = htonll(udp_request_get_nonce(pke));
 	if (_debug == LDEBUG) {
 		/* ================================= */
 		cp_log(LDEBUG, "Map-Reply ");
@@ -989,7 +987,6 @@ udp_reply_error(void *data)
 udp_referral_add(void *data)
 {
 	struct map_referral_hdr *hdr;
-	uint64_t nonce;
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
 
@@ -999,9 +996,8 @@ udp_referral_add(void *data)
 	rpk->request_id = pke;
 
 	hdr = (struct map_referral_hdr *)rpk->buf;
-	udp_request_get_nonce(pke, &nonce);
 	hdr->lisp_type = LISP_TYPE_MAP_REFERRAL;
-	hdr->nonce = htonll(nonce);
+	hdr->nonce = htonll(udp_request_get_nonce(pke));
 
 	if (_debug == LDEBUG) {
 		/* ================================= */
@@ -1253,12 +1249,11 @@ udp_request_get_eid(void *data, struct prefix *pr)
 }
 
 /* get nonce from map-request */
-	int
-udp_request_get_nonce(void *data, uint64_t * nonce)
+	uint64_t
+udp_request_get_nonce(void *data)
 {
 	struct pk_req_entry *pke = data;
-	*nonce = pke->nonce;
-	return (TRUE);
+	return ntohll(pke->nonce);
 }
 
 /* check if map-request is ddt bit set or not */
@@ -3298,7 +3293,6 @@ general_register_process(void *data)
 	struct list_entry_t *_iter, *pr;
 	struct list_t *l = NULL;
 	u_char pkbuf[PKMSIZE];
-	uint64_t	nonce;
 	int count;
 	int buflen;
 
@@ -3380,8 +3374,7 @@ general_register_process(void *data)
 			/*Calc auth data */
 			memset(hr->auth_data, 0, hr->auth_data_length);
 
-			_make_nonce(&nonce);
-			hr->nonce = htonll(nonce);
+			hr->nonce = htonll(_make_nonce());
 			memcpy(pkbuf, hr,buflen);
 			HMAC_SHA1_Init(&ctx);
 			HMAC_SHA1_UpdateKey(&ctx, (unsigned char *)ms->key, strlen((char *)ms->key));
@@ -3680,7 +3673,7 @@ mr_new_lookup(void *data,struct communication_fct *fct,struct db_node *rn)
 	mr_lookups[i].orgi_pkg_len = pkg_len;
 	lh = mr_lookups[i].orgi_pkg;
 	lh->ddt_originated  = 1;
-	fct->request_get_nonce(pke, &mr_lookups[i].nonce);
+	mr_lookups[i].nonce = fct->request_get_nonce(pke);
 
 	struct list_t *l,*lr;
 	struct list_entry_t *_iter;
@@ -3709,16 +3702,14 @@ mr_new_lookup(void *data,struct communication_fct *fct,struct db_node *rn)
 	int
 pending_request(void *data, struct communication_fct *fct, struct db_node *rn)
 {
-	uint64_t nonce;
 	int i, l;
 	struct pk_req_entry *pke = data;
-	fct->request_get_nonce(pke, &nonce);
 
 	l = -1;
 
 	for (i = 0; i < MAX_LOOKUPS; i++) {
 		if (!(mr_lookups[i].active)) continue;
-		if (nonce == mr_lookups[i].nonce) {
+		if (fct->request_get_nonce(pke) == mr_lookups[i].nonce) {
 			l = i;
 			break;
 		}

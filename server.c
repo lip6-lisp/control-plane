@@ -115,7 +115,7 @@ _request_ddt(void *data, struct communication_fct *fct, \
 	fct->request_get_port(pke, &sport);
 
 	/* determine the nonce used by the ITR */
-	fct->request_get_nonce(pke, &nonce);
+	nonce = fct->request_get_nonce(pke);
 
 	/* determine the RLOC of the DDT server to send a request to */
 	/* get the RLOCs */

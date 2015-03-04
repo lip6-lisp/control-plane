@@ -1,7 +1,7 @@
 
 #include "lib.h"
 
-int cli_request_get_nonce(uint32_t id, uint64_t *nonce);
+uint64_t cli_request_get_nonce(uint32_t id);
 void *cli_start_communication(void *context);
 void *cli_stop_communication(void *context);
 
@@ -9,9 +9,7 @@ void *cli_stop_communication(void *context);
 	int 
 cli_reply_add(uint32_t id)
 {
-	uint64_t nonce;
-
-	cli_request_get_nonce(id, &nonce);
+	uint64_t nonce = cli_request_get_nonce(id);
 
 	printf("Map-Reply %u\n", id);
 	printf(" <");
@@ -138,14 +136,12 @@ cli_request_get_eid(uint32_t id, struct prefix *p)
 	return (TRUE);
 }
 
-	int 
-cli_request_get_nonce(uint32_t id, uint64_t *nonce)
+	uint64_t
+cli_request_get_nonce(uint32_t id)
 {
 	assert(id < MAX_INCOMING_QUEUE);
 
-	*nonce = incoming_messages[id].nonce;
-
-	return (TRUE);
+	return incoming_messages[id].nonce;
 }
 
 /* ! Map-Request handling code */

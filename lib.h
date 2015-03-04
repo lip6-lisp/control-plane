@@ -184,7 +184,7 @@ struct communication_fct {
 	   @return TRUE on success, otherwise a FALSE is returned
 	   XXX nonce is given in network byte order
 	 */
-	int (*request_get_nonce)(void *data, uint64_t *nonce);
+	uint64_t (*request_get_nonce)(void *data);
 	int (*request_is_ddt)(void *data, int *is_ddt);
 	/* Obtain a source ITR address of the request
 	   @param id request identifier
@@ -231,7 +231,7 @@ char *sk_get_ip(union sockunion *sk, char *ip);
 int sk_get_port(union sockunion *sk);
 void sk_set_port(union sockunion *sk, int port);
 void reconfigure();
-void _make_nonce(uint64_t *nonce);
+uint64_t _make_nonce();
 int _parser_config(const char *filename);
 int timespec_subtract(struct timespec *res, struct timespec *x, struct timespec *y);
 int entrycmp(void *esrc, void *edst);
