@@ -631,7 +631,7 @@ udp_reply_add_record(void *data, struct prefix *p,
 	hdr = (struct map_reply_hdr *)rpk->buf;
 	hdr->record_count++;
 	if (rpk->request_id &&
-		(mrh = (struct map_request_hdr *)((struct pk_req_entry *)rpk->request_id)->lcm) &&
+		(mrh = (struct map_request_hdr *)((struct pk_req_entry *)rpk->request_id)->buf) &&
 		mrh->rloc_probe)
 			hdr->rloc_probe = 1;
 	rec = (union map_reply_record_generic *)rpk->curs;
@@ -896,14 +896,16 @@ udp_reply_terminate(void *data)
 	socklen_t slen;
 	struct pk_req_entry *pke;
 	struct pk_rpl_entry *rpk = data;
+	struct lisp_control_hdr *lcm;
 	union sockunion itr;
 	uint16_t itr_port;
 
 	cp_log(LDEBUG, "Send Map-Reply ");
 
 	pke = rpk->request_id;
+	lcm = pke->buf;
 
-	if (pke->type != LISP_TYPE_MAP_REQUEST) {
+	if (lcm->type != LISP_TYPE_MAP_REQUEST) {
 		memcpy(&local, &pke->si, sizeof(local));
 	}else {
 		/* choose one ITR */
@@ -1253,7 +1255,8 @@ udp_request_get_eid(void *data, struct prefix *pr)
 udp_request_get_nonce(void *data)
 {
 	struct pk_req_entry *pke = data;
-	return ntohll(pke->nonce);
+	struct map_request_hdr *lcm = pke->buf;
+	return ntohll(lcm->nonce);
 }
 
 /* check if map-request is ddt bit set or not */
@@ -2025,7 +2028,6 @@ udp_get_pk(int sockfd, socklen_t slen)
 udp_preparse_pk(void *data)
 {
 	struct lisp_control_hdr *lh;
-	struct map_request_hdr *lcm;
 	struct ip *ih;
 	struct ip6_hdr *ih6;
 	struct udphdr *udph;
@@ -2053,7 +2055,7 @@ udp_preparse_pk(void *data)
 
 		switch (ih->ip_v) {
 		case 4:
-			pke->udp = udph = (struct udphdr *)CO(lh,sizeof(struct ip));
+			udph = (struct udphdr *)CO(lh,sizeof(struct ip));
 			hdr_len += sizeof(struct ip) + sizeof(struct udphdr);
 			ih_si->sin.sin_family = AF_INET;
 			#ifdef BSD
@@ -2064,7 +2066,7 @@ udp_preparse_pk(void *data)
 			ih_si->sin.sin_addr = ih->ip_src;
 			break;
 		case 6:
-			pke->udp = udph = (struct udphdr *)CO(lh,sizeof(struct ip6_hdr));
+			udph = (struct udphdr *)CO(lh,sizeof(struct ip6_hdr));
 			hdr_len += sizeof(struct ip6_hdr) + sizeof(struct udphdr);
 			ih_si->sin.sin_family = AF_INET6;
 			#ifdef BSD
@@ -2079,28 +2081,13 @@ udp_preparse_pk(void *data)
 			return -1;
 		}
 
-		lh = (struct lisp_control_hdr *)CO(udph,sizeof(struct udphdr));
+		pke->buf = (struct lisp_control_hdr *)CO(udph,sizeof(struct udphdr));
+		pke->buf_len -= hdr_len;
 	}
 
-	if (((char *)lh - (char *)pke->buf + sizeof(struct lisp_control_hdr) + _NONESIZE) > pke->buf_len )
+	if ((sizeof(struct lisp_control_hdr) + _NONESIZE) > pke->buf_len)
 		return -1;
 
-	switch (lh->type) {
-	case LISP_TYPE_MAP_REQUEST:
-	case LISP_TYPE_MAP_REPLY:
-	case LISP_TYPE_MAP_REGISTER:
-	case LISP_TYPE_MAP_NOTIFY:
-	case LISP_TYPE_MAP_REFERRAL:
-	case LISP_TYPE_INFO_MSG:
-		pke->lcm = lcm = (struct map_request_hdr *)lh;
-		pke->type = lh->type;
-		pke->nonce = ntohll(lcm->nonce);
-		break;
-	default:
-		cp_log(LDEBUG, "unsupported LISP type %hhu\n", lh->type);
-
-		return -1;
-	}
 	return 1;
 }
 
@@ -2204,7 +2191,7 @@ udp_prc_request(void *data)
 	char buf[BSIZE];
 
 	/* Encapsulated Control Message Format => decap first */
-	lcm = (struct map_request_hdr *)pke->lcm;
+	lcm = pke->buf;
 
 	if (pke->ecm) {
 		lh = (struct lisp_control_hdr *)pke->lh;

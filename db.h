@@ -82,15 +82,11 @@ struct map_entry {
 struct pk_req_entry {	
 	uint8_t ecm:1;		/*Encapsulate Message Control*/
 	uint8_t ddt:1;		/*Encapsulate Message Control*/
-	uint8_t type;  	/*type of lisp message*/
-	uint64_t nonce; /*nonce in map-request with ddt */
 	union sockunion  si; /* source address OH */
 	union sockunion  di; /* destination address OH */
 	void *lh;	/*EMC lisp header */
 	union sockunion  ih_si;/* source address IH */
 	void *ih;	/*IH ip header */
-	void *udp;	/*IH udp header */
-	void *lcm;	/*Lisp control message */
 	void *buf; /*package content */
 	struct list_t *itr;
 	struct list_t *eid;
