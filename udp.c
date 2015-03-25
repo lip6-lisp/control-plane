@@ -1850,21 +1850,86 @@ udp_init_socket()
 	return 1;
 }
 
+	void
+_lisp_process_encaps(struct pk_req_entry *pke)
+{
+	struct ip *ih;
+	struct ip6_hdr *ih6;
+	struct udphdr *udph;
+	struct lisp_control_hdr *lh;
 
+	pke->lh = (struct lisp_control_hdr *)pke->buf;
+	pke->ecm = 1;
+
+	pke->ih = ih = (struct ip *)CO(pke->lh, sizeof(struct lisp_control_hdr));
+	ih6 = (struct ip6_hdr *)CO(pke->lh, sizeof(struct lisp_control_hdr));
+
+	if ((sizeof(*pke->lh) + sizeof(struct ip) + sizeof(struct udphdr))
+	    > pke->buf_len) {
+		cp_log(LLOG, "packet too short");
+		return;
+	}
+
+	switch (ih->ip_v) {
+	case 4:
+		udph = (struct udphdr *)CO(ih, ih->ip_hl*sizeof(uint32_t));
+		pke->ih_si.sin.sin_family = AF_INET;
+		pke->ih_si.sin.sin_port = udph->uh_sport;
+		pke->ih_si.sin.sin_addr = ih->ip_src;
+		break;
+	case 6:
+		udph = (struct udphdr *)CO(ih6, sizeof(struct ip6_hdr));
+		pke->ih_si.sin.sin_family = AF_INET6;
+		pke->ih_si.sin6.sin6_port = udph->uh_sport;
+		pke->ih_si.sin6.sin6_addr = ih6->ip6_src;
+		break;
+	default:
+		cp_log(LDEBUG, "IP version not correct: Only support IPv4 and IPv6\n");
+		return;
+	}
+
+	pke->buf_len -= (char *)CO(udph, sizeof(struct udphdr)) - (char*)pke->buf ;
+	pke->buf = CO(udph, sizeof(struct udphdr));
+
+	if (pke->buf_len < sizeof(struct lisp_control_hdr)) {
+		cp_log(LLOG, "packet too short");
+		return;
+	}
+
+	lh = (struct lisp_control_hdr *)pke->buf;
+
+	switch (lh->type) {
+	case LISP_TYPE_MAP_REQUEST:
+		if (udp_prc_request(pke) <= 0) {
+			cp_log(LDEBUG, "Not a map-request.....Ignore!\n");
+			break;
+		}
+
+		if (_fncs & _FNC_XTR) {
+			xtr_generic_process_request(pke, &udp_fct);
+		} else if (generic_process_request(pke, &udp_fct) <= 0) {
+			cp_log(LDEBUG, "Forwarding mode\n");
+			_forward(pke);
+		}
+		break;
+	default:
+		cp_log(LLOG, "unsupported LISP type %hhd in an ECM\n", lh->type);
+	}
+}
 
 /* process with new message in queue */
 	void *
 _lisp_process(void *data)
 {
-	void *buf;
-	struct lisp_control_hdr *lh;
 	struct info_msg_hdr *imh;
 	struct pk_req_entry *pke = data;
+	struct lisp_control_hdr *lh = pke->buf;
 
-	udp_preparse_pk(pke);
-	buf = pke->buf;
+	if (pke->buf_len < sizeof(struct lisp_control_hdr)) {
+		cp_log(LLOG, "packet too short");
+		return NULL;
+	}
 
-	lh = (struct lisp_control_hdr *)CO(buf, 0);
 	/* action depends on the LISP type */
 	switch (lh->type) {
 		/* Map-Request or DDT Map-Request */
@@ -1882,18 +1947,7 @@ _lisp_process(void *data)
 		}
 		break;
 	case LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE:
-		/* Parse request message */
-		if (udp_prc_request(pke) <= 0) {
-			cp_log(LDEBUG, "Not a map-request.....Ignore!\n");
-			break;
-		}
-
-		if (_fncs & _FNC_XTR) {
-			xtr_generic_process_request(pke, &udp_fct);
-		} else if (generic_process_request(pke, &udp_fct) <= 0) {
-			cp_log(LDEBUG, "Forwarding mode\n");
-			_forward(pke);
-		}
+		_lisp_process_encaps(pke);
 		break;
 		/* Map-Register */
 	case LISP_TYPE_MAP_REGISTER:
@@ -2020,74 +2074,6 @@ udp_get_pk(int sockfd, socklen_t slen)
 		cp_log(LDEBUG, "unsupported LISP type %hhu\n", lh->type);
 		return -1;
 	}
-	return 1;
-}
-/* get message and push to queue */
-
-	int
-udp_preparse_pk(void *data)
-{
-	struct lisp_control_hdr *lh;
-	struct ip *ih;
-	struct ip6_hdr *ih6;
-	struct udphdr *udph;
-	uint32_t hdr_len = 0;
-	union sockunion *ih_si;
-	struct pk_req_entry *pke = data;
-
-	lh = (struct lisp_control_hdr *)CO(pke->buf, 0);
-	if (pke->buf_len < sizeof(struct lisp_control_hdr))
-		return -1;
-
-	if (lh->type == LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE) {
-		pke->lh = lh;
-		pke->ecm = 1;
-		pke->ddt = lh->ddt_originated;
-		lh = (struct lisp_control_hdr *)CO(lh, sizeof(struct lisp_control_hdr));
-		hdr_len += sizeof(struct lisp_control_hdr);
-
-		/* by pass UDP IH */
-		pke->ih = ih = (struct ip *)lh;
-		ih6 = (struct ip6_hdr *)lh;
-		ih_si = (union sockunion *)&(pke->ih_si);
-		if (((char *)ih - (char *)pke->buf + sizeof(struct ip) + sizeof(struct udphdr) ) > pke->buf_len)
-			return -1;
-
-		switch (ih->ip_v) {
-		case 4:
-			udph = (struct udphdr *)CO(lh,sizeof(struct ip));
-			hdr_len += sizeof(struct ip) + sizeof(struct udphdr);
-			ih_si->sin.sin_family = AF_INET;
-			#ifdef BSD
-				ih_si->sin.sin_port = udph->uh_sport;
-			#else
-				ih_si->sin.sin_port = udph->source;
-			#endif
-			ih_si->sin.sin_addr = ih->ip_src;
-			break;
-		case 6:
-			udph = (struct udphdr *)CO(lh,sizeof(struct ip6_hdr));
-			hdr_len += sizeof(struct ip6_hdr) + sizeof(struct udphdr);
-			ih_si->sin.sin_family = AF_INET6;
-			#ifdef BSD
-				ih_si->sin6.sin6_port = udph->uh_sport;
-			#else
-				ih_si->sin6.sin6_port = udph->source;
-			#endif
-			ih_si->sin6.sin6_addr = ih6->ip6_src;
-			break;
-		default:
-			cp_log(LDEBUG, "IP version not correct: Only support IPv4 and IPv6\n");
-			return -1;
-		}
-
-		pke->buf = (struct lisp_control_hdr *)CO(udph,sizeof(struct udphdr));
-		pke->buf_len -= hdr_len;
-	}
-
-	if ((sizeof(struct lisp_control_hdr) + _NONESIZE) > pke->buf_len)
-		return -1;
-
 	return 1;
 }
 
@@ -3652,9 +3638,7 @@ mr_new_lookup(void *data,struct communication_fct *fct,struct db_node *rn)
     mr_lookups[i].count = 0;
     mr_lookups[i].active = 1;
 	mr_lookups[i].pke = pke;
-	mr_lookups[i].orgi_pkg = pke->lh;
-	mr_lookups[i].orgi_pkg_len = pke->buf_len;
-	pkg_len = pke->buf_len - (pke->lh - pke->buf);
+	pkg_len = pke->buf_len + ((uint8_t *)pke->lh - (uint8_t *)pke->buf);
 	mr_lookups[i].orgi_pkg = calloc(pkg_len, sizeof(char));
 	memcpy(mr_lookups[i].orgi_pkg, pke->lh, pkg_len);
 	mr_lookups[i].orgi_pkg_len = pkg_len;
