@@ -2,6 +2,14 @@
 #ifndef __HAVE_MSDB_H
 	#define __HAVE_MSDB_H
 
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip6.h>
+
+#include "radix/db_prefix.h"
+
 #define	_MAPP		1
 #define	_MAPP_XTR	2
 #define _EID		4
@@ -83,7 +91,7 @@ struct pk_req_entry {
 	uint8_t ecm:1;		/*Encapsulate Message Control*/
 	union sockunion  si; /* source address OH */
 	union sockunion  di; /* destination address OH */
-	void *lh;	/*EMC lisp header */
+	struct lisp_control_hdr *lh;	/*EMC lisp header */
 	union sockunion  ih_si;/* source address IH */
 	void *ih;	/*IH ip header */
 	void *buf; /*package content */

@@ -1857,6 +1857,7 @@ _lisp_process_encaps(struct pk_req_entry *pke)
 	struct ip6_hdr *ih6;
 	struct udphdr *udph;
 	struct lisp_control_hdr *lh;
+	struct map_register_hdr *mrh;
 
 	pke->lh = (struct lisp_control_hdr *)pke->buf;
 	pke->ecm = 1;
@@ -1910,6 +1911,14 @@ _lisp_process_encaps(struct pk_req_entry *pke)
 		} else if (generic_process_request(pke, &udp_fct) <= 0) {
 			cp_log(LDEBUG, "Forwarding mode\n");
 			_forward(pke);
+		}
+		break;
+	case LISP_TYPE_MAP_REGISTER:
+		mrh = (struct map_register_hdr *)lh;
+		if ((_fncs & _FNC_RTR) && (mrh->R || pke->lh->R)) {
+			rtr_process_map_register(pke);
+		} else {
+			cp_log(LDEBUG, "unexpected ECMed Map-Register\n");
 		}
 		break;
 	default:

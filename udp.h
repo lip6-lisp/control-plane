@@ -497,13 +497,15 @@ void *udp_stop_communication(void *context);
 void *_ms_recal_hashing(const void *packet, int pk_len, void *key, void *rt, int no_nonce);
 int ms_process_info_req(struct pk_req_entry *pke);
 
+/* RTR specifique fonctions */
+int rtr_process_map_register(struct pk_req_entry *pke);
 
 /*
  * Map-Request draft-ietf-lisp-22 structures definition
  * Map encapsulated control message draft-fuller-lisp-ddt-00
  *
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-LH  |Type=8 |S|D|               Reserved                            |
+LH  |Type=8 |S|D|R|N|                 Reserved                      |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   / |                       IPv4 or IPv6 Header                     |
 IH  |                  (uses RLOC or EID addresses)                 | 
@@ -537,7 +539,8 @@ Rec +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 struct lisp_control_hdr {
 #ifdef LITTLE_ENDIAN
-	uint8_t		rsvd:2;
+	uint8_t		N:1;
+	uint8_t		R:1;
 	uint8_t		ddt_originated:1;
 	uint8_t		security_bit:1;
 	uint8_t		type:4;
@@ -545,7 +548,8 @@ struct lisp_control_hdr {
 	uint8_t		type:4;
 	uint8_t		security_bit:1;
 	uint8_t		ddt_originated:1;
-	uint8_t		rsvd:2;
+	uint8_t		R:1;
+	uint8_t		N:1;
 #endif
 	uint8_t		reserved[3];
 } __attribute__ ((__packed__));
@@ -661,7 +665,7 @@ union map_request_record_generic_lcaf {
      0                   1                   2                   3
      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |Type=3 |P|            Reserved               |M| Record Count  |
+    |Type=3 |P|  |I|       Reserved               |M| Record Count  |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     |                         Nonce . . .                           |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -689,13 +693,17 @@ d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 struct map_register_hdr {
 #ifdef LITTLE_ENDIAN
-	uint8_t		rsvd:3;
+	uint8_t		R:1; /* TODO: no longer RFC compliante */
+	uint8_t		I:1;
+	uint8_t		rsvd:1;
 	uint8_t		proxy_map_reply:1;
 	uint8_t		lisp_type:4;
 #else
 	uint8_t		lisp_type:4;
 	uint8_t		proxy_map_reply:1;
-	uint8_t		rsvd:3;
+	uint8_t		rsvd:1;
+	uint8_t		I:1;
+	uint8_t		R:1; /* TODO: no longer RFC compliante */
 #endif
     uint8_t     reserved1;
 #ifdef LITTLE_ENDIAN
