@@ -81,7 +81,6 @@ struct map_entry {
 
 struct pk_req_entry {	
 	uint8_t ecm:1;		/*Encapsulate Message Control*/
-	uint8_t ddt:1;		/*Encapsulate Message Control*/
 	union sockunion  si; /* source address OH */
 	union sockunion  di; /* destination address OH */
 	void *lh;	/*EMC lisp header */

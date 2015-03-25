@@ -185,7 +185,7 @@ struct communication_fct {
 	   XXX nonce is given in network byte order
 	 */
 	uint64_t (*request_get_nonce)(void *data);
-	int (*request_is_ddt)(void *data, int *is_ddt);
+	int (*request_is_ddt)(void *data);
 	/* Obtain a source ITR address of the request
 	   @param id request identifier
 	   @param itr ITR address in the request

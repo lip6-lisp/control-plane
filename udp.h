@@ -467,7 +467,7 @@ int udp_request_get_eid(void *data, struct prefix *p);
 
 uint64_t udp_request_get_nonce(void *data);
 
-int udp_request_is_ddt(void *data, int *is_ddt);
+int udp_request_is_ddt(void *data);
 
 int udp_request_get_itr(void *data, union sockunion *itr, int afi);
 

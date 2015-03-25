@@ -1261,12 +1261,12 @@ udp_request_get_nonce(void *data)
 
 /* check if map-request is ddt bit set or not */
 	int
-udp_request_is_ddt(void *data, int *is_ddt)
+udp_request_is_ddt(void *data)
 {
 	struct pk_req_entry *pke = data;
+	struct lisp_control_hdr *lcm = pke->buf;
 
-	*is_ddt = pke->ddt;
-	return (TRUE);
+	return lcm->ddt_originated;
 }
 
 /* get itr suit with afi, if afi = 0, choose the first in list */

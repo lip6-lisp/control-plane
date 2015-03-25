@@ -458,7 +458,6 @@ generic_process_request(void *data, struct communication_fct *fct)
 	struct db_table *table;
 	struct db_node *rn = NULL;
 	struct prefix p;
-	int is_ddt;
 	struct db_node *node = NULL;	
 	int rt;
 	struct pk_req_entry *pke = data;
@@ -467,11 +466,9 @@ generic_process_request(void *data, struct communication_fct *fct)
 	fct->request_get_eid(pke, &p);
 	table = ms_get_db_table(ms_db,&p);
 	rn = db_node_match_prefix(table, &p);
-			
-	fct->request_is_ddt(pke, &is_ddt);
 
 	/* Received DDT request */
-	if (is_ddt) {
+	if (fct->request_is_ddt(pke)) {
 		/*function of {map-register-with-DDT|DDT-node}*/
 		if (!rn) {
 			/* never happen: at least it must match with root node */				
