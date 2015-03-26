@@ -104,6 +104,7 @@ struct pk_req_entry {
 	union sockunion  di; /* destination address OH */
 	struct lisp_control_hdr *lh;	/*EMC lisp header */
 	union sockunion  ih_si;/* source address IH */
+	union sockunion  ih_di;/* destination address IH */
 	void *ih;	/*IH ip header */
 	void *buf; /*package content */
 	struct list_t *itr;

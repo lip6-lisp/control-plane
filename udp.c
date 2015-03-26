@@ -1877,12 +1877,18 @@ _lisp_process_encaps(struct pk_req_entry *pke)
 		pke->ih_si.sin.sin_family = AF_INET;
 		pke->ih_si.sin.sin_port = udph->uh_sport;
 		pke->ih_si.sin.sin_addr = ih->ip_src;
+		pke->ih_di.sin.sin_family = AF_INET;
+		pke->ih_di.sin.sin_port = udph->uh_dport;
+		pke->ih_di.sin.sin_addr = ih->ip_dst;
 		break;
 	case 6:
 		udph = (struct udphdr *)CO(ih6, sizeof(struct ip6_hdr));
 		pke->ih_si.sin.sin_family = AF_INET6;
 		pke->ih_si.sin6.sin6_port = udph->uh_sport;
 		pke->ih_si.sin6.sin6_addr = ih6->ip6_src;
+		pke->ih_di.sin.sin_family = AF_INET6;
+		pke->ih_di.sin6.sin6_port = udph->uh_dport;
+		pke->ih_di.sin6.sin6_addr = ih6->ip6_dst;
 		break;
 	default:
 		cp_log(LDEBUG, "IP version not correct: Only support IPv4 and IPv6\n");

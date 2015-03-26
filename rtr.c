@@ -16,6 +16,29 @@ search_rloc_cmp(void *rloc, void *entry)
 	int
 rtr_forward_map_register(struct pk_req_entry *pke)
 {
+	/* include ECM header in pke buffer */
+	pke->buf_len += (uint8_t *)pke->buf - (uint8_t *)pke->lh;
+	pke->buf = pke->lh;
+
+	/* set ECM header bits */
+	pke->lh->R = 0;
+	pke->lh->N = 1;
+
+	cp_log(LDEBUG, "Forward ECMed Map-Register to %s:%d\n",
+		sk_get_ip(&pke->ih_di, ip), sk_get_port(&pke->ih_di));
+
+	/* select socket for ds */
+	if (pke->ih_di.sa.sa_family != AF_INET) {
+		cp_log(LDEBUG, "unsupported address family\n");
+		return -1;
+	}
+
+	if (sendto(skfd, pke->lh, pke->buf_len, 0,
+		   &pke->ih_di.sa, sizeof(struct sockaddr_in)) == -1) {
+		cp_log(LLOG, "sendto error: %s\n", strerror(errno));
+		return -1;
+	}
+
 	return 0;
 }
 
