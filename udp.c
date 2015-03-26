@@ -2490,56 +2490,32 @@ _process_referral_record(const union map_referral_record_generic *rec, union afi
 
 /* Map-notify */
 	int
-_register_notify(void *data, struct site_info *site )
+_register_notify(struct pk_req_entry *pke, struct site_info *site)
 {
-	struct pk_req_entry *pke;
 	union sockunion ds;
-	void *buf;
-	void *pkbuf;
-	size_t pklen;
 	struct map_register_hdr *lcm;
 	size_t slen;
 	int skt;
-	HMAC_SHA1_CTX	ctx;
-	unsigned char	macbuf[BUFLEN];
-	uint16_t auth_len = HMAC_SHA1_DIGEST_LENGTH;
-	int i;
 
-	/* content of map-notify same as map-register except not include P,M bit set*/
-	pke = data;
-	buf = calloc(pke->buf_len, sizeof(char));
-	memcpy(buf,pke->buf,pke->buf_len);
-	/* set type and bit set for map-notify */
-	lcm = buf;
+	/* content of map-notify is the same as map-register except for
+	 * P, M bits */
+	lcm = pke->buf;
+
+	/* set type and bits set for map-notify */
 	lcm->lisp_type = LISP_TYPE_MAP_NOTIFY;
 	lcm->proxy_map_reply = 0;
 	lcm->want_map_notify = 0;
-	/* recal the HMAC data */
-	for (i = 0; i < auth_len; i++)
-		lcm->auth_data[i]=0;
 
-	pkbuf = calloc(pke->buf_len, sizeof(char));
-	memcpy(pkbuf,buf,pke->buf_len);
-	HMAC_SHA1_Init(&ctx);
-	HMAC_SHA1_UpdateKey(&ctx, (unsigned char *)site->key, strlen((char *)site->key));
-	HMAC_SHA1_EndKey(&ctx);
-	HMAC_SHA1_StartMessage(&ctx);
-	HMAC_SHA1_UpdateMessage(&ctx, pkbuf,pke->buf_len);
-	HMAC_SHA1_EndMessage(macbuf, &ctx);
-	for (i = 0; i < auth_len; i++) {
-		lcm->auth_data[i]=macbuf[i];
-	}
-	free(pkbuf);
+	/* compute authentication data */
+	lcm->key_id = htons(1); //HMAC-SHA-1-96
+	lcm->auth_data_length = htons(HMAC_SHA1_DIGEST_LENGTH);
+	_ms_recal_hashing(pke->buf, pke->buf_len, site->key, lcm->auth_data, 0);
+
 	memcpy(&ds, &pke->si, sizeof(union sockunion));
-	sk_set_port(&ds,LISP_CP_PORT);
-	pklen = pke->buf_len;
+	sk_set_port(&ds, LISP_CP_PORT);
 
-	if (_debug == LDEBUG) {
-		cp_log(LDEBUG, "send Map-Notify ");
-		cp_log(LDEBUG, "to %s:%d\n",
-					sk_get_ip(&ds, ip), sk_get_port(&ds) );
-		cp_log(LDEBUG, "Sending packet... ");
-	}
+	cp_log(LDEBUG, "Send Map-Notify to %s:%d\n",
+	       sk_get_ip(&ds, ip), sk_get_port(&ds));
 
 	/* select socket for ds */
 	switch ((ds.sa).sa_family ) {
@@ -2553,18 +2529,16 @@ _register_notify(void *data, struct site_info *site )
 		break;
 	default:
 		cp_log(LDEBUG, "ETR address not correct::AF_NOT_SUPPORT\n");
-		free(buf);
 		return -1;
 	}
 
-	if (sendto(skt, (char *)buf, pklen, 0, (struct sockaddr *)&(ds.sa), slen) == -1) {
-			cp_log(LDEBUG, "failed\n");
-			perror("sendto()");
-			free(buf);
-			return (-1);
+	if (sendto(skt, pke->buf, pke->buf_len, 0, &(ds.sa), slen) == -1) {
+		cp_log(LLOG, "sendto error: %s\n", strerror(errno));
+		return -1;
 	}
+
 	cp_log(LDEBUG, "done\n");
-	free(buf);
+
 	return (TRUE);
 }
 
