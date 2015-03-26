@@ -497,6 +497,10 @@ void *udp_stop_communication(void *context);
 void *_ms_recal_hashing(const void *packet, int pk_len, void *key, void *rt, int no_nonce);
 int ms_process_info_req(struct pk_req_entry *pke);
 
+int addrcmp(union sockunion *src, union sockunion *dst);
+
+size_t _get_reply_record_size(const union map_reply_record_generic *rec);
+
 /* RTR specifique fonctions */
 int rtr_process_map_register(struct pk_req_entry *pke);
 
@@ -719,6 +723,11 @@ struct map_register_hdr {
 	uint16_t	auth_data_length;
 	uint8_t		auth_data[0];
 }  __attribute__ ((__packed__));
+
+#define map_register_record_generic 	map_reply_record_generic
+#define map_register_locator 		map_reply_locator
+#define map_register_locator6 		map_reply_locator6
+#define map_register_locator_generic 	map_reply_locator_generic
 
 /*
     0                   1                   2                   3

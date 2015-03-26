@@ -85,6 +85,17 @@ struct map_entry {
 		p:1,			/* RLOC-probing locator */
 		r:1;			/* reachability bit */
 	struct list_t *pe;	/* list of pe, each pe is an pe_entry */	
+
+	/* The following fields are only used by a RTR */
+	int natted;			/* This RLOC is natted or local to this
+					 * RTR */
+	int unverified;			/* new or updated mapping but
+					 * map-notify not yet received */
+	union sockunion nat_rloc;	/* ETR's translated global RLOC */
+	union sockunion rtr_rloc;	/* RTR's RLOC which received the
+					 * Map-Register */
+	uint8_t xtr_id[16];		/* 128 bits xTR ID */
+	uint64_t nonce;
 };
 
 struct pk_req_entry {	
