@@ -478,7 +478,6 @@ void *udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		uint8_t p, uint8_t s, uint64_t nonce,\
 		const union sockunion *src, \
 		const union sockunion *dst, \
-		uint16_t source_port,\
 		const struct prefix *eid );
 
 int udp_request_ddt_terminate(void *data, const union sockunion *server, 

@@ -109,14 +109,14 @@ struct pk_req_entry {
 	void *buf; /*package content */
 	struct list_t *itr;
 	struct list_t *eid;
-	uint16_t buf_len; /*package len */
+	size_t buf_len; /*package len */
 	uint8_t ttl; /* how long exist in queue, ttl = n (n second) */
 	uint8_t hop; /* number of recue - use for map-request */
 };
 
 struct pk_rpl_entry {
 	void *buf; /*package content */
-	uint16_t buf_len;
+	size_t buf_len;
 	void *curs;
 	void *request_id;
 };

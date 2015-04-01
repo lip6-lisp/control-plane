@@ -203,7 +203,6 @@ struct communication_fct {
 			uint8_t p, uint8_t s, uint64_t nonce,\
 			const union sockunion *src, \
 			const union sockunion *dst, \
-			uint16_t source_port,\
 			const struct prefix *eid );
 	/* Indicates that the request has been processed completely */
         int (*request_terminate)(void *data);

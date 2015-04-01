@@ -1,6 +1,8 @@
 #include "lib.h"
 #include "udp.h"
 
+static uint16_t ip_id = 0;
+
 uint32_t udp_prc_request(void *data);
 uint32_t _register(void *data);
 uint32_t _referral(void *data);
@@ -303,27 +305,114 @@ _afi_address_str(const union afi_address_generic *addr, char *buf, size_t len)
 	return ret;
 }
 
-/* convert union sockunio to afi_address */
-
+/* given afi, get the IP header length */
 	int
-_sockunion_to_afi_address(const union sockunion *su, union afi_address_generic *afi_address)
+get_ip_hdr_len(const union sockunion *addr)
 {
-	bzero(afi_address, sizeof(union afi_address_generic));
-	switch (su->sa.sa_family) {
+	switch (addr->sa.sa_family) {
 	case AF_INET:
-		afi_address->ip.afi = htons(LISP_AFI_IP);
-		memcpy(&((afi_address->ip).address), &((su->sin).sin_addr), sizeof(struct in_addr));
+		return(sizeof(struct ip));
+	case AF_INET6:
+		return(sizeof(struct ip6_hdr));
+	default:
+		cp_log(LLOG, "get_ip_hdr_len: unknown AFI (%d)",
+		       addr->sa.sa_family);
+		return - 1;
+	}
+}
+
+/* generate checksum of IP header; nwords is the length of the header measured in 16-bit words */
+	uint16_t
+ip_checksum (uint16_t *buf, int nwords)
+{
+	unsigned long sum;
+
+	for (sum = 0; nwords > 0; nwords--)
+		sum += *buf++;
+
+	sum = (sum >> 16) + (sum & 0xffff);
+	sum += (sum >> 16);
+	return ~sum;
+}
+
+/* build encapsulated control message */
+	uint8_t *
+build_encap_pkt(uint8_t *pkt, size_t pkt_len, void *lisp_oh,
+		size_t lisp_oh_len, const union sockunion *src,
+		const union sockunion *dst, size_t *buf_len)
+{
+	uint8_t *buf;
+	size_t ecm_hdr_len, iph_len;
+	struct ip *iph;
+	struct ip6_hdr *ip6h;
+	struct udphdr *udph;
+
+	if (src->sa.sa_family != dst->sa.sa_family) {
+		cp_log(LLOG, "different source and destination afi\n");
+		return NULL;
+	}
+
+	iph_len = get_ip_hdr_len(src);
+
+	ecm_hdr_len = lisp_oh_len + iph_len + sizeof(*udph);
+	*buf_len = ecm_hdr_len + pkt_len;
+
+	buf = calloc(*buf_len, sizeof(uint8_t));
+	if (!buf) {
+		cp_log(LLOG, "memory allocation error: %s\n", strerror(errno));
+		return NULL;
+	}
+
+	/* add lisp header*/
+	memcpy(buf, lisp_oh, lisp_oh_len);
+
+	/* set IP parameters */
+	switch (src->sa.sa_family) {
+	case AF_INET:
+		iph = (struct ip *)CO(buf, lisp_oh_len);
+		iph->ip_hl	   = 5;
+		iph->ip_v	   = IPVERSION;
+		iph->ip_tos	   = 0;
+		iph->ip_len	   = htons(iph_len + sizeof(*udph) + pkt_len);
+		iph->ip_id	   = htons(ip_id++);
+		iph->ip_off	   = 0;
+		iph->ip_ttl	   = 255;
+		iph->ip_p	   = IPPROTO_UDP;
+		iph->ip_src.s_addr = src->sin.sin_addr.s_addr;
+		iph->ip_dst.s_addr = dst->sin.sin_addr.s_addr;
+		iph->ip_sum	   = 0;
+		iph->ip_sum	   = ip_checksum((uint16_t *)iph, (iph->ip_hl)*2);
+		udph = (struct udphdr *)CO(iph, iph_len);
+		udph->uh_sport = src->sin.sin_port;
 		break;
 	case AF_INET6:
-		afi_address->ip6.afi = htons(LISP_AFI_IPV6);
-		memcpy(&((afi_address->ip6).address), &((su->sin6).sin6_addr), sizeof(struct in6_addr));
+		ip6h = (struct ip6_hdr *)CO(buf, lisp_oh_len);
+		ip6h->ip6_vfc	= (6 << 4);
+		ip6h->ip6_plen  = htons(sizeof(*udph) + pkt_len);
+		ip6h->ip6_nxt	= IPPROTO_UDP;
+		ip6h->ip6_hops	= 255;
+		memcpy(&ip6h->ip6_src, &src->sin6.sin6_addr,
+		       sizeof(struct in6_addr));
+		memcpy(&ip6h->ip6_dst, &dst->sin6.sin6_addr,
+		       sizeof(struct in6_addr));
+		udph = (struct udphdr *)CO(ip6h, iph_len);
+		udph->uh_sport = src->sin6.sin6_port;
 		break;
 	default:
-		assert(0);
-		cp_log(LDEBUG, "AFI not supported union sockunion to afi_address\n");
-		return (FALSE);
+		cp_log(LLOG, "unsupported address family\n");
+		free(buf);
+		return NULL;
 	}
-	return (TRUE);
+
+	/* set the UDP parameters */
+	udph->uh_dport = htons(LISP_CP_PORT);
+	udph->uh_ulen = htons(sizeof(*udph) + pkt_len);
+	udph->uh_sum = 0;
+
+	/* copy original lisp control message at the end */
+	memcpy(buf + ecm_hdr_len, pkt, pkt_len);
+
+	return buf;
 }
 
 /*------------Main functions: Reply------------- */
@@ -1333,20 +1422,6 @@ udp_request_get_port(void *data, uint16_t *port)
 	return (TRUE);
 }
 
-/* generate checksum of IP header; nwords is the length of the header measured in 16-bit words */
-	uint16_t
-ip_checksum (uint16_t *buf, int nwords)
-{
-	unsigned long sum;
-
-	for (sum = 0; nwords > 0; nwords--)
-		sum += *buf++;
-
-	sum = (sum >> 16) + (sum & 0xffff);
-	sum += (sum >> 16);
-	return ~sum;
-}
-
 /* make a new map-request message -	EMC package */
 	void *
 udp_request_add(void *data, uint8_t security, uint8_t ddt,\
@@ -1354,57 +1429,26 @@ udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		uint8_t p, uint8_t s, uint64_t nonce,\
 		const union sockunion *src,\
 		const union sockunion *dst,\
-		uint16_t source_port,\
 		const struct prefix *eid)
 {
 	size_t itr_size;
-	size_t ip_len;
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
-	/* the different parts of the packet */
-	/* type 8 encapsulation part */
-	struct lisp_control_hdr *lh;
-	struct ip *ih;	/*set source and destination IPs */
-	struct ip6_hdr *ih6;
-	struct udphdr *udp /* dst port 4342 */;
-	/* map request part */
-	/* type 1 */
 	struct map_request_hdr *lcm;
 	union afi_address_generic *itr_rloc;
 	//union map_request_record_generic_lcaf * rec;
 	union map_request_record_generic *rec;
-	union afi_address_generic afi_addr_src, afi_addr_dst;
+	struct lisp_control_hdr lh;
+	uint8_t *buf;
 
 	rpk = _get_rpl_pool_place();
 	rpk->curs = rpk->buf;
 	rpk->buf_len = 0;
 	rpk->request_id = pke;
 
-	_sockunion_to_afi_address(src, &afi_addr_src);
-	_sockunion_to_afi_address(dst, &afi_addr_dst);
-
-	/* point to the correct place in the packet */
-	lh = (struct lisp_control_hdr *)rpk->buf;
-	ih = (struct ip *)CO(lh, sizeof(struct lisp_control_hdr));
-	ih6 = (struct ip6_hdr *)CO(lh, sizeof(struct lisp_control_hdr));
-
-	switch (eid->family) {
-	case AF_INET:
-		udp = (struct udphdr *)CO(ih, sizeof(struct ip));
-		break;
-	case AF_INET6:
-		udp = (struct udphdr *)CO(ih, sizeof(struct ip6_hdr));
-		break;
-	default:
-		cp_log(LDEBUG, "AF not support, ignore \n");
-		return NULL;
-	}
-	lcm = (struct map_request_hdr*)CO(udp, sizeof(struct udphdr));
+	lcm = (struct map_request_hdr*)rpk->buf;
 
 	/* set all the LISP flags  */
-	lh->type = LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE;
-	lh->security_bit = security;
-	lh->ddt_originated = ddt;
 	lcm->lisp_type = LISP_TYPE_MAP_REQUEST;
 	lcm->auth_bit = A;
 	lcm->map_data_present = M;
@@ -1468,51 +1512,18 @@ udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		return NULL;
 	}
 
-	/* set the UDP parameters */
-#ifdef BSD
-	udp->uh_sport = htons(source_port);
-	udp->uh_dport = htons(LISP_CP_PORT);
-	udp->uh_ulen = htons((uint8_t *)rpk->curs - (uint8_t *) udp);
-	udp->uh_sum = 0;
-#else
-	udp->source = htons(source_port);
-	udp->dest = htons(LISP_CP_PORT);
-	udp->len = htons((uint8_t *)rpk->curs - (uint8_t *) udp );
-	udp->check = 0;
-#endif
-
-	/* setup the IP parameters */
-	switch (eid->family) {
-	case AF_INET:
-		ip_len = (uint8_t *)rpk->curs - (uint8_t *) ih;
-		ih->ip_hl         = 5;
-		ih->ip_v          = 4;
-		ih->ip_tos        = 0;
-		ih->ip_len        = htons(ip_len);
-		ih->ip_id         = htons(0);
-		ih->ip_off        = 0;
-		ih->ip_ttl        = 255;
-		ih->ip_p          = IPPROTO_UDP;
-		ih->ip_sum        = 0;
-		ih->ip_src.s_addr = afi_addr_src.ip.address.s_addr;
-		ih->ip_dst.s_addr = afi_addr_dst.ip.address.s_addr;
-		ih->ip_sum	  = ip_checksum((uint16_t *)ih, (ih->ip_hl)*2);
-		break;
-	case AF_INET6:
-		ip_len = (uint8_t *)rpk->curs - (uint8_t *) udp;
-		ih6->ip6_vfc	  = 0x6E; //version
-		ih6->ip6_plen	  = htons(ip_len); //payload length
-		ih6->ip6_nxt      = IPPROTO_UDP;//nex header
-		ih6->ip6_hlim     = 64; //hop limit
-		memcpy(&ih6->ip6_src, &afi_addr_src.ip6.address, sizeof(struct in6_addr));
-		memcpy(&ih6->ip6_dst, &afi_addr_dst.ip6.address, sizeof(struct in6_addr));
-		break;
-	default:
-		cp_log(LDEBUG, "AF not support, ignore \n");
+	/* add LISP ECM part */
+	memset(&lh , 0, sizeof(lh));
+	lh.type = LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE;
+	lh.security_bit = security;
+	lh.ddt_originated = ddt;
+	buf = build_encap_pkt(rpk->buf, rpk->buf_len, &lh, sizeof(lh),
+			      src, dst, &rpk->buf_len);
+	if (!buf)
 		return NULL;
-	}
+	free(rpk->buf);
+	rpk->buf = buf;
 
-	rpk->buf_len = (char *)rpk->curs - (char *)rpk->buf;
 	if (_debug == LDEBUG) {
 		/* ================================= */
 		cp_log(LDEBUG, "Map-Request-Referral ");

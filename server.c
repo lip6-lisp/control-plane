@@ -85,8 +85,6 @@ _request_ddt(void *data, struct communication_fct *fct, \
 	struct list_t *l = NULL;
 	struct map_entry *e;
 	union sockunion dst;		/* inner packet destination header */
-	union sockunion itr;		/* ITR address*/
-	uint16_t sport;			/* ITR source port */
 	struct mapping_flags *mflags;
 	struct pk_req_entry *pke = data;
 	
@@ -108,11 +106,6 @@ _request_ddt(void *data, struct communication_fct *fct, \
 		fct->referral_error(pke);
 		return (FALSE);
 	}
-
-	/* determine the ITR address */
-	memcpy(&itr,&pke->ih_si,sizeof(union sockunion));
-	/* determine the ITR source port */
-	fct->request_get_port(pke, &sport);
 
 	/* determine the nonce used by the ITR */
 	nonce = fct->request_get_nonce(pke);
@@ -165,14 +158,13 @@ _request_ddt(void *data, struct communication_fct *fct, \
 	/* lcm flags: S=0, D=1
 	 * Map-Request flags: A=1 M=0 P=0 S=0 p=0 s=0
 	 * nonce
-	 * inner packet src address: itr
+	 * inner packet src address and port: itr
 	 * inner packet dst address: eid-prefix
-	 * inner packet source port: sport
 	 * EID prefix: eid
 	 */
 	struct pk_rpl_entry *rpk = fct->request_add(pke, 0, 1, 1, 0, 0, 0,
-						    0, 0, nonce, &itr,
-						    &dst, sport, &eid);
+						    0, 0, nonce, &pke->ih_si,
+						    &dst, &eid);
 	 
 	if (!rpk) {
 		fct->referral_error(pke);
