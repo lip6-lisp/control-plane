@@ -14,7 +14,8 @@ size_t _process_referral_record(const union map_referral_record_generic *rec,
 								struct db_node **node);
 int  _ms_validate_register(struct lisp_db *db, const void *packet, int pkg_len, void **site_ptr);
 void _ms_clean_site_mapping(struct list_entry_t *site);
-size_t _ms_process_register_record(const union map_reply_record_generic *rec,uint8_t proxy_map_repl );
+size_t _ms_process_register_record(const union map_reply_record_generic *rec,
+				   uint8_t proxy_map_repl, uint8_t *xtr_id);
 
 void *general_register_process(void *data);
 void *mr_event_loop(void *context);
@@ -1548,6 +1549,7 @@ udp_request_ddt_terminate(void *data, const union sockunion *server, char termin
 	/* for testing: fix soure of map-request-ddt to 4342 */
 	if ((server->sa).sa_family == AF_INET) {
 		skt = skfd;
+
 		(servaddr.sin).sin_port=ntohs(LISP_CP_PORT);
 		slen = sizeof(struct sockaddr_in);
 	}else if ((server->sa).sa_family == AF_INET6) {
@@ -1934,6 +1936,9 @@ _lisp_process_encaps(struct pk_req_entry *pke)
 		mrh = (struct map_register_hdr *)lh;
 		if ((_fncs & _FNC_RTR) && (mrh->R || pke->lh->R)) {
 			rtr_process_map_register(pke);
+		} else if ((_fncs & _FNC_MS) && pke->lh->N &&
+			   mrh->want_map_notify) {
+			_register(pke);
 		} else {
 			cp_log(LDEBUG, "unexpected ECMed Map-Register\n");
 		}
@@ -2503,24 +2508,40 @@ _process_referral_record(const union map_referral_record_generic *rec, union afi
 	int
 _register_notify(struct pk_req_entry *pke, struct site_info *site)
 {
+	uint8_t *buf;
 	union sockunion ds;
-	struct map_register_hdr *lcm;
+	struct map_notify_hdr *lcm;
+	uint8_t xtr_id_pres = ((struct map_register_hdr *)pke->buf)->I;
 	size_t slen;
 	int skt;
 
 	/* content of map-notify is the same as map-register except for
-	 * P, M bits */
+	 * type and bits set */
 	lcm = pke->buf;
+	memset(lcm, 0, 3 * sizeof(uint8_t));
 
 	/* set type and bits set for map-notify */
 	lcm->lisp_type = LISP_TYPE_MAP_NOTIFY;
-	lcm->proxy_map_reply = 0;
-	lcm->want_map_notify = 0;
+	lcm->I = xtr_id_pres;
 
 	/* compute authentication data */
 	lcm->key_id = htons(1); //HMAC-SHA-1-96
 	lcm->auth_data_length = htons(HMAC_SHA1_DIGEST_LENGTH);
 	_ms_recal_hashing(pke->buf, pke->buf_len, site->key, lcm->auth_data, 0);
+
+	/* add LISP ECM part */
+	if (pke->ecm) {
+		struct lisp_control_hdr lh;
+		memset(&lh , 0, sizeof(lh));
+		lh.type = LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE;
+		lh.R = pke->lh->N;
+		buf = build_encap_pkt(pke->buf, pke->buf_len, &lh, sizeof(lh),
+				      &pke->ih_di, &pke->ih_si, &pke->buf_len);
+		if (!buf)
+			return -1;
+		free(pke->buf);
+		pke->buf = buf;
+	}
 
 	memcpy(&ds, &pke->si, sizeof(union sockunion));
 	sk_set_port(&ds, LISP_CP_PORT);
@@ -2568,6 +2589,7 @@ _register(void *data)
 	void *packet = pke->buf;
 	int rt;
 	int pkg_len = pke->buf_len;
+	uint8_t *xtr_id = NULL;
 	lcm = (struct map_register_hdr *)CO(packet, 0);
 	rcount = lcm->record_count;
 	cp_log(LDEBUG, "LCM: <type=%u, P=%u, M=%u, rcount=%u, nonce=0x%lx, key id=%u, auth data length=%u\n", \
@@ -2581,6 +2603,9 @@ _register(void *data)
 
 	lcm_len = sizeof(struct map_register_hdr) + ntohs(lcm->auth_data_length);
 	packet_len = lcm_len;
+
+	if (lcm->I)
+		xtr_id = (uint8_t *)(pke->buf + pke->buf_len - (16 + 8)); /* 128bits xTR-ID + 64bits site-ID */
 
 	if ((rt = _ms_validate_register(ms_db, packet, pkg_len, (void *)&site)) >=0 ) {
 		/* update */
@@ -2597,7 +2622,7 @@ _register(void *data)
 			/* ==================== RECORDs ========================= */
 			size_t rlen = 0;
 			while (rcount--) {
-				rlen = _ms_process_register_record(rec, proxy_flg);
+				rlen = _ms_process_register_record(rec, proxy_flg, xtr_id);
 				packet_len += rlen;
 				rec = (union map_reply_record_generic *)CO(rec, rlen);
 			}
@@ -2974,7 +2999,7 @@ _ms_generic_mapping_new(struct db_table *tb, struct prefix *eid)
 
 /* Update a mapping */
 	size_t
-_ms_process_register_record(const union map_reply_record_generic *rec, uint8_t proxy_map_repl)
+_ms_process_register_record(const union map_reply_record_generic *rec, uint8_t proxy_map_repl, uint8_t *xtr_id)
 {
 	size_t rlen;
 	union map_reply_locator_generic *loc;
@@ -3080,6 +3105,8 @@ _ms_process_register_record(const union map_reply_record_generic *rec, uint8_t p
 		entry->r = loc->rloc.R;
 		entry->L =loc->rloc.L;
 		entry->p = loc->rloc.p;
+		if (xtr_id)
+			memcpy(entry->xtr_id, xtr_id, sizeof(entry->xtr_id));
 
 
 		lcaf = (struct lcaf_hdr *)&loc->rloc.rloc_afi;
