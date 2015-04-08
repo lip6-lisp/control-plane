@@ -1943,6 +1943,13 @@ _lisp_process_encaps(struct pk_req_entry *pke)
 			cp_log(LDEBUG, "unexpected ECMed Map-Register\n");
 		}
 		break;
+	case LISP_TYPE_MAP_NOTIFY:
+		if ((_fncs & _FNC_RTR) && pke->lh->R) {
+			rtr_process_map_notify(pke);
+		} else {
+			cp_log(LDEBUG, "unexpected ECMed Map-Notify\n");
+		}
+		break;
 	default:
 		cp_log(LLOG, "unsupported LISP type %hhd in an ECM\n", lh->type);
 	}

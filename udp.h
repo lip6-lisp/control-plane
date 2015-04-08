@@ -502,6 +502,7 @@ size_t _get_reply_record_size(const union map_reply_record_generic *rec);
 
 /* RTR specifique fonctions */
 int rtr_process_map_register(struct pk_req_entry *pke);
+int rtr_process_map_notify(struct pk_req_entry *pke);
 
 /*
  * Map-Request draft-ietf-lisp-22 structures definition
@@ -775,6 +776,11 @@ struct map_notify_hdr {
 	uint16_t	auth_data_length;
 	uint8_t		auth_data[0];
 }  __attribute__ ((__packed__));
+
+#define map_notify_record_generic 	map_reply_record_generic
+#define map_notify_locator 		map_reply_locator
+#define map_notify_locator6 		map_reply_locator6
+#define map_notify_locator_generic 	map_reply_locator_generic
 
 /*
     0                   1                   2                   3

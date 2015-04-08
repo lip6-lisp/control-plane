@@ -230,3 +230,144 @@ rtr_process_map_register(struct pk_req_entry *pke)
 
 	return rtr_forward_map_register(pke);
 }
+
+	int
+rtr_send_data_map_notify(struct pk_req_entry *pke, union sockunion *dest)
+{
+	return 0;
+}
+
+	int
+rtr_process_map_notify(struct pk_req_entry *pke)
+{
+	struct map_notify_hdr *lcm = (struct map_notify_hdr *)pke->buf;
+	union map_notify_record_generic *rec;
+	uint8_t *xtr_id;
+	struct db_table *db;
+	struct db_node *mapping;
+	struct prefix eid;
+	union map_notify_locator_generic *loc;
+	union sockunion *dest = NULL;
+	uint8_t lcount;
+	size_t len;
+	int local_rloc_pass = 0;
+	struct map_entry *me;
+	struct list_entry_t *le, *le_tmp;
+
+	if (lcm->record_count > 1) {
+		cp_log(LDEBUG, "ECMed Map_Notify should have only one mapping record\n");
+		return -1;
+	}
+
+	if (!lcm->I) {
+		cp_log(LDEBUG, "ECMed Map_Notify record should have an xTR-ID\n");
+		return -1;
+	}
+
+	xtr_id = (uint8_t *)pke->buf + pke->buf_len - (16 + 8); /* 128bits xTR-ID + 64bits site-ID */
+
+	rec = (union map_notify_record_generic *)CO(lcm,
+				sizeof(*lcm) + ntohs(lcm->auth_data_length));
+
+	/* get EID-prefix */
+	memset(&eid, 0, sizeof(eid));
+	switch (ntohs(rec->record.eid_prefix_afi)) {
+	case LISP_AFI_IP:
+		eid.family = AF_INET;
+		eid.u.prefix4 = rec->record.eid_prefix;
+		break;
+	case LISP_AFI_IPV6:
+		eid.family = AF_INET6;
+		eid.u.prefix6 = rec->record6.eid_prefix;
+		break;
+	default:
+		cp_log(LDEBUG, "unsuported address family\n");
+		return -1;
+	}
+	eid.prefixlen = rec->record.eid_mask_len;
+
+	/* find node */
+	db = ms_get_db_table(ms_db, &eid);
+	mapping = db_node_match_prefix(db, &eid);
+	if (mapping) {
+		while (mapping != db->top && !ms_node_is_type(mapping, _MAPP))
+			mapping = mapping->parent;
+	}
+
+	if(!mapping || mapping == db->top) {
+		cp_log(LDEBUG, "no mapping found for EID prefix %s\n",
+		       prefix2str(&eid));
+		return -1;
+	}
+
+	lcount = rec->record.locator_count;
+	len = _get_reply_record_size(rec);
+	loc = (union map_notify_locator_generic *)CO(rec, 0);
+	while (len? lcount-- : lcount) {
+		struct list_entry_t *le;
+		union sockunion rloc;
+
+		loc = (union map_notify_locator_generic *)CO(loc, len);
+		len = sizeof(struct map_register_locator);
+
+		if (ntohs(loc->rloc.rloc_afi) != LISP_AFI_IP) {
+			cp_log(LDEBUG, "Unsupporte AFI for an ETR behind a NAT\n");
+			return -1;
+		}
+
+		/* Reachable locator that is no this RTR's RLOC, skip */
+		if (memcmp(&pke->di.sin.sin_addr, &loc->rloc.rloc,
+			   sizeof(struct in_addr)) != 0 && loc->rloc.R)
+			continue;
+
+		/* do two pass for the RTR's RLOC : first for the implicit
+		 * ETR's natted RLOC then for the RTR's local RLOC */
+		if (loc->rloc.R && local_rloc_pass == 0) {
+			memcpy(&rloc.sin.sin_addr, &pke->ih_di.sin.sin_addr,
+			       sizeof(struct in_addr));
+			local_rloc_pass ++;
+			len = 0;
+		} else {
+			memcpy(&rloc.sin.sin_addr, &loc->rloc.rloc,
+			       sizeof(struct in_addr));
+		}
+		rloc.sin.sin_family = AF_INET;
+
+		le = list_search(mapping->info, &rloc, search_rloc_cmp);
+		if (!le)
+			continue;
+
+		me = le->data;
+		if (memcmp(me->xtr_id, xtr_id, sizeof(me->xtr_id)) != 0 ||
+		    me->nonce != ntohll(lcm->nonce))
+			continue;
+
+		me->unverified = 0;
+
+		/* global translated RLOC */
+		if (len == 0)
+			dest = &me->nat_rloc;
+	}
+
+	/* purge unverified rlocs of this xTR (xTR-ID) */
+	le = ((struct list_t *)mapping->info)->head.next;
+	while(le != &((struct list_t *)mapping->info)->tail) {
+		me = le->data;
+		le_tmp = le;
+		le = le->next;
+		if (memcmp(me->xtr_id, xtr_id, sizeof(me->xtr_id)) == 0 &&
+		    me->unverified) {
+			cp_log(LDEBUG, "Remove unverified RLOC: %s",
+			       sk_get_ip(&me->rloc, ip));
+			list_remove(mapping->info, le_tmp, NULL);
+			free(me);
+		}
+	}
+
+	if (!dest) {
+		cp_log(LDEBUG, "could not found destination nat rloc\n");
+		return -1;
+	}
+
+	return rtr_send_data_map_notify(pke, dest);
+}
