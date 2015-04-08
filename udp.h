@@ -498,6 +498,10 @@ int ms_process_info_req(struct pk_req_entry *pke);
 
 int addrcmp(union sockunion *src, union sockunion *dst);
 
+uint8_t *build_encap_pkt(uint8_t *pkt, size_t pkt_len, void *lisp_oh,
+			 size_t lisp_oh_len, const union sockunion *src,
+			 const union sockunion *dst, size_t *buf_len);
+
 size_t _get_reply_record_size(const union map_reply_record_generic *rec);
 
 /* RTR specifique fonctions */
@@ -839,5 +843,38 @@ struct info_msg_hdr {
 
 #define info_msg_ttl_t uint32_t
 #define info_msg_eid map_request_record_generic
+
+/*
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |N|L|E|V|I|flags|            Nonce/Map-Version                  |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                 Instance ID/Locator-Status-Bits               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*/
+
+struct lisp_data_hdr {
+#ifdef LITTLE_ENDIAN
+	uint8_t		flags:3;
+	uint8_t		I:1;
+	uint8_t		V:1;
+	uint8_t		E:1;
+	uint8_t		L:1;
+	uint8_t		N:1;
+#else
+	uint8_t		N:1;
+	uint8_t		L:1;
+	uint8_t		E:1;
+	uint8_t		V:1;
+	uint8_t		I:1;
+	uint8_t		flags:3;
+#endif
+	uint8_t		nonce[3];
+	uint8_t		instance_id[3];
+	uint8_t		lsbs;
+}  __attribute__ ((__packed__));
+
+#define DATA_MAP_NOTIFY_INSTANCE_ID 0xFFFFFF
 
 #endif

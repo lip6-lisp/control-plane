@@ -234,6 +234,43 @@ rtr_process_map_register(struct pk_req_entry *pke)
 	int
 rtr_send_data_map_notify(struct pk_req_entry *pke, union sockunion *dest)
 {
+	struct lisp_data_hdr ldh;
+	unsigned int instance_id = DATA_MAP_NOTIFY_INSTANCE_ID;
+	uint8_t *buf;
+	size_t buf_len;
+	char ip2[INET6_ADDRSTRLEN];
+
+	/* prepare lisp data header*/
+	memset(&ldh , 0, sizeof(ldh));
+	ldh.I = 1;
+	memcpy(ldh.instance_id, &instance_id, sizeof(ldh.instance_id));
+
+	/* encapsulate map-notify in the lisp_data_header */
+	buf = build_encap_pkt(pke->buf, pke->buf_len, &ldh, sizeof(ldh),
+			      &pke->ih_si, &pke->ih_di, &buf_len);
+	if (!buf)
+		return -1;
+
+	cp_log(LDEBUG, "Forward ECMed Map-Notify to %s:%d via %s:%d\n",
+	       sk_get_ip(&pke->ih_di, ip), sk_get_port(&pke->ih_di),
+	       sk_get_ip(dest, ip2), sk_get_port(dest));
+
+	/* select socket */
+	if (dest->sa.sa_family != AF_INET) {
+		cp_log(LDEBUG, "unsupported address family\n");
+		free(buf);
+		return -1;
+	}
+
+	if (sendto(skfd, buf, buf_len, 0, &dest->sa,
+		   sizeof(struct sockaddr_in)) == -1) {
+		cp_log(LLOG, "sendto error: %s\n", strerror(errno));
+		free(buf);
+		return -1;
+	}
+
+	free(buf);
+
 	return 0;
 }
 
