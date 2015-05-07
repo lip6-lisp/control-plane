@@ -1,6 +1,11 @@
 #include "lib.h"
 #include "db.h"
 #include "udp.h"
+#ifdef OPENLISP
+#include "plugin_openlisp.h"
+#include <net/lisp/lisp.h>
+#include <net/lisp/maptables.h>
+#endif
 
 	int
 search_rloc_cmp(void *rloc, void *entry)

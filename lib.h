@@ -224,8 +224,6 @@ int xtr_generic_process_request(void *data, struct communication_fct *fct);
 int pending_request(void *data, struct communication_fct *fct, struct db_node *rn);
 int udp_init_socket();
 int udp_preparse_pk(void *data);
-extern void *plugin_openlisp(void *data);
-
 char *sk_get_ip(union sockunion *sk, char *ip);
 int sk_get_port(union sockunion *sk);
 void sk_set_port(union sockunion *sk, int port);
