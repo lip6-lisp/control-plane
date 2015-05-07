@@ -280,6 +280,137 @@ rtr_send_data_map_notify(struct pk_req_entry *pke, union sockunion *dest)
 }
 
 	int
+rtr_opl_add_rloc(void *buf, struct db_node *mapp)
+{
+	void *mcm;
+	struct map_msghdr *mhdr;
+	struct list_t *rl_list = (struct list_t *)mapp->info;
+	struct list_entry_t *rl_entry;
+	struct map_entry *rl;
+	struct rloc_mtx *mx;
+	union sockunion *rloc, *skp;
+
+	if (!rl_list || rl_list->count == 0) {
+		cp_log(LLOG, "mapping should at least have on associated rloc\n");
+		return -1;
+	}
+
+	mhdr = (struct map_msghdr *)buf;
+	mhdr->map_rloc_count = 0;
+	mcm = CO(buf, mhdr->map_msglen);
+
+	rl_entry = rl_list->head.next;
+	while (rl_entry != &rl_list->tail) {
+		rl = (struct map_entry *)rl_entry->data;
+		uint16_t flags = 0;
+
+		if (rl->natted && rl->r) { /* RTR RLOC */
+			/* add local RTR RLOC */
+			/*rloc = &rl->rtr_rloc;
+			flags |= RLOCF_LIF | RLOCF_UP;*/
+			rl_entry = rl_entry->next;
+			continue;
+		} else if (rl->natted && !rl->r) { /* Natted RLOC */
+			/* add translated global RLOC (with priority) */
+			rloc = &rl->nat_rloc;
+			flags |= RLOCF_UP;
+		} else {
+			/* add RLOC */
+			rloc = &rl->rloc;
+			flags |= rl->r? RLOCF_UP:0;
+		}
+
+		skp = mcm;
+
+		memcpy(skp, rloc, SA_LEN(rloc->sa.sa_family));
+		skp->sa.sa_len = SA_LEN(rloc->sa.sa_family);
+		mx = (struct rloc_mtx *)CO(skp, SS_LEN(skp));
+		mx->priority = rl->priority;
+		mx->weight = rl->weight;
+		mx->flags |= flags;
+
+		mcm = CO(mx, sizeof(struct rloc_mtx));
+		mhdr->map_rloc_count++;
+
+		rl_entry = rl_entry->next;
+	}
+
+	mhdr->map_msglen = (char *)mcm - (char *)mhdr;
+	return mhdr->map_msglen;
+}
+
+	int
+rtr_opl_update(struct db_node *mapp)
+{
+#ifdef OPENLISP
+	static int sock = -1;
+	void *buf;
+	int buf_len;
+
+	if (sock < 0) {
+		sock = socket(PF_MAP, SOCK_RAW, 0);
+		if (sock < 0) {
+			cp_log(LLOG, "could not open mapping socket: %s\n",
+			       strerror(errno));
+			return -1;
+		}
+	}
+
+	/* Delete mapping */
+	buf = opl_new_msg(MAPM_VERSION,	MAPM_DELETE, MAPF_UP, MAPA_EID);
+
+	buf_len = opl_add_mapp(buf, mapp);
+	if (buf_len <= 0) {
+		free(buf);
+		return -1;
+	}
+
+	cp_log(LLOG, "Delete eid %s mapping from cache\n", prefix2str(&mapp->p));
+
+	/* send to openlisp data-plane */
+	if (write(sock, buf, buf_len) < 1 && errno != ESRCH) {
+		cp_log(LLOG, "failed to delete mapping from cache");
+		opl_errno(errno);
+		free(buf);
+		return -1;
+	}
+
+	/* Add mapping */
+	if (!mapp->info) {
+		cp_log(LLOG, "no rloc associated with this mapping\n");
+		return -1;
+	}
+
+	buf = opl_new_msg(MAPM_VERSION, MAPM_ADD, MAPF_UP,
+			  MAPA_EID | MAPA_RLOC);
+
+	if (opl_add_mapp(buf, mapp) <= 0) {
+		free(buf);
+		return -1;
+	}
+
+	buf_len = rtr_opl_add_rloc(buf, mapp);
+	if (buf_len <= 0) {
+		free(buf);
+		return -1;
+	}
+
+	cp_log(LLOG, "Add mapping for eid %s to cache\n", prefix2str(&mapp->p));
+
+	/* send to openlisp data-plane */
+	if (write(sock, buf, buf_len) < 0 ) {
+		cp_log(LLOG, "failed to add mapping to cache");
+		opl_errno(errno);
+		free(buf);
+		return -1;
+	}
+
+	free(buf);
+#endif
+	return 0;
+}
+
+	int
 rtr_process_map_notify(struct pk_req_entry *pke)
 {
 	struct map_notify_hdr *lcm = (struct map_notify_hdr *)pke->buf;
@@ -410,6 +541,9 @@ rtr_process_map_notify(struct pk_req_entry *pke)
 		cp_log(LDEBUG, "could not found destination nat rloc\n");
 		return -1;
 	}
+
+	if (rtr_opl_update(mapping))
+		return -1;
 
 	return rtr_send_data_map_notify(pke, dest);
 }
