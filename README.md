@@ -73,7 +73,8 @@ control-plane function to enable. It also points to the specific xml configurati
 Use github tracking system in case you encounter a bug.
 Pull requests are welcome and should also go through the github system.
 
-
+If you have any question that does not fit the previous cases, you may search or ask them on the openlisp mailing list:
+https://tibre.lip6.fr/wws/info/openlisp
 
 
 
