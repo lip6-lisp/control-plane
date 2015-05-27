@@ -1,0 +1,23 @@
+<db>
+	<authoritative_eid_prefix>
+		<eid_prefix>10.100.0.0/16</eid_prefix>
+		<eid_prefix>10.200.0.0/16</eid_prefix>
+		<eid_prefix family="IPv6">2000:D0:2::/47</eid_prefix>
+	</authoritative_eid_prefix>
+	 
+	<site>
+		<name>unirome</name>
+		<key>uniroma-KEY-HERE</key>
+		<contact>admin@uniroma.it</contact>		
+		<delegated_eid_prefix>10.100.0.0/24</delegated_eid_prefix>
+		<delegated_eid_prefix>10.200.0.0/24</delegated_eid_prefix>
+		<delegated_eid_prefix family="IPv6">2000:D0:2::/48</delegated_eid_prefix>
+	</site>
+
+	<site>
+		<name>vnu</name>
+		<key>uet-KEY-HERE</key>
+		<contact>admin@vnu.edu.vn</contact>
+		<delegated_eid_prefix>10.100.1.0/24</delegated_eid_prefix>
+	</site>
+</db>
