@@ -10,20 +10,23 @@ http://www.lisp.ipv6.lip6.fr
 # How to install ?
 
 
-Require: expat library (need expat.h expat_external.h in /usr/local/include/)
+Requirements: expat library (need expat.h expat_external.h in /usr/local/include/)
 	Installation of the expat library using ports collection (on FreeBSD) or packaging tool (on Linux).
 	
-	On FreeBSD:
-		#cd /usr/ports/textproc/expat2
-		#make clean install
+On FreeBSD:
+```
+#cd /usr/ports/textproc/expat2
+#make clean install
+```
 	
-	On Linux:(example for Ubuntu)
-		#apt-get install libexpat1-dev
+On Linux (example for Ubuntu):
+
+`#apt-get install libexpat1-dev`
 
 1. Make sure that you have the gcc compiler. 
 If you use other compiler, modify the Makefile to assign CC variable to your compiler.
 (Note: default FreeBSD 10 use `clang` instead `gcc`)
-	CC = gcc  --> CC = your_complier
+	CC = gcc  --> CC = your_compiler
 
 2. From source code directory, run 'make'. This will create the binary file 'opencp'.
 
