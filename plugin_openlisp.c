@@ -1,4 +1,5 @@
 #ifdef OPENLISP
+#include "plugin_openlisp.h"
 #include "lib.h"
 #include "udp.h"
 #include <net/lisp/lisp.h>
@@ -10,8 +11,7 @@ static int timeout = MAP_REPLY_TIMEOUT;
 struct eid_lookup {
     union sockunion eid;/* Destination EID */
     int rx;                     /* Receiving socket */
-    uint32_t nonce0[MAX_COUNT]; /* First half of the nonce */
-    uint32_t nonce1[MAX_COUNT]; /* Second half of the nonce */
+    uint64_t nonce[MAX_COUNT];	/* nonce */
     uint16_t sport;             /* EMR inner header source port */
     struct timespec start;      /* Start time of lookup */
     int count;                  /* Current count of retries */
@@ -33,10 +33,6 @@ int check_eid(union sockunion *eid);
 void  new_lookup(union sockunion *eid,  union sockunion *mr);
 int  send_mr(int idx);
 int read_rec(union map_reply_record_generic *rec);
-int opl_add(int s, struct db_node *node, int db);
-int opl_del(int s, struct db_node *node, int db);
-int opl_get(int s, struct db_node *mapp, int db, struct db_node *rs);
-int opl_update(int s, struct db_node *node, uint8_t);
 
 	size_t
 prefix2sockaddr(struct prefix *p, union sockunion *rs)
@@ -244,7 +240,7 @@ new_lookup(union sockunion *eid,  union sockunion *mr)
 	int 
 send_mr(int idx)
 {
-    uint32_t nonce0, nonce1;
+	uint64_t nonce;
     int cnt;
     union sockunion *eid;
 	char buf[PSIZE];
@@ -310,12 +306,7 @@ send_mr(int idx)
 
 	/*build message header*/
 	/* set all the LISP flags  */
-	uint64_t nonce;
-	
-	_make_nonce(&nonce);
-	nonce0 = (uint32_t)nonce;
-	nonce1 = (uint32_t)(*((uint32_t *)(((uint8_t *)(&nonce))+4)));
-	
+	nonce = _make_nonce();
 	lh->type = LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE;
 	lh->security_bit = 0;
 	lh->ddt_originated = 0;
@@ -328,8 +319,7 @@ send_mr(int idx)
 	lcm->smr_invoke_bit = 0;
 	lcm->irc = 0;
 	lcm->record_count = 1;
-	lcm->lisp_nonce0 = htonl(nonce0);
-	lcm->lisp_nonce1 = htonl(nonce1);
+	lcm->nonce = htonll(nonce);
 
 	/* set no source EID <AFI=0, addres is empty> -> jump of 2 bytes */
 	/* nothing to do as bzero of the packet at init */
@@ -421,21 +411,20 @@ send_mr(int idx)
 	char ip2[INET6_ADDRSTRLEN];
 	if (sendto(lookups[idx].rx, (void *)buf, (uint8_t *)ptr - (uint8_t *)lh, 0, 
 						&(lookups[idx].mr->sa), sockaddr_len) < 0) {
-		cp_log(LLOG, "\n#Error send Map-Request to %s:%d <nonce=0x%x - 0x%x>\n", \
-						sk_get_ip(lookups[idx].mr, ip2) , sk_get_port(lookups[idx].mr),\
-						nonce0, nonce1);			
+		cp_log(LLOG, "\n#Error send Map-Request to %s:%d <nonce=0x%lx>\n", \
+		       sk_get_ip(lookups[idx].mr, ip2), sk_get_port(lookups[idx].mr),\
+		       nonce);
 		cp_log(LDEBUG, "   EID %s/%d\n",ip,mask);		
         return 0;
     } else {
         cnt = lookups[idx].count;
-        lookups[idx].nonce0[cnt] = nonce0;
-        lookups[idx].nonce1[cnt] = nonce1;
+		lookups[idx].nonce[cnt] = nonce;
 		lookups[idx].count++;
 		
 		
-		cp_log(LLOG, "\n#Send Map-Request to %s:%d <nonce=0x%x - 0x%x>\n", \
-						sk_get_ip(lookups[idx].mr, ip2) , sk_get_port(lookups[idx].mr),\
-						nonce0, nonce1);			
+		cp_log(LLOG, "\n#Send Map-Request to %s:%d <nonce=0x%lx>\n", \
+		       sk_get_ip(lookups[idx].mr, ip2) , sk_get_port(lookups[idx].mr),\
+		       nonce);
 		cp_log(LDEBUG, "   EID %s/%d\n",ip,mask);		
 	}   
     return 1;
@@ -736,7 +725,7 @@ read_mr(int idx)
 	union sockunion si;
 	struct map_reply_hdr *lh;
 	union map_reply_record_generic *lcm;
-	uint32_t nonce0, nonce1;
+	uint64_t nonce;
 	socklen_t sockaddr_len;
 	int rec_len;
 	char ip[INET6_ADDRSTRLEN];
@@ -762,15 +751,13 @@ read_mr(int idx)
 		return 0;
 	}
 	/* check nonce to see reply for what */
-	nonce0 = ntohl(lh->lisp_nonce0);
-	nonce1 = ntohl(lh->lisp_nonce1);
-	cp_log(LLOG, "\n#Received Map-Reply from %s:%d <nonce=0x%x - 0x%x>\n",\
-					sk_get_ip(&si, ip) , sk_get_port(&si),\
-					nonce0,nonce1);
+	nonce = ntohll(lh->nonce);
+	cp_log(LLOG, "\n#Received Map-Reply from %s:%d <nonce=0x%lx>\n",\
+	       sk_get_ip(&si, ip) , sk_get_port(&si), nonce);
 	
 		
 	for (i = 0;i <= MAX_COUNT ; i++) {
-		if (lookups[idx].nonce0[i] == nonce0 && lookups[idx].nonce1[i] == nonce1)
+		if (lookups[idx].nonce[i] == nonce)
 			break;		
 	}
 	if (i > MAX_COUNT)
@@ -804,7 +791,7 @@ get_mr(void *data)
 	union sockunion *si;
 	struct map_reply_hdr *lh;
 	union map_reply_record_generic *lcm;
-	uint32_t nonce0, nonce1;	
+	uint64_t nonce;
 	int rec_len;
 	char ip[INET6_ADDRSTRLEN];
 	char *buf;
@@ -819,15 +806,13 @@ get_mr(void *data)
 		return 0;
 	}
 	/* check nonce to see reply for what */
-	nonce0 = ntohl(lh->lisp_nonce0);
-	nonce1 = ntohl(lh->lisp_nonce1);
-	cp_log(LLOG, "\n#Received Map-Reply from %s:%d <nonce=0x%x - 0x%x>\n",\
-					sk_get_ip(si, ip) , sk_get_port(si),\
-					nonce0,nonce1);
+	nonce = ntohll(lh->nonce);
+	cp_log(LLOG, "\n#Received Map-Reply from %s:%d <nonce=0x%lx>\n",\
+	       sk_get_ip(si, ip) , sk_get_port(si), nonce);
 			
 	for (idx = 1; idx < MAX_LOOKUPS; idx++) {
 		for (i = 0; i <= MAX_COUNT ; i++) {
-			if (lookups[idx].nonce0[i] == nonce0 && lookups[idx].nonce1[i] == nonce1)
+			if (lookups[idx].nonce[i] == nonce)
 				break;		
 		}
 		if (i > MAX_COUNT)
@@ -917,13 +902,6 @@ event_loop(void)
 }
 
 /* Main function of thread with intergrate with OpenLisp */
-/* Size of socket must be multiple of long (from OpenLISP code) 
-	so size of sockaddr_in6 is 32 instead 28 
-*/
-#define SS_LEN(ss)							\
-    ( (!(ss) || ((struct sockaddr_storage *)(ss))->ss_len == 0) ?	\
-       sizeof(long)		:					\
-	1 + ((((struct sockaddr_storage *)(ss))->ss_len - 1) | (sizeof(long) - 1) ) )
 	void *
 plugin_openlisp(void *data)
 {

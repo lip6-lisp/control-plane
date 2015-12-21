@@ -2,6 +2,14 @@
 #ifndef __HAVE_MSDB_H
 	#define __HAVE_MSDB_H
 
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip6.h>
+
+#include "radix/db_prefix.h"
+
 #define	_MAPP		1
 #define	_MAPP_XTR	2
 #define _EID		4
@@ -77,34 +85,38 @@ struct map_entry {
 		p:1,			/* RLOC-probing locator */
 		r:1;			/* reachability bit */
 	struct list_t *pe;	/* list of pe, each pe is an pe_entry */	
+
+	/* The following fields are only used by a RTR */
+	int natted;			/* This RLOC is natted or local to this
+					 * RTR */
+	int unverified;			/* new or updated mapping but
+					 * map-notify not yet received */
+	union sockunion nat_rloc;	/* ETR's translated global RLOC */
+	union sockunion rtr_rloc;	/* RTR's RLOC which received the
+					 * Map-Register */
+	uint8_t xtr_id[16];		/* 128 bits xTR ID */
+	uint64_t nonce;
 };
 
 struct pk_req_entry {	
 	uint8_t ecm:1;		/*Encapsulate Message Control*/
-	uint8_t ddt:1;		/*Encapsulate Message Control*/
-	uint8_t type;  	/*type of lisp message*/
-	uint32_t nonce0; /*nonce in map-request with ddt */
-	uint32_t nonce1; /*nonce in map-request with ddt */
 	union sockunion  si; /* source address OH */
 	union sockunion  di; /* destination address OH */
-	void *lh;	/*EMC lisp header */
+	struct lisp_control_hdr *lh;	/*EMC lisp header */
 	union sockunion  ih_si;/* source address IH */
+	union sockunion  ih_di;/* destination address IH */
 	void *ih;	/*IH ip header */
-	void *udp;	/*IH udp header */
-	void *lcm;	/*Lisp control message */
 	void *buf; /*package content */
-	uint32_t *nonce_0; /*nonce0*/
-	uint32_t *nonce_1;
 	struct list_t *itr;
 	struct list_t *eid;
-	uint16_t buf_len; /*package len */
+	size_t buf_len; /*package len */
 	uint8_t ttl; /* how long exist in queue, ttl = n (n second) */
 	uint8_t hop; /* number of recue - use for map-request */
 };
 
 struct pk_rpl_entry {
 	void *buf; /*package content */
-	uint16_t buf_len;
+	size_t buf_len;
 	void *curs;
 	void *request_id;
 };
@@ -125,9 +137,14 @@ struct petr_entry {
 	union sockunion addr;
 };
 
+struct rtr_entry {
+	union sockunion rloc;
+};
+
 extern struct lisp_db *ms_db;
 extern struct list_t *site_db;
 extern struct list_t *etr_db;
+extern struct list_t *rtr_db;
 extern struct list_t *xtr_ms;
 extern struct list_t *xtr_mr;
 extern struct list_t *xtr_petr;

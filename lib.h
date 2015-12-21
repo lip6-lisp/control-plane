@@ -89,6 +89,14 @@
 #define SA_LEN(a) ((a == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6))
 #define SIN_LEN(a) ((a == AF_INET) ? sizeof(struct in_addr) : sizeof(struct in6_addr))
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define htonll(x) (((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
+#define ntohll(x) (((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
+#else
+#define htonll(x) (x)
+#define ntohll(x) (x)
+#endif
+
 extern struct db_table *table;
 extern u_char _fncs;
 extern u_char lisp_te;
@@ -176,8 +184,8 @@ struct communication_fct {
 	   @return TRUE on success, otherwise a FALSE is returned
 	   XXX nonce is given in network byte order
 	 */
-	int (*request_get_nonce)(void *data, uint64_t *nonce);
-	int (*request_is_ddt)(void *data, int *is_ddt);
+	uint64_t (*request_get_nonce)(void *data);
+	int (*request_is_ddt)(void *data);
 	/* Obtain a source ITR address of the request
 	   @param id request identifier
 	   @param itr ITR address in the request
@@ -192,11 +200,9 @@ struct communication_fct {
 	int (*request_get_port)(void *data, uint16_t *port);
 	void *(*request_add)(void *data, uint8_t security, uint8_t ddt,\
 			uint8_t A, uint8_t M, uint8_t P, uint8_t S,\
-			uint8_t p, uint8_t s,\
-			uint32_t nonce0, uint32_t nonce1,\
+			uint8_t p, uint8_t s, uint64_t nonce,\
 			const union sockunion *src, \
 			const union sockunion *dst, \
-			uint16_t source_port,\
 			const struct prefix *eid );
 	/* Indicates that the request has been processed completely */
         int (*request_terminate)(void *data);
@@ -218,13 +224,11 @@ int xtr_generic_process_request(void *data, struct communication_fct *fct);
 int pending_request(void *data, struct communication_fct *fct, struct db_node *rn);
 int udp_init_socket();
 int udp_preparse_pk(void *data);
-extern void *plugin_openlisp(void *data);
-
 char *sk_get_ip(union sockunion *sk, char *ip);
 int sk_get_port(union sockunion *sk);
 void sk_set_port(union sockunion *sk, int port);
 void reconfigure();
-void _make_nonce(uint64_t *nonce);
+uint64_t _make_nonce();
 int _parser_config(const char *filename);
 int timespec_subtract(struct timespec *res, struct timespec *x, struct timespec *y);
 int entrycmp(void *esrc, void *edst);

@@ -4,6 +4,7 @@
 struct lisp_db *ms_db = NULL;
 struct list_t *site_db;
 struct list_t *etr_db;
+struct list_t *rtr_db;
 struct list_t *xtr_ms;
 struct list_t *xtr_mr;
 struct list_t *xtr_mr;

@@ -81,13 +81,10 @@ _request_ddt(void *data, struct communication_fct *fct, \
 	union sockunion *best_rloc = NULL;	/* best rloc */
 	uint8_t best_priority = 0xff;	/* priority of the best RLOC*/
 	uint64_t nonce;
-	uint32_t *nonce_ptr;		/* pointer to nonce (cause network byte order) */
 	struct list_entry_t *_iter;
 	struct list_t *l = NULL;
 	struct map_entry *e;
 	union sockunion dst;		/* inner packet destination header */
-	union sockunion itr;		/* ITR address*/
-	uint16_t sport;			/* ITR source port */
 	struct mapping_flags *mflags;
 	struct pk_req_entry *pke = data;
 	
@@ -110,14 +107,8 @@ _request_ddt(void *data, struct communication_fct *fct, \
 		return (FALSE);
 	}
 
-	/* determine the ITR address */
-	memcpy(&itr,&pke->ih_si,sizeof(union sockunion));
-	/* determine the ITR source port */
-	fct->request_get_port(pke, &sport);
-
 	/* determine the nonce used by the ITR */
-	fct->request_get_nonce(pke, &nonce);
-	nonce_ptr = (void *)&nonce;
+	nonce = fct->request_get_nonce(pke);
 
 	/* determine the RLOC of the DDT server to send a request to */
 	/* get the RLOCs */
@@ -167,18 +158,15 @@ _request_ddt(void *data, struct communication_fct *fct, \
 	/* lcm flags: S=0, D=1
 	 * Map-Request flags: A=1 M=0 P=0 S=0 p=0 s=0
 	 * nonce
-	 * inner packet src address: itr
+	 * inner packet src address and port: itr
 	 * inner packet dst address: eid-prefix
-	 * inner packet source port: sport
 	 * EID prefix: eid
 	 */
-	 struct pk_rpl_entry *rpk;
+	struct pk_rpl_entry *rpk = fct->request_add(pke, 0, 1, 1, 0, 0, 0,
+						    0, 0, nonce, &pke->ih_si,
+						    &dst, &eid);
 	 
-	if ((rpk = fct->request_add(pke, 0, 1, \
-			1, 0, 0, 0, 0, 0,\
-			*nonce_ptr, *(nonce_ptr + 1),\
-			&itr ,  &dst, sport,\
-			&eid)) == NULL ) {
+	if (!rpk) {
 		fct->referral_error(pke);
 		return (FALSE);
 	}
@@ -462,7 +450,6 @@ generic_process_request(void *data, struct communication_fct *fct)
 	struct db_table *table;
 	struct db_node *rn = NULL;
 	struct prefix p;
-	int is_ddt;
 	struct db_node *node = NULL;	
 	int rt;
 	struct pk_req_entry *pke = data;
@@ -471,11 +458,9 @@ generic_process_request(void *data, struct communication_fct *fct)
 	fct->request_get_eid(pke, &p);
 	table = ms_get_db_table(ms_db,&p);
 	rn = db_node_match_prefix(table, &p);
-			
-	fct->request_is_ddt(pke, &is_ddt);
 
 	/* Received DDT request */
-	if (is_ddt) {
+	if (fct->request_is_ddt(pke)) {
 		/*function of {map-register-with-DDT|DDT-node}*/
 		if (!rn) {
 			/* never happen: at least it must match with root node */				
@@ -714,6 +699,7 @@ reconfigure()
 	cp_log(LLOG, "Init database ...\n\n");
 	site_db = list_init();	
 	etr_db = list_init();
+	rtr_db = list_init();
 	printf("Parse main configuration file ...\n\n");
 	cp_log(LLOG, "Parse main configuration file ...\n\n");
 	_parser_config(config_file[0]);	

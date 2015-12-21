@@ -20,4 +20,7 @@
 		<contact>admin@vnu.edu.vn</contact>
 		<delegated_eid_prefix>10.100.1.0/24</delegated_eid_prefix>
 	</site>
+
+	<rtr rloc="193.162.145.50" />                                                                                              │
+	<rtr family="IPv6" rloc="2001:67c:21b4:109::b" /> 
 </db>
