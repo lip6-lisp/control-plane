@@ -220,7 +220,7 @@ int udp_init_socket();
 int udp_preparse_pk(void *data);
 extern void *plugin_openlisp(void *data);
 /*y5er*/
-int generic_mapping_set_flags(void *mapping,struct prefix *peer);
+int generic_mapping_set_peer(void *mapping,struct prefix *peer);
 /*y5er*/
 
 char *sk_get_ip(union sockunion *sk, char *ip);

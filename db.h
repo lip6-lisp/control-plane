@@ -78,7 +78,7 @@ struct map_entry {
 		r:1;			/* reachability bit */
 	struct list_t *pe;	/* list of pe, each pe is an pe_entry */
 	/*y5er*/
-	struct prefix peer_eid	/* EID prefix of remote peer */
+	struct prefix peer_eid;	/* EID prefix of remote peer */
 	unit8_t i_cost;			/* ingress cost */
 	unit8_t e_cost;			/* egress cost */
 	unit8_t encoded_cost;	/* encoded ingress and egress cost */
