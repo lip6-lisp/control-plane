@@ -135,8 +135,8 @@ exit_fnc:
 
 	void 
 _err_config(char *err_msg) {
-	printf("Error Configure file: %s, at line %" XML_FMT_INT_MOD "u\n",err_msg,XML_GetCurrentLineNumber(parser));
-	cp_log(LLOG, "Error Configure file: %s, at line %" XML_FMT_INT_MOD "u\n",err_msg,XML_GetCurrentLineNumber(parser));
+	printf("X Error Configure file: %s, at line %" XML_FMT_INT_MOD "u\n",err_msg,XML_GetCurrentLineNumber(parser));
+	cp_log(LLOG, " X Error Configure file: %s, at line %" XML_FMT_INT_MOD "u\n",err_msg,XML_GetCurrentLineNumber(parser));
 }
 
 /* validate if an eid-prefix is overlap or not
