@@ -337,18 +337,17 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 				struct prefix p1;
 				atts++;
 				len = strlen(*atts);
-				printf("processing prefix \n");
 				_prefix = (char *)calloc(1, len+1);
 				memcpy(_prefix, *atts, len);
 				*(_prefix + len) = '\0';
 				if (str2prefix (_prefix, &p1) <=0) {
-					_err_config("invalid prefix");
+					_err_config("invalid prefixx");
 					exit(1);				
 				}				
 				apply_mask(&p1);				
 				/* append to db */
 				if (!_valid_prefix(&p1, _MAPP_XTR) || !(_mapping = generic_mapping_new(&p1)) ) {
-					_err_config("invalid prefix");
+					_err_config("invalid prefixx");
 					exit(1);
 				}
 				bzero(&_mflags, sizeof(struct mapping_flags));
@@ -418,7 +417,6 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 			if (0 == strcasecmp(*atts, "ttl")) {
 				atts++;
 				_mflags.ttl = atoi(*atts);
-				printf("processing ttl ");
 			}
 			/* y5er */
 			if (0 == strcasecmp(*atts, "peer")){
@@ -430,7 +428,7 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 				_prefix = (char *)calloc(1, len+1);
 				memcpy(_prefix, *atts, len);
 				*(_prefix + len) = '\0';
-				printf("processing peer prefix ");
+
 				if (str2prefix(_prefix,&peer_prefix) <= 0){
 					_err_config("invalid prefix");
 					exit(1);
