@@ -340,13 +340,17 @@ list_db(struct db_table *db)
 						cp_log(LDEBUG, "unsuported family\n");
 						continue;
 				}
-				cp_log(LDEBUG, "\t•[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d]\n", \
+				 /* cp_log(LDEBUG, "\t•[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d]\n", \ */
+				    cp_log(LDEBUG, "\t•[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d i_cost = %u, e_cost=%u]\n", \
 					buf, \
 					e->priority, \
 					e->weight, \
 					e->m_priority, \
 					e->m_weight, \
-					e->r);
+					e->r, \
+					e->i_cost, \
+					e->e_cost);
+					//e->r);
 				rl = rl->next;
 			}
 		}			
