@@ -82,7 +82,7 @@ generic_mapping_set_peer(void *mapping, struct prefix *peer)
 
 	assert(mapping);
 	rn = (struct db_node *)mapping;
-	prefix_copy (&rn->p, peer);
+	prefix_copy (&rn->peer, peer);
 
 	return (TRUE);
 }

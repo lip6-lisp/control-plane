@@ -433,7 +433,7 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 				*(_peer + len) = '\0';
 
 				if (str2prefix(_peer,&peer_prefix) <= 0){
-					_err_config("invalid prefix");
+					_err_config("invalid peer prefix");
 					exit(1);
 				}
 				apply_mask(&peer_prefix);
