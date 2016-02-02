@@ -36,7 +36,7 @@ install:
 	/bin/chmod a+x /sbin/${EXE}
 	/bin/cp opencp_service /etc/rc.d/opencp
 	/bin/chmod a+x /etc/rc.d/opencp
-	/bin/cp opencp.conf opencp_xtr.xml opencp_ms.xml opencp_mr.xml opencp_ddtnode.xml opencp_rtr.xml /etc/ 
+#	/bin/cp opencp.conf opencp_xtr.xml opencp_ms.xml opencp_mr.xml opencp_ddtnode.xml opencp_rtr.xml /etc/ 
 
 clean:
 	/bin/rm -f ${OBJ} ${EXE} ${MANOUT} *.core a.out Make.log Make.err *~
