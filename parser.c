@@ -135,8 +135,8 @@ exit_fnc:
 
 	void 
 _err_config(char *err_msg) {
-	printf("X Error Configure file: %s, at line %" XML_FMT_INT_MOD "u\n",err_msg,XML_GetCurrentLineNumber(parser));
-	cp_log(LLOG, " X Error Configure file: %s, at line %" XML_FMT_INT_MOD "u\n",err_msg,XML_GetCurrentLineNumber(parser));
+	printf("Error Configure file: %s, at line %" XML_FMT_INT_MOD "u\n",err_msg,XML_GetCurrentLineNumber(parser));
+	cp_log(LLOG, "Error Configure file: %s, at line %" XML_FMT_INT_MOD "u\n",err_msg,XML_GetCurrentLineNumber(parser));
 }
 
 /* validate if an eid-prefix is overlap or not
@@ -341,13 +341,13 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 				memcpy(_prefix, *atts, len);
 				*(_prefix + len) = '\0';
 				if (str2prefix (_prefix, &p1) <=0) {
-					_err_config("invalid prefixx");
+					_err_config("invalid prefix");
 					exit(1);				
 				}				
 				apply_mask(&p1);				
 				/* append to db */
 				if (!_valid_prefix(&p1, _MAPP_XTR) || !(_mapping = generic_mapping_new(&p1)) ) {
-					_err_config("invalid prefixx");
+					_err_config("invalid prefix");
 					exit(1);
 				}
 				bzero(&_mflags, sizeof(struct mapping_flags));
@@ -1737,27 +1737,26 @@ _parser_config(const char *filename)
 	}
 			
 	if ((_fncs & _FNC_XTR)  && config_file[1]) {
-		cp_log(LLOG, "xtr_parser_config Parser file:%s\n",config_file[1]);
-		//printf("xtr_parser_config , parse file %s\n",config_file[1]);
+		cp_log(LLOG, "Parser file:%s\n",config_file[1]);
 		xtr_parser_config(config_file[1]);
 	}
 	
 	if ((_fncs & _FNC_MS) && config_file[2]) {
-		cp_log(LLOG, "xtr_parser_config 1 Parser file:%s\n",config_file[2]);
+		cp_log(LLOG, "Parser file:%s\n",config_file[2]);
 		ms_parser_config(config_file[2]);
 	}
 	
 	if ((_fncs & _FNC_MR) && config_file[3]) {
-		cp_log(LLOG, "xtr_parser_config 2 Parser file:%s\n",config_file[3]);
+		cp_log(LLOG, "Parser file:%s\n",config_file[3]);
 		mr_parser_config(config_file[3]);		
 	}
 	
 	if ((_fncs & _FNC_RTR) && config_file[4]) {
-		cp_log(LLOG, "xtr_parser_config 3 Parser file:%s\n",config_file[4]);
+		cp_log(LLOG, "Parser file:%s\n",config_file[4]);
 		rtr_parser_config(config_file[4]);		
 	}
 	if ((_fncs & _FNC_NODE) && config_file[5]) {
-		cp_log(LLOG, "xtr_parser_config 4 Parser file:%s\n",config_file[5]);
+		cp_log(LLOG, "Parser file:%s\n",config_file[5]);
 		node_parser_config(config_file[5]);		
 	}
 	fclose(config);
