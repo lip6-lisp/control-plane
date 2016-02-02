@@ -17,6 +17,9 @@
 static XML_Parser parser;
 static const char *_xml_name;
 static char *_prefix;
+/*y5er*/
+static char *_peer;
+/*y5er*/
 static struct mapping_flags _mflags;
 static int _fam = AF_INET;
 static void *_mapping;
@@ -422,14 +425,14 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 			if (0 == strcasecmp(*atts, "peer")){
 				struct prefix peer_prefix;
 				/* getting peer eid from buf string*/
-				// NOTICE: we reuse the len and _prefix
+				// NOTICE: we reuse the len, use _peer to replace _prefix
 				atts++;
 				len = strlen(*atts);
-				_prefix = (char *)calloc(1, len+1);
-				memcpy(_prefix, *atts, len);
-				*(_prefix + len) = '\0';
+				_peer = (char *)calloc(1, len+1);
+				memcpy(_peer, *atts, len);
+				*(_peer + len) = '\0';
 
-				if (str2prefix(_prefix,&peer_prefix) <= 0){
+				if (str2prefix(_peer,&peer_prefix) <= 0){
 					_err_config("invalid prefix");
 					exit(1);
 				}
@@ -564,6 +567,10 @@ xtr_endElement(void *userData, const char *name)
 			generic_mapping_set_flags(_mapping, &_mflags);			
 			bzero(&_mflags, sizeof(struct mapping_flags));
 			free(_prefix);
+			/*y5er*/
+			free(_peer);
+			_peer = NULL;
+			/*y5er*/
 			_prefix = NULL;
 			_mapping = NULL;
 		}
