@@ -73,6 +73,21 @@ generic_mapping_add_rloc(void *mapping, struct map_entry *entry)
 	return (TRUE);
 }
 
+/*y5er*/
+/* assign peer prefix  */
+	int
+generic_mapping_set_peer(void *mapping, struct prefix *peer)
+{
+	struct db_node *rn;
+
+	assert(mapping);
+	rn = (struct db_node *)mapping;
+	prefix_copy (&rn->p, peer);
+
+	return (TRUE);
+}
+/*y5er*/
+
 	int 
 _request_ddt(void *data, struct communication_fct *fct, \
 			struct db_node *rn)

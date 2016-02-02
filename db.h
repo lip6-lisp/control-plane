@@ -76,7 +76,13 @@ struct map_entry {
 	uint8_t L:1,			/* Local locator */
 		p:1,			/* RLOC-probing locator */
 		r:1;			/* reachability bit */
-	struct list_t *pe;	/* list of pe, each pe is an pe_entry */	
+	struct list_t *pe;	/* list of pe, each pe is an pe_entry */
+	/*y5er*/
+	struct prefix peer_eid	/* EID prefix of remote peer */
+	unit8_t i_cost;			/* ingress cost */
+	unit8_t e_cost;			/* egress cost */
+	unit8_t encoded_cost;	/* encoded ingress and egress cost */
+	/*y5er*/
 };
 
 struct pk_req_entry {	

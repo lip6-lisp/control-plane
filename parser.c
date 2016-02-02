@@ -427,7 +427,10 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 			0 == strcasecmp(name, "mr") ||
 			0 == strcasecmp(name, "petr") ||
 			0 == strcasecmp(name, "elp")||
-			0 == strcasecmp(name, "hop") ) {
+			0 == strcasecmp(name, "hop")
+			/* y5er */
+			0 == strcasecmp(name, "peer")
+			/* y5er */){
 			
 			if (0 == strcasecmp(name, "ms")) {
 				xtr_ms_entry = calloc(1, sizeof(struct ms_entry));
@@ -598,6 +601,12 @@ xtr_getElementValue(void *userData, const XML_Char *s, int len)
 			entry->L = (strcasecmp(buf, "true")==0);
 		}else if (0 == strcasecmp(_xml_name, "rloc-probing")) {
 			entry->p = (strcasecmp(buf, "true")==0);
+		/*y5er*/
+		}else if (0 == strcasecmp(_xml_name, "ingress_cost")) {
+					entry->i_cost = atoi(buf);
+		}else if (0 == strcasecmp(_xml_name, "egress_cost")) {
+					entry->e_cost = atoi(buf);
+		/*y5er*/
 		}else if (0 == strcasecmp(_xml_name, "hop")) {
 			hop->addr.sa.sa_family = _fam;
 			switch (_fam) {
@@ -726,6 +735,22 @@ xtr_getElementValue(void *userData, const XML_Char *s, int len)
 		list_insert(xtr_petr,petr, NULL);
 		_fam = AF_INET;	
 	}
+	/* y5er */
+	if ( 0 == strcasecmp(_xml_name,"peer")) {
+		struct prefix peer_prefix;
+		/* getting peer eid from buf string*/
+		if (str2prefix(buf,&peer_prefix) <= 0){
+			_err_config("invalid prefix")
+			exit(1);
+		}
+		apply_mask(&peer_prefix);
+		/* adding peer's eid*/
+		if ( !generic_mapping_set_peer(_mapping,&peer_prefix) ){
+			_err_config("unable to set peer");
+			exit(1);
+		}
+	}
+	/* y5er */
 	_xml_name = "DUMMY";
 }
 

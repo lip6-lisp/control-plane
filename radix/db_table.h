@@ -111,6 +111,9 @@ struct db_node
 	void *info;
 	void * flags;
 	unsigned int lock;/*you can delete a node when its lock == 0*/
+	/*y5er*/
+	struct prefix peer;
+	/*y5er*/
 };
 
 /**
