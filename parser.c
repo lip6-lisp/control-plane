@@ -418,6 +418,24 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 				atts++;
 				_mflags.ttl = atoi(*atts);  
 			}
+			/* y5er */
+			if (0 == strcasecmp(*atts, "peer")){
+				struct prefix peer_prefix;
+				/* getting peer eid from buf string*/
+				if (str2prefix(buf,&peer_prefix) <= 0){
+					_err_config("invalid prefix");
+					exit(1);
+				}
+				apply_mask(&peer_prefix);
+				/* adding peer's eid*/
+				if ( !generic_mapping_set_peer(_mapping,&peer_prefix) ){
+					_err_config("unable to set peer");
+					exit(1);
+				}
+
+			}
+			/* y5er */
+
 			/**/
 			atts++;
 		}
@@ -427,10 +445,7 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 			0 == strcasecmp(name, "mr") ||
 			0 == strcasecmp(name, "petr") ||
 			0 == strcasecmp(name, "elp")||
-			0 == strcasecmp(name, "hop")||
-			/* y5er */
-			0 == strcasecmp(name, "peer")
-			/* y5er */){
+			0 == strcasecmp(name, "hop")){
 			
 			if (0 == strcasecmp(name, "ms")) {
 				xtr_ms_entry = calloc(1, sizeof(struct ms_entry));
@@ -736,20 +751,22 @@ xtr_getElementValue(void *userData, const XML_Char *s, int len)
 		_fam = AF_INET;	
 	}
 	/* y5er */
+	/*
 	if ( 0 == strcasecmp(_xml_name,"peer")) {
 		struct prefix peer_prefix;
-		/* getting peer eid from buf string*/
+
 		if (str2prefix(buf,&peer_prefix) <= 0){
 			_err_config("invalid prefix");
 			exit(1);
 		}
+
 		apply_mask(&peer_prefix);
-		/* adding peer's eid*/
 		if ( !generic_mapping_set_peer(_mapping,&peer_prefix) ){
 			_err_config("unable to set peer");
 			exit(1);
 		}
 	}
+	*/
 	/* y5er */
 	_xml_name = "DUMMY";
 }
