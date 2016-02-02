@@ -1737,8 +1737,8 @@ _parser_config(const char *filename)
 	}
 			
 	if ((_fncs & _FNC_XTR)  && config_file[1]) {
-		cp_log(LLOG, "Parser file:%s\n",config_file[1]);
-		printf("xtr_parser_config , parse file %s\n",config_file[1]);
+		cp_log(LLOG, "xtr_parser_config Parser file:%s\n",config_file[1]);
+		//printf("xtr_parser_config , parse file %s\n",config_file[1]);
 		xtr_parser_config(config_file[1]);
 	}
 	
