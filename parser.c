@@ -428,7 +428,7 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 				_prefix = (char *)calloc(1, len+1);
 				memcpy(_prefix, *atts, len);
 				*(_prefix + len) = '\0';
-
+				printf("processing peer prefix ");
 				if (str2prefix(_prefix,&peer_prefix) <= 0){
 					_err_config("invalid prefix");
 					exit(1);
