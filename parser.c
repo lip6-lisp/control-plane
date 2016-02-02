@@ -416,7 +416,8 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 			/* TTL */
 			if (0 == strcasecmp(*atts, "ttl")) {
 				atts++;
-				_mflags.ttl = atoi(*atts);  
+				_mflags.ttl = atoi(*atts);
+				printf("processing ttl ");
 			}
 			/* y5er */
 			if (0 == strcasecmp(*atts, "peer")){
