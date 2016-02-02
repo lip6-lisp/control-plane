@@ -1666,7 +1666,7 @@ _parser_config(const char *filename)
 			}
 		}
 		
-		if ((_fncs & _FNC_XTR ) && (0 == strcasecmp(data[0], "xtr_configure")) ) {
+		if ((_fncs & _FNC_XTR ) && (0 == strcasecmp(data[0], "xxxtr_configure")) ) {
 			config_file[1] = calloc(1,strlen(data[2])+1);
 			memcpy(config_file[1], data[2],strlen(data[2]));
 			config_file[1][strlen(data[2])]='\0';			
