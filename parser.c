@@ -337,6 +337,7 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 				struct prefix p1;
 				atts++;
 				len = strlen(*atts);
+				printf("processing prefix \n");
 				_prefix = (char *)calloc(1, len+1);
 				memcpy(_prefix, *atts, len);
 				*(_prefix + len) = '\0';
