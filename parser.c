@@ -427,7 +427,7 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 			0 == strcasecmp(name, "mr") ||
 			0 == strcasecmp(name, "petr") ||
 			0 == strcasecmp(name, "elp")||
-			0 == strcasecmp(name, "hop")
+			0 == strcasecmp(name, "hop")||
 			/* y5er */
 			0 == strcasecmp(name, "peer")
 			/* y5er */){
@@ -740,7 +740,7 @@ xtr_getElementValue(void *userData, const XML_Char *s, int len)
 		struct prefix peer_prefix;
 		/* getting peer eid from buf string*/
 		if (str2prefix(buf,&peer_prefix) <= 0){
-			_err_config("invalid prefix")
+			_err_config("invalid prefix");
 			exit(1);
 		}
 		apply_mask(&peer_prefix);
