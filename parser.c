@@ -422,7 +422,14 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 			if (0 == strcasecmp(*atts, "peer")){
 				struct prefix peer_prefix;
 				/* getting peer eid from buf string*/
-				if (str2prefix(buf,&peer_prefix) <= 0){
+				// NOTICE: we reuse the len and _prefix
+				atts++;
+				len = strlen(*atts);
+				_prefix = (char *)calloc(1, len+1);
+				memcpy(_prefix, *atts, len);
+				*(_prefix + len) = '\0';
+
+				if (str2prefix(_prefix,&peer_prefix) <= 0){
 					_err_config("invalid prefix");
 					exit(1);
 				}
