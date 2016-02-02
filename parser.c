@@ -1743,21 +1743,21 @@ _parser_config(const char *filename)
 	}
 	
 	if ((_fncs & _FNC_MS) && config_file[2]) {
-		cp_log(LLOG, "Parser file:%s\n",config_file[2]);
+		cp_log(LLOG, "xtr_parser_config 1 Parser file:%s\n",config_file[2]);
 		ms_parser_config(config_file[2]);
 	}
 	
 	if ((_fncs & _FNC_MR) && config_file[3]) {
-		cp_log(LLOG, "Parser file:%s\n",config_file[3]);
+		cp_log(LLOG, "xtr_parser_config 2 Parser file:%s\n",config_file[3]);
 		mr_parser_config(config_file[3]);		
 	}
 	
 	if ((_fncs & _FNC_RTR) && config_file[4]) {
-		cp_log(LLOG, "Parser file:%s\n",config_file[4]);
+		cp_log(LLOG, "xtr_parser_config 3 Parser file:%s\n",config_file[4]);
 		rtr_parser_config(config_file[4]);		
 	}
 	if ((_fncs & _FNC_NODE) && config_file[5]) {
-		cp_log(LLOG, "Parser file:%s\n",config_file[5]);
+		cp_log(LLOG, "xtr_parser_config 4 Parser file:%s\n",config_file[5]);
 		node_parser_config(config_file[5]);		
 	}
 	fclose(config);
