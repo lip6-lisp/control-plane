@@ -159,9 +159,15 @@ map_message_handler(union sockunion *mr)
         /* y5er */
         // ip_hdr = (struct ip *)CO(msg,sizeof(union sockunion));
         ip_hdr = (struct ip *)CO(msg,_get_sock_size(eid));
-        cp_log(LLOG, "Handling MAPM_MISS_EID");
+        cp_log(LLOG, "Handling MAPM_MISS_EID \n");
         if ( ip_hdr != NULL)
-        	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header");
+        {
+        	char buff[512];
+        	bzero(buff,512);
+        	inet_ntop(AF_INET,(void *)&(ip_hdr->ip_src.s_addr),buff,512);
+        	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header %s \n",buf);
+
+        }
         //lookup[x].source_eid = ip_hdr->ip_src.s_addr
         //need to define a new look up function to add the ip address of source eid
         /* y5er */
