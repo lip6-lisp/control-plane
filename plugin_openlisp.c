@@ -165,7 +165,7 @@ map_message_handler(union sockunion *mr)
         	char buff[512];
         	bzero(buff,512);
         	inet_ntop(AF_INET,(void *)&ip_hdr->ip_src.s_addr,buff,512);
-        	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header %s %d \n",buff,ip_hdr->ip_v);
+        	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header %s v=%u ttl=%d \n",buff,ip_hdr->ip_v,ip_hdr->ip_ttl);
 
         }
         //lookup[x].source_eid = ip_hdr->ip_src.s_addr
