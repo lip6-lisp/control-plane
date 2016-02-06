@@ -157,8 +157,8 @@ map_message_handler(union sockunion *mr)
     if (((struct map_msghdr *)msg)->map_type == MAPM_MISS_EID) {
         eid = (union sockunion *)CO(msg,sizeof(struct map_msghdr));
         /* y5er */
-        // ip_hdr = (struct ip *)CO(msg,sizeof(union sockunion));
-        ip_hdr = (struct ip *)CO(msg,_get_sock_size(eid));
+        // ip_hdr = (struct ip *)CO(eid,sizeof(union sockunion));
+        ip_hdr = (struct ip *)CO(eid,_get_sock_size(eid));
         cp_log(LLOG, "Handling MAPM_MISS_EID \n");
         if ( ip_hdr != NULL)
         {
