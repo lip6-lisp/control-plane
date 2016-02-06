@@ -18,7 +18,7 @@ struct eid_lookup {
     uint64_t active;            /* Unique lookup identifier, 0 if inactive */
 	union sockunion *mr;		/* Point to mapresolver */
 	/* y5er */
-	struct in_addr source_eid  /* Source EID */
+	struct in_addr source_eid;  /* Source EID */
 	/* y5er */
 };
 
