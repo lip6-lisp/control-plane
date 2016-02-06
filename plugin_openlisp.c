@@ -446,8 +446,8 @@ send_mr(int idx)
 	if (lookups[idx].source_eid != NULL)
 	{
 		src_eid = ( struct map_request_source_eid *)CO(lcm, sizeof(struct map_request_hdr));
-		src_eid->source_eid_afi = AFI_NET;
-		memcpy(&src_eid->source_eid_addr, (struct in_addr *)&lookups[idx].source_eid,sizeof(struct in_addr));
+		src_eid->source_eid_afi = AF_INET;
+		memcpy(&src_eid->source_eid_addr, (struct in_addr *)&(lookups[idx].source_eid),sizeof(struct in_addr));
 		cp_log(LLOG, "Add Source EID to request message \n");
 		itr_rloc = (union afi_address_generic *)CO(src_eid, sizeof(struct map_request_source_eid));
 	}
