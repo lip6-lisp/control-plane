@@ -34,6 +34,9 @@ int openlispsck;
 static void map_message_handler(union sockunion *mr);
 int check_eid(union sockunion *eid);
 void  new_lookup(union sockunion *eid,  union sockunion *mr);
+/* y5er */
+void  new_lookup_with_src(union sockunion *eid,  union sockunion *mr, struct in_addr *ip_src);
+/* y5er */
 int  send_mr(int idx);
 int read_rec(union map_reply_record_generic *rec);
 int opl_add(int s, struct db_node *node, int db);
@@ -159,20 +162,23 @@ map_message_handler(union sockunion *mr)
         /* y5er */
         // ip_hdr = (struct ip *)CO(eid,sizeof(union sockunion));
         ip_hdr = (struct ip *)CO(eid,_get_sock_size(eid));
-        cp_log(LLOG, "Handling MAPM_MISS_EID \n");
+        //cp_log(LLOG, "Handling MAPM_MISS_EID \n");
         if ( ip_hdr != NULL)
         {
-        	char buff[512];
-        	bzero(buff,512);
-        	inet_ntop(AF_INET,(void *)&ip_hdr->ip_src.s_addr,buff,512);
-        	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header %s v=%u ttl=%d \n",buff,ip_hdr->ip_v,ip_hdr->ip_ttl);
+        	//char buff[512];
+        	//bzero(buff,512);
+        	//inet_ntop(AF_INET,(void *)&ip_hdr->ip_src.s_addr,buff,512);
+        	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header");
 
         }
         //lookup[x].source_eid = ip_hdr->ip_src.s_addr
         //need to define a new look up function to add the ip address of source eid
         /* y5er */
 		if (check_eid(eid)) {
-			new_lookup(eid, mr);
+			//new_lookup(eid, mr);
+			/* y5er */
+			new_lookup_with_src(eid, mr,&ip_hdr->ip_src);
+			/* y5er */
 		}
 	}
 }
@@ -190,6 +196,85 @@ check_eid(union sockunion *eid)
 			}
     return 1;
 }
+
+/* y5er */
+/*Add new EID with including also the "source ip address" to poll*/
+	void
+new_lookup_with_src(union sockunion *eid,  union sockunion *mr, struct in_addr *ip_src)
+{
+	int i,e,r;
+	uint16_t sport;             /* inner EMR header source port */
+	char sport_str[NI_MAXSERV]; /* source port in string format */
+	struct addrinfo hints;
+	struct addrinfo *res;
+
+
+	/* Find an inactive slot in the lookup table */
+	for (i = 1; i < MAX_LOOKUPS; i++)
+		if (!lookups[i].active)
+			break;
+
+	if (i >= MAX_LOOKUPS)
+		return;
+
+	if (srcport_rand) {
+		/*new socket for map-request */
+		if ((r = socket(mr->sa.sa_family, SOCK_DGRAM, udpproto)) < 0) {
+			cp_log(LLOG, "Error when create new socket\n");
+			return;
+		}
+
+		/*random source port of map-request */
+		e = -1;
+		while (e == -1) {
+			sport = MIN_EPHEMERAL_PORT + random() % (MAX_EPHEMERAL_PORT - MIN_EPHEMERAL_PORT);
+			sprintf(sport_str, "%d", sport);
+			memset(&hints, 0, sizeof(struct addrinfo));
+			hints.ai_family    = mr->sa.sa_family;
+			hints.ai_socktype  = SOCK_DGRAM;
+			hints.ai_flags     = AI_PASSIVE;
+			hints.ai_canonname = NULL;
+			hints.ai_addr      = NULL;
+			hints.ai_next      = NULL;
+
+			if ((e = getaddrinfo(NULL, sport_str, &hints, &res)) != 0) {
+				cp_log(LLOG, "getaddrinfo: %s\n", gai_strerror(e));
+				e = -1;
+				continue;
+			}
+
+			if ((e = bind(r, res->ai_addr, res->ai_addrlen)) == -1) {
+				cp_log(LLOG, "bind error to port %s\n", sport_str);
+				e = -1;
+				continue;
+			}
+			freeaddrinfo(res);
+		}
+	}else{
+		r = (mr->sa.sa_family == AF_INET)? skfd : skfd6;
+		sport = LISP_CP_PORT;
+	}
+	memcpy(&lookups[i].eid, eid, _get_sock_size(eid));
+	lookups[i].rx = r;
+	lookups[i].sport = sport;
+	clock_gettime(CLOCK_REALTIME, &lookups[i].start);
+	lookups[i].count = 0;
+	lookups[i].active = 1;
+	if (mr->sa.sa_family == AF_INET)
+		mr->sin.sin_port = htons(LISP_CP_PORT);
+	else
+		mr->sin6.sin6_port = htons(LISP_CP_PORT);
+	lookups[i].mr = mr;
+	/* y5er */
+	memcpy(&lookups[i].source_eid, ip_src, sizeof(struct in_addr));
+	char buff[512];
+	bzero(buff,512);
+	inet_ntop(AF_INET,(void *)&lookups[i].source_eid.s_addr,buff,512);
+	cp_log(LLOG, "add new recorde with source eid %s \n",buff);
+	/* y5er */
+	send_mr(i);
+}
+/* y5er */
 
 /*Add new EID to poll*/
 	void 
