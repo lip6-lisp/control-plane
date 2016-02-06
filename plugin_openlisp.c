@@ -16,7 +16,10 @@ struct eid_lookup {
     struct timespec start;      /* Start time of lookup */
     int count;                  /* Current count of retries */
     uint64_t active;            /* Unique lookup identifier, 0 if inactive */
-	union sockunion *mr;		/* Point to mapresolver */	
+	union sockunion *mr;		/* Point to mapresolver */
+	/* y5er */
+	struct in_addr source_eid  /* Source EID */
+	/* y5er */
 };
 
 struct eid_lookup lookups[MAX_LOOKUPS];
@@ -145,12 +148,23 @@ map_message_handler(union sockunion *mr)
     char msg[PSIZE];         /* buffer for mapping messages */
     int n = 0;              /* number of bytes received on mapping socket */
     union sockunion *eid;
-	
+    /*y5er*/
+    struct ip *ip_hdr;
+    /*y5er*/
     n = read(lookups[0].rx, msg, PSIZE);
     clock_gettime(CLOCK_REALTIME, &now);
 	
     if (((struct map_msghdr *)msg)->map_type == MAPM_MISS_EID) {
         eid = (union sockunion *)CO(msg,sizeof(struct map_msghdr));
+        /* y5er */
+        // ip_hdr = (struct ip *)CO(msg,sizeof(union sockunion));
+        ip_hdr = (struct ip *)CO(msg,_get_sock_size(eid));
+        cp_log(LLOG, "Handling MAPM_MISS_EID");
+        if ( ip_hdr != NULL)
+        	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header");
+        //lookup[x].source_eid = ip_hdr->ip_src.s_addr
+        //need to define a new look up function to add the ip address of source eid
+        /* y5er */
 		if (check_eid(eid)) {
 			new_lookup(eid, mr);
 		}
@@ -180,6 +194,7 @@ new_lookup(union sockunion *eid,  union sockunion *mr)
     char sport_str[NI_MAXSERV]; /* source port in string format */
     struct addrinfo hints;
     struct addrinfo *res;
+
 
     /* Find an inactive slot in the lookup table */
     for (i = 1; i < MAX_LOOKUPS; i++)
