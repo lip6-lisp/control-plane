@@ -443,7 +443,7 @@ send_mr(int idx)
 	// add source eid with AFI = AFI_NET and source eid address
 	// new struct defined in udp.h
 	// need also change the pointer to itr_rloc
-	if (lookups[idx].source_eid != NULL)
+	if (lookups[idx].source_eid)
 	{
 		src_eid = ( struct map_request_source_eid *)CO(lcm, sizeof(struct map_request_hdr));
 		src_eid->source_eid_afi = AF_INET;

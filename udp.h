@@ -586,9 +586,9 @@ struct map_request_hdr {
 }  __attribute__ ((__packed__));
 
 /* y5er */
-sstruct map_request_source_eid truct map_request_source_eid {
-	uint16_t			source_eid_afi;
-	struct in_addr		source_eid_addr;
+struct map_request_source_eid {
+	uint16_t		source_eid_afi;
+	struct in_addr	source_eid_addr;
 } __attribute__ ((__packed__));
 /* y5er */
 
