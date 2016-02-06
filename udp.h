@@ -585,7 +585,12 @@ struct map_request_hdr {
 	uint32_t	lisp_nonce1;
 }  __attribute__ ((__packed__));
 
-
+/* y5er */
+sstruct map_request_source_eid truct map_request_source_eid {
+	uint16_t			source_eid_afi;
+	struct in_addr		source_eid_addr;
+};
+/* y5er */
 
 /* Map-Request record tuple IPv4 */
 struct map_request_record {

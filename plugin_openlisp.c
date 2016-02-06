@@ -168,7 +168,7 @@ map_message_handler(union sockunion *mr)
         	//char buff[512];
         	//bzero(buff,512);
         	//inet_ntop(AF_INET,(void *)&ip_hdr->ip_src.s_addr,buff,512);
-        	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header");
+        	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header \n");
 
         }
         //lookup[x].source_eid = ip_hdr->ip_src.s_addr
@@ -197,7 +197,6 @@ check_eid(union sockunion *eid)
     return 1;
 }
 
-/* y5er */
 /*Add new EID with including also the "source ip address" to poll*/
 	void
 new_lookup_with_src(union sockunion *eid,  union sockunion *mr, struct in_addr *ip_src)
@@ -270,7 +269,7 @@ new_lookup_with_src(union sockunion *eid,  union sockunion *mr, struct in_addr *
 	char buff[512];
 	bzero(buff,512);
 	inet_ntop(AF_INET,(void *)&lookups[i].source_eid.s_addr,buff,512);
-	cp_log(LLOG, "add new recorde with source eid %s \n",buff);
+	cp_log(LLOG, "Add new lookup with source eid %s \n",buff);
 	/* y5er */
 	send_mr(i);
 }
@@ -363,6 +362,9 @@ send_mr(int idx)
 	union map_request_record_generic *rec;
 	union afi_address_generic afi_addr_src;
 	union afi_address_generic afi_addr_dst;
+	/* y5er */
+	struct map_request_source_eid *src_eid;
+	/* y5er */
 	uint8_t *ptr;
 	int sockaddr_len;
 	size_t itr_size, ip_len;
@@ -437,11 +439,29 @@ send_mr(int idx)
 	lcm->lisp_nonce0 = htonl(nonce0);
 	lcm->lisp_nonce1 = htonl(nonce1);
 
+	/* y5er */
+	// add source eid with AFI = AFI_NET and source eid address
+	// new struct defined in udp.h
+	// need also change the pointer to itr_rloc
+	if (lookups[idx].source_eid != NULL)
+	{
+		src_eid = ( struct map_request_source_eid *)CO(lcm, sizeof(struct map_request_hdr));
+		src_eid->source_eid_afi = AFI_NET;
+		memcpy(&src_eid->source_eid_addr, (struct in_addr *)&lookups[idx].source_eid,sizeof(struct in_addr));
+		cp_log(LLOG, "Add Source EID to request message \n");
+		itr_rloc = (union afi_address_generic *)CO(src_eid, sizeof(struct map_request_source_eid));
+	}
+	else
+	{
+		itr_rloc = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr) + 2);
+	}
+	/* y5er */
+
 	/* set no source EID <AFI=0, addres is empty> -> jump of 2 bytes */
 	/* nothing to do as bzero of the packet at init */
-	itr_rloc = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr) + 2);
-
 	
+	//itr_rloc = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr) + 2);
+
 	/* set source ITR */
 	switch (lookups[idx].mr->sa.sa_family ) {
 	case AF_INET:
