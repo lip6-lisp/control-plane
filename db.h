@@ -100,6 +100,9 @@ struct pk_req_entry {
 	void *buf; /*package content */
 	uint32_t *nonce_0; /*nonce0*/
 	uint32_t *nonce_1;
+	/* y5er */
+	struct in_addr *seid; /*source EID*/
+	/* y5er */
 	struct list_t *itr;
 	struct list_t *eid;
 	uint16_t buf_len; /*package len */

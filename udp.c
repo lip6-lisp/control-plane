@@ -41,6 +41,7 @@ struct communication_fct udp_fct = {\
 	.request_terminate	= udp_request_terminate, \
 	.request_get_eid	= udp_request_get_eid , \
 	.request_get_nonce	= udp_request_get_nonce, \
+	.request_get_seid	= udp_request_get_seid, \     // y5er
 	.request_is_ddt		= udp_request_is_ddt, \
 	.request_get_itr	= udp_request_get_itr, \
 	.request_get_port	= udp_request_get_port,\
@@ -1282,6 +1283,17 @@ udp_request_get_nonce(void *data, uint64_t * nonce)
 	
 	return (TRUE);
 }
+
+/* y5er */
+	int
+udp_request_get_seid(void *data, struct in_addr * ip_src)
+{
+	struct pk_req_entry *pke = data;
+	ip_src = pke->seid;
+	//memcpy(ip_src,pke->seid,sizeof(struct in_addr));
+	return (TRUE);
+}
+/* y5er */
 
 /* check if map-request is ddt bit set or not */
 	int 

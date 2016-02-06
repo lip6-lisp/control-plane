@@ -682,7 +682,9 @@ xtr_generic_process_request(void *data, struct communication_fct *fct)
 		if (!(rn->flags) || !((struct mapping_flags *)rn->flags)->range) {
 			node = ms_get_target(rn);
 		}
-		
+		/* y5er */
+		cp_log(LLOG, "xtr generic process request \n");
+		/* y5er */
 		if (ms_node_is_type(node, _MAPP_XTR)) {
 			rt = _request_reply(pke, fct, node);			
 			return rt;
