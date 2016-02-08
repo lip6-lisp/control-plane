@@ -221,6 +221,7 @@ int udp_preparse_pk(void *data);
 extern void *plugin_openlisp(void *data);
 /*y5er*/
 int generic_mapping_set_peer(void *mapping,struct prefix *peer);
+int source_eid_check(uint32_t seid, uint32_t prefix, uint32_t mask);
 /*y5er*/
 
 char *sk_get_ip(union sockunion *sk, char *ip);

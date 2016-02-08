@@ -116,6 +116,9 @@ struct pk_rpl_entry {
 	uint16_t buf_len;
 	void *curs;
 	void *request_id;
+	/* y5er */
+	uint8_t reply_to_peer;
+	/* y5er */
 };
 
 struct ms_entry {

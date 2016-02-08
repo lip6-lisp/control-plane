@@ -854,7 +854,11 @@ udp_reply_add_locator(void *data, struct map_entry *e)
 	}/* not te */
 	else{
 		loc = (union map_reply_locator_generic *)rpk->curs;
-
+		/* y5er */
+		/* only reply to peer with priority = ingress cost and weight = egress cost
+		 * perform the validation here
+		 *
+		 */
 		loc->rloc.priority = e->priority;
 		loc->rloc.weight = e->weight;
 		loc->rloc.m_priority = e->m_priority;
@@ -1273,17 +1277,6 @@ udp_request_get_eid(void *data, struct prefix *pr)
 
 	if (!pke->eid)
 		return -1;
-	
-	/* y5er */
-	cp_log(LLOG, "get eid and check source eid \n");
-	if (pke->have_source_eid)
-	{
-		char buff[512];
-		bzero(buff,512);
-		inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
-		cp_log(LDEBUG, " source eid of the request is %s \n",buff);
-	}
-	/* y5er */
 
 	ll = (struct list_t *)pke->eid;	
 	

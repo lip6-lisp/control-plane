@@ -74,6 +74,7 @@ generic_mapping_add_rloc(void *mapping, struct map_entry *entry)
 }
 
 /*y5er*/
+/* remember to add to lib.h */
 /* assign peer prefix  */
 	int
 generic_mapping_set_peer(void *mapping, struct prefix *peer)
@@ -86,6 +87,17 @@ generic_mapping_set_peer(void *mapping, struct prefix *peer)
 
 	return (TRUE);
 }
+/* check whether source eid belong to peer prefix */
+	int
+source_eid_check(uint32_t seid, uint32_t prefix, uint32_t mask)
+{
+	// due to the byte order instead of right shift to remove all the host bit of prefix, we do the left shift
+	if ( (seid << (32 - mask)) == ( prefix << (32 - mask)) )
+		return 1;
+	else
+		return 0;
+}
+
 /*y5er*/
 
 	int 
@@ -331,20 +343,33 @@ _request_reply(void *data, struct communication_fct *fct, \
 	int pe=0;
 	
 	cp_log(LDEBUG, "Send Map-Reply to ITR\n");
-	/* y5er */
-	// check the source eid belonging to peer our not
-	/*
-    if (pke->seid)
-    {
-    	char buff[512];
-    	bzero(buff,512);
-    	inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
-    	cp_log(LDEBUG, " source eid of the request is %s \n",buff);
-    }
-	*/
-	/* y5er */
+
 	rpk = fct->reply_add(pke);
 	
+	/* y5er */
+	rpk->reply_to_peer = 0;
+
+	if (pke->have_source_eid)
+	{
+		//check whether the source eid belong to configured peer
+		//information about configured peer is stored at the input dbnode rn ( rn->peer , type prefix )
+		//similar to the check source IP address at the data-plane when receiving the incoming packet
+		//the reply_to_peer flag will be used latter by rely_add_locator function to determine the value of priority and weight for each locator
+		struct prefix *pr;
+		pr = &rn->peer;
+		if ( source_eid_check(pke->seid.s_addr,(pr->u.prefix4).s_addr,pr->prefixlen) )
+		{
+			rpk->reply_to_peer = 1;
+			char buff[512];
+			bzero(buff,512);
+			inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
+			cp_log(LDEBUG, "  A reply to peer %s \n",buff);
+		}
+		else
+			cp_log(LDEBUG, "  Normal reply \n");
+	}
+	/* y5er */
+
 	/*PCD */
 	overlap = list_init();
 	ms_get_tree(rn,overlap,_MAPP|_MAPP_XTR);
@@ -695,6 +720,7 @@ xtr_generic_process_request(void *data, struct communication_fct *fct)
 		}
 		/* y5er */
 		cp_log(LLOG, "xtr generic process request \n");
+
 		/* y5er */
 		if (ms_node_is_type(node, _MAPP_XTR)) {
 			rt = _request_reply(pke, fct, node);			

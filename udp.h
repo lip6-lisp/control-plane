@@ -324,9 +324,19 @@ struct map_reply_locator {
 	uint8_t		R:1;
 	uint8_t		p:1;
 	uint8_t		L:1;
-	uint8_t		unused_flags1:5;
+	/* y5er */
+	// use 1 bit in the unused flag, introduce new RC flag, indicating the availability of routing cost
+	uint8_t		RC:1;
+	uint8_t		unused_flags1:4;
+	/* y5er */
+//	uint8_t		unused_flags1:5;
 #else
-	uint8_t		unused_flags1:5;
+//	uint8_t		unused_flags1:5;
+	/* y5er */
+	// use 1 bit in the unused flag, introduce new RC flag, indicating the availability of routing cost
+	uint8_t		unused_flags1:4;
+	uint8_t		RC:1;
+	/* y5er */
 	uint8_t		L:1;
 	uint8_t		p:1;
 	uint8_t		R:1;
@@ -345,9 +355,19 @@ struct map_reply_locator6 {
 	uint8_t		R:1;
 	uint8_t		p:1;
 	uint8_t		L:1;
-	uint8_t		unused_flags1:5;
+	/* y5er */
+	// use 1 bit in the unused flag, introduce new RC flag, indicating the availability of routing cost
+	uint8_t		RC:1;
+	uint8_t		unused_flags1:4;
+	/* y5er */
+//	uint8_t		unused_flags1:5;
 #else
-	uint8_t		unused_flags1:5;
+//	uint8_t		unused_flags1:5;
+	/* y5er */
+	// use 1 bit in the unused flag, introduce new RC flag, indicating the availability of routing cost
+	uint8_t		unused_flags1:4;
+	uint8_t		RC:1;
+	/* y5er */
 	uint8_t		L:1;
 	uint8_t		p:1;
 	uint8_t		R:1;
