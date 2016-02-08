@@ -1270,9 +1270,16 @@ udp_request_get_eid(void *data, struct prefix *pr)
 	struct list_entry_t *l;
 	struct pk_req_entry *pke = data;
 	
+
 	if (!pke->eid)
 		return -1;
 	
+	/* y5er */
+	cp_log(LLOG, "get eid and check source eid ");
+	if ( pke->seid )
+		cp_log(LLOG, " source eid available ");
+	/* y5er */
+
 	ll = (struct list_t *)pke->eid;	
 	
 	if (ll->count <=0)
