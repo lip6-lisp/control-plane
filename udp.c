@@ -342,6 +342,7 @@ udp_new_reply_entry(void *data)
 	
 	/* y5er */
 	// check the source eid belonging to peer our not
+	/*
 	if (pke->seid)
 	{
 		char buff[512];
@@ -349,6 +350,7 @@ udp_new_reply_entry(void *data)
 		inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
 		cp_log(LDEBUG, " source eid of the request is %s \n",buff);
 	}
+	*/
 	/* y5er */
 
 	if (!(rpk = _get_rpl_pool_place()))
