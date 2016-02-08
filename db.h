@@ -75,7 +75,7 @@ struct map_entry {
 	uint8_t m_weight;		/* multicast weight */
 	uint8_t L:1,			/* Local locator */
 		p:1,			/* RLOC-probing locator */
-		r:1;			/* reachability bit */
+		r:1,			/* reachability bit */
 		/* y5er */
 		RC:1;			/* indicate routing cost included in priority and weight ;
 						it's only applicable for entry learnt from peer ; store in map cache */
