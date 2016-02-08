@@ -1275,9 +1275,11 @@ udp_request_get_eid(void *data, struct prefix *pr)
 		return -1;
 	
 	/* y5er */
-	cp_log(LLOG, "get eid and check source eid ");
-	if ( pke->seid )
-		cp_log(LLOG, " source eid available ");
+	cp_log(LLOG, "get eid and check source eid \n");
+	char buff[512];
+	bzero(buff,512);
+	inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
+	cp_log(LDEBUG, " source eid of the request is %s \n",buff);
 	/* y5er */
 
 	ll = (struct list_t *)pke->eid;	
