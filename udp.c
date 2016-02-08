@@ -1276,10 +1276,13 @@ udp_request_get_eid(void *data, struct prefix *pr)
 	
 	/* y5er */
 	cp_log(LLOG, "get eid and check source eid \n");
-	char buff[512];
-	bzero(buff,512);
-	inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
-	cp_log(LDEBUG, " source eid of the request is %s \n",buff);
+	if (pke->have_source_eid)
+	{
+		char buff[512];
+		bzero(buff,512);
+		inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
+		cp_log(LDEBUG, " source eid of the request is %s \n",buff);
+	}
 	/* y5er */
 
 	ll = (struct list_t *)pke->eid;	
@@ -2314,7 +2317,10 @@ udp_prc_request(void *data)
 	
 	
 	eid_source = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr));
-	
+	/* y5er */
+	// init the source eid as no source eid presented
+	pke->have_source_eid = LISP_REQ_NOT_INCLUDE_SOURCE_EID;
+	/* y5er */
 	ret = _afi_address_str(eid_source, buf, BSIZE);
 	/* check if the source EID is specified */
 	if (ret) {
@@ -2323,6 +2329,7 @@ udp_prc_request(void *data)
 		/* y5er */
 		// consider IPv4
 		cp_log(LDEBUG, " add source eid to pke \n");
+		pke->have_source_eid = LISP_REQ_INCLUDE_SOURCE_EID;
 		memcpy(&pke->seid,&eid_source->ip.address , sizeof(struct in_addr));
 		/* y5er */
 	}

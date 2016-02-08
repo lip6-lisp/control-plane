@@ -101,6 +101,7 @@ struct pk_req_entry {
 	uint32_t *nonce_0; /*nonce0*/
 	uint32_t *nonce_1;
 	/* y5er */
+	uint8_t have_source_eid;  /*request message includes source eid*/
 	struct in_addr seid; /*source EID*/
 	/* y5er */
 	struct list_t *itr;
