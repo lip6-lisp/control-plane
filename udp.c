@@ -2298,17 +2298,18 @@ udp_prc_request(void *data)
 	if (ret) {
 		/* size is [Source EID AFI field + Source EID Address field] */
 		eid_size = _get_address_size(eid_source);
+		/* y5er */
+		// consider IPv4
+		cp_log(LDEBUG, " add source eid to pke \n");
+		memcpy(&pke->seid,&eid_source->ip.address , sizeof(struct in_addr));
+		/* y5er */
 	}
 	else{
 		/* size is [Source EID AFI field] as no address is provided */
 		eid_size = 2;
 	}
 	cp_log(LDEBUG, "Source EID: %s\n", buf);
-	/* y5er */
-	// consider IPv4
-	cp_log(LDEBUG, " add source eid to pke \n");
-	memcpy(&pke->seid,&eid_source->ip.address , sizeof(struct in_addr));
-	/* y5er */
+
 
 	/* jump to the ITR address list */
 	itr_rloc = (union afi_address_generic *)CO(eid_source, eid_size);
