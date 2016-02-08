@@ -340,6 +340,17 @@ udp_new_reply_entry(void *data)
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
 	
+	/* y5er */
+	// check the source eid belonging to peer our not
+	if (pke->seid)
+	{
+		char buff[512];
+		bzero(buff,512);
+		inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
+		cp_log(LDEBUG, " source eid of the request is %s \n",buff);
+	}
+	/* y5er */
+
 	if (!(rpk = _get_rpl_pool_place()))
 		return NULL;
 	rpk->curs = rpk->buf;

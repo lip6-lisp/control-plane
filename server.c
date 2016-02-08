@@ -333,7 +333,7 @@ _request_reply(void *data, struct communication_fct *fct, \
 	cp_log(LDEBUG, "Send Map-Reply to ITR\n");
 	/* y5er */
 	// check the source eid belonging to peer our not
-
+	/*
     if (pke->seid)
     {
     	char buff[512];
@@ -341,7 +341,7 @@ _request_reply(void *data, struct communication_fct *fct, \
     	inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
     	cp_log(LDEBUG, " source eid of the request is %s \n",buff);
     }
-
+	*/
 	/* y5er */
 	rpk = fct->reply_add(pke);
 	
