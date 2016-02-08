@@ -658,7 +658,9 @@ read_rec(union map_reply_record_generic *rec)
 		entry->r = loc->rloc.R;
 		entry->L =loc->rloc.L;
 		entry->p = loc->rloc.p;
-		
+		/* y5er */
+		entry->RC = loc->rloc.RC;
+		/* y5er */
 		lcaf = (struct lcaf_hdr *)&loc->rloc.rloc_afi;
 		if (ntohs(lcaf->afi) == LCAF_AFI && lcaf->type == LCAF_TE) {
 			struct sockaddr_in hop_inet;
@@ -676,7 +678,11 @@ read_rec(union map_reply_record_generic *rec)
 					if RTR --> get the hop after RTR
 				if not lisp_te --> get last hop				
 			*/
+			/* y5er */
+			if (entry->RC)
+				cp_log(LDEBUG, " Routing cost included in priority and weight \n",buf);
 			
+			/* y5er */
 			cp_log(LDEBUG, "\t•[rloc=ELP, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 						entry->priority, \
 						entry->weight, \

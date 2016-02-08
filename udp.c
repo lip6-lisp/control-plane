@@ -854,15 +854,25 @@ udp_reply_add_locator(void *data, struct map_entry *e)
 	}/* not te */
 	else{
 		loc = (union map_reply_locator_generic *)rpk->curs;
-		/* y5er */
-		/* only reply to peer with priority = ingress cost and weight = egress cost
-		 * perform the validation here
-		 *
-		 */
+
 		loc->rloc.priority = e->priority;
 		loc->rloc.weight = e->weight;
 		loc->rloc.m_priority = e->m_priority;
 		loc->rloc.m_weight = e->m_weight;
+
+		/* y5er */
+		// only reply to peer with priority = ingress cost and weight = egress cost
+		if (rpk->reply_to_peer)
+		{
+			if ( e->e_cost && e->i_cost ) // rememeber to avoid case of routing cost = 0 and routing cost = 255
+			{
+				loc->rloc.priority = e->i_cost; 	// encode the ingress routing cost to priority
+				loc->rloc.weight = e->e_cost;		// encode the egress routing cost to weight
+				loc->rloc.RC = 1;					// turn on the RC flag; consider that bit when requester parses the map-reply
+			}
+		}
+		/* y5er */
+
 		loc->rloc.L = e->L;
 		if (rhdr->rloc_probe)
 			if (sockunioncmp(&e->rloc, &((struct pk_req_entry *)rpk->request_id)->di) == 0)
