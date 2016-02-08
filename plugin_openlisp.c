@@ -441,13 +441,13 @@ send_mr(int idx)
 	lcm->lisp_nonce1 = htonl(nonce1);
 
 	/* y5er */
-	// add source eid with AFI = AFI_NET and source eid address
-	// new struct defined in udp.h
-	// need also change the pointer to itr_rloc
+	// add source eid with AFI = LISP_AFI_IP and source eid address
+	// use type "union afi_address_generic" defined in udp.h for <source eid afi,source eid address>
+	// update itr_rloc pointer, point to address after the source eid
 	if (lookups[idx].source_eid.s_addr)
 	{
 		src_eid = ( union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr));
-		// case AF_INET:
+		// case AF_INET, currently we only handle the IPv4
 		src_eid->ip.afi = htons(LISP_AFI_IP);
 		memcpy(&src_eid->ip.address, (struct in_addr *)&(lookups[idx].source_eid),sizeof(struct in_addr));
 		cp_log(LLOG, "Add Source EID to request message \n");

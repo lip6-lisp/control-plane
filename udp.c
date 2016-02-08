@@ -41,7 +41,7 @@ struct communication_fct udp_fct = {\
 	.request_terminate	= udp_request_terminate, \
 	.request_get_eid	= udp_request_get_eid , \
 	.request_get_nonce	= udp_request_get_nonce, \
-	//.request_get_seid	= udp_request_get_seid, \     // y5er
+	//.request_get_seid	= udp_request_get_seid, \  // y5er no need to define, already get the source eid when parsing the message with udp_prc_request(pke)
 	.request_is_ddt		= udp_request_is_ddt, \
 	.request_get_itr	= udp_request_get_itr, \
 	.request_get_port	= udp_request_get_port,\
@@ -2304,6 +2304,11 @@ udp_prc_request(void *data)
 		eid_size = 2;
 	}
 	cp_log(LDEBUG, "Source EID: %s\n", buf);
+	/* y5er */
+	// consider IPv4
+	cp_log(LDEBUG, " add source eid to pke \n");
+	memcpy(&pke->seid,&eid_source->ip.address , sizeof(struct in_addr));
+	/* y5er */
 
 	/* jump to the ITR address list */
 	itr_rloc = (union afi_address_generic *)CO(eid_source, eid_size);
