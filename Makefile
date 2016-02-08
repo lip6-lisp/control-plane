@@ -14,7 +14,7 @@ MISC     = Makefile README
 #	compile/load options
 #
 
-CC	 = gcc
+CC	 = gcc -w
 CFLAGS   = -O2 -L/usr/local/lib/ -lexpat -L. -DHAVE_IPV6 -Wall -lpthread
 LDLIBS   = 
 LDFLAGS  = 
