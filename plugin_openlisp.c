@@ -363,7 +363,8 @@ send_mr(int idx)
 	union afi_address_generic afi_addr_src;
 	union afi_address_generic afi_addr_dst;
 	/* y5er */
-	struct map_request_source_eid *src_eid;
+	struct afi_address *src_eid;
+	//struct map_request_source_eid *src_eid;
 	/* y5er */
 	uint8_t *ptr;
 	int sockaddr_len;
@@ -445,12 +446,11 @@ send_mr(int idx)
 	// need also change the pointer to itr_rloc
 	if (lookups[idx].source_eid.s_addr)
 	{
-		src_eid = ( struct map_request_source_eid *)CO(lcm, sizeof(struct map_request_hdr));
-		// src_eid->source_eid_afi = AF_INET;
-		src_eid->source_eid_afi = LISP_AFI_IP;
-		memcpy(&src_eid->source_eid_addr, (struct in_addr *)&(lookups[idx].source_eid),sizeof(struct in_addr));
+		src_eid = ( struct afi_address *)CO(lcm, sizeof(struct map_request_hdr));
+		src_eid->afi = LISP_AFI_IP;
+		memcpy(&src_eid->address, (struct in_addr *)&(lookups[idx].source_eid),sizeof(struct in_addr));
 		cp_log(LLOG, "Add Source EID to request message \n");
-		itr_rloc = (union afi_address_generic *)CO(src_eid, sizeof(struct map_request_source_eid));
+		itr_rloc = (union afi_address_generic *)CO(src_eid, sizeof(struct afi_address));
 	}
 	else
 	{

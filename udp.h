@@ -586,10 +586,16 @@ struct map_request_hdr {
 }  __attribute__ ((__packed__));
 
 /* y5er */
+struct afi_address {
+	uint16_t	afi;
+	struct in_addr	address;
+} __attribute__ ((__packed__));
+/*
 struct map_request_source_eid {
 	uint16_t		source_eid_afi;
 	struct in_addr	source_eid_addr;
 } __attribute__ ((__packed__));
+*/
 /* y5er */
 
 /* Map-Request record tuple IPv4 */
