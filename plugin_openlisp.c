@@ -659,9 +659,11 @@ read_rec(union map_reply_record_generic *rec)
 		entry->L =loc->rloc.L;
 		entry->p = loc->rloc.p;
 		/* y5er */
-		entry->RC = loc->rloc.RC;
+		entry->RC = loc->rloc.RC; //include routing cost or not
 		/* y5er */
 		lcaf = (struct lcaf_hdr *)&loc->rloc.rloc_afi;
+
+		// traffic engineering
 		if (ntohs(lcaf->afi) == LCAF_AFI && lcaf->type == LCAF_TE) {
 			struct sockaddr_in hop_inet;
 			struct sockaddr_in6 hop_inet6;
@@ -814,7 +816,11 @@ read_rec(union map_reply_record_generic *rec)
 			
 			/* y5er */
 			if (entry->RC)
-				cp_log(LDEBUG, " Routing cost included in priority and weight \n",buf);
+			{
+				cp_log(LDEBUG, " Routing cost included in priority and weight \n");
+				if (ms_db)
+					cp_log(LDEBUG, "  local database detected \n");
+			}
 			/* y5er */
 
 			inet_ntop(entry->rloc.sin.sin_family, (void *)&loc->rloc.rloc, buf, BSIZE);
@@ -830,7 +836,27 @@ read_rec(union map_reply_record_generic *rec)
 			
 			loc = (union map_reply_locator_generic *)CO(loc, len);	
 		}
-		/* add the locator to the table */
+		// here we can add the source locator, also define in map entry a value indicate
+		// how many source locator
+		// now each locator is a mapping entry, each entry is added into the node
+		// locator is read from the message , while entry is created here
+		// we can modify the entry building to allow more field added
+		// collect the current source locator by looking up the table
+		// consider using opl_get --- how to use ?
+		// add source locator to entry
+		// we dont modify the process of adding entry, just including more data to entry
+		/* y5er */
+		/*
+		struct db_node *n_rn = NULL;
+		struct db_table *n_table;
+		struct prefix *p;
+		p = &eid;
+		n_table = ms_get_db_table(ms_db,&p);
+		n_rn = db_node_match_prefix(table, &p);
+		*/
+		/* y5er */
+
+		/* add locator to the table */
 		rlen = (char *)loc - (char *)rec;	
 		assert((struct list_t *)node.info);
 		struct list_entry_t *m;
@@ -840,7 +866,7 @@ read_rec(union map_reply_record_generic *rec)
 				list_insert((struct list_t *)node.info, entry, NULL);	
 			}				
 			else{				
-				/* new rloc exist, only updat priority and pe */
+				/* new rloc exist, only update priority and pe */
 				n_entry = (struct map_entry *)m->data;
 				if (n_entry->priority > entry->priority) { 
 					m->data = entry;					

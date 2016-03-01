@@ -15,6 +15,9 @@
 #define _NOACTIVE 	0
 #define _NONESIZE	8
 
+/*y5er*/
+#define MAX_SRC_LOC 3
+/*y5er*/
 
 union sockunion {
 	struct  sockaddr sa;
@@ -67,6 +70,13 @@ struct pe_entry {
 	struct list_t *hop;		/* chain of next hop, each nex hop is an sockunion */
 };
 
+/* y5er */
+struct src_locator {
+	uint8_t weight;
+	union sockunion addr;
+};
+/* y5er */
+
 struct map_entry {
 	union sockunion rloc;		/* RLOC address */
 	uint8_t priority;		/* priority */
@@ -85,6 +95,8 @@ struct map_entry {
 	uint8_t i_cost;			/* ingress cost */
 	uint8_t e_cost;			/* egress cost */
 	uint8_t encoded_cost;	/* encoded ingress and egress cost */
+	uint8_t n_src_loc;		/* number of source locator */
+	struct src_locator src_loc[MAX_SRC_LOC];  /* list of source locator */
 	/*y5er*/
 };
 
