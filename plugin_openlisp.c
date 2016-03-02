@@ -32,6 +32,11 @@ int seq;
 int openlispsck;
 /* y5er */
 struct prefix *src_prefix = NULL;
+struct db_node *local_map_node = NULL;
+// currently we only get one local node
+// it is the case of multiple local node (one locator handle multiple eid)
+// in that case we need to perform additional validations
+// all the local map node can be collected from the etr_db which is a global variable
 /* y5er */
 static void map_message_handler(union sockunion *mr);
 int check_eid(union sockunion *eid);
@@ -857,9 +862,45 @@ read_rec(union map_reply_record_generic *rec)
 		n_rn = db_node_match_prefix(table, &p);
 		*/
 		if ( src_prefix != NULL )
-		cp_log(LLOG, "source prefix %s", (char *)prefix2str(src_prefix));
+		{
+			// now we no need the source prefix, since we could get the data directly from the etr_db
+			cp_log(LLOG, "\n Source prefix %s \n", (char *)prefix2str(src_prefix));
+			struct list_entry_t *db_entry;
+			struct db_node *local_map_node;
+			db_entry = etr_db->head.next;
+			if ( _fncs & (_FNC_XTR | _FNC_RTR )) {
+				while ( db_entry != &etr_db.tail )  // actually we do not go throught the list, we only consider 1 mapping
+				// consider to add the break if found, latter on the exact condition will be put
+				{
+					cp_log(LLOG, " Check local map node \n");
+					if ((local_map_node = (struct db_node *)(db_entry->data)))
+					{
+						// what we do here is to attach the each of the rloc into the entry
+						// a list of entry will be added here before sending it via mapping socket
+						// need to perform a check here to make sure it is also the interface of that router
+						struct list_t *ll;
+						struct list_entry_t *rl_entry;
+						if (!(ll = (struct list_t *)(local_map_node->info)) || (ll->count <= 0) )
+							return 0;
+						struct map_entry *rl;
+						rl_entry = ll->head.next;
+						while (rl_entry != &ll.tail)
+						{
+							rl = (struct map_entry*)rl_entry->data;
+							cp_log(LLOG, " Priority and weight %d %d \n", rl->priority, rl->weight );
+							inet_ntop(rl->rloc.sin.sin_family, (void *)&rl->rloc.sin.sin_addr, buf, BSIZE);
+							cp_log(LLOG, " Source Locator  %s \n", buf );
+							rl_entry = rl_entry->next;
+						}
+						break; // just temporary put here
+					}
+					db_entry = db_entry->next;
+				}
+			}
+		}
 
 		/* y5er */
+
 		/* add locator to the table */
 		rlen = (char *)loc - (char *)rec;	
 		assert((struct list_t *)node.info);
