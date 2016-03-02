@@ -869,7 +869,7 @@ read_rec(union map_reply_record_generic *rec)
 			struct db_node *local_map_node;
 			db_entry = etr_db->head.next;
 			if ( _fncs & (_FNC_XTR | _FNC_RTR )) {
-				while ( db_entry != &etr_db.tail )  // actually we do not go throught the list, we only consider 1 mapping
+				while ( db_entry != &etr_db->tail )  // actually we do not go throught the list, we only consider 1 mapping
 				// consider to add the break if found, latter on the exact condition will be put
 				{
 					cp_log(LLOG, " Check local map node \n");
@@ -884,7 +884,7 @@ read_rec(union map_reply_record_generic *rec)
 							return 0;
 						struct map_entry *rl;
 						rl_entry = ll->head.next;
-						while (rl_entry != &ll.tail)
+						while (rl_entry != &ll->tail)
 						{
 							rl = (struct map_entry*)rl_entry->data;
 							cp_log(LLOG, " Priority and weight %d %d \n", rl->priority, rl->weight );
