@@ -30,7 +30,9 @@ struct protoent	    *proto;
 int udpproto;
 int seq;
 int openlispsck;
-
+/* y5er */
+struct prefix *src_prefix = NULL;
+/* y5er */
 static void map_message_handler(union sockunion *mr);
 int check_eid(union sockunion *eid);
 void  new_lookup(union sockunion *eid,  union sockunion *mr);
@@ -854,8 +856,10 @@ read_rec(union map_reply_record_generic *rec)
 		n_table = ms_get_db_table(ms_db,&p);
 		n_rn = db_node_match_prefix(table, &p);
 		*/
-		/* y5er */
+		if ( src_prefix != NULL )
+		cp_log(LLOG, "source prefix %s", (char *)prefix2str(src_prefix));
 
+		/* y5er */
 		/* add locator to the table */
 		rlen = (char *)loc - (char *)rec;	
 		assert((struct list_t *)node.info);
@@ -1390,6 +1394,19 @@ opl_add(int s, struct db_node *mapp, int db)
 		return -1;
 	cp_log(LLOG, "add %s %s", (db ==1 ? "database":"cache"), (char *)prefix2str(&mapp->p));	
 	
+	/*y5er*/
+	if ( db == 1)
+	{
+		//adding to local, so we collect the source prefix
+		//src_prefix is a new defined global variable
+		//latter on, we do lookup the source prefix to find the node
+		//why dont we just store the pointer to node ? mapp ?
+		//latter on no need to do the lookup, just extend the data from the node ????
+		//where the struct dbnode is defined ? in db_table.h
+		src_prefix = &mapp->p;
+		//cp_log(LLOG, "source prefix %s", (char *)prefix2str(src_prefix));
+	}
+	/*y5er*/
 	/*send to openlisp database */
 	errno = 0;
 	if ((l = write(s, (char *)buf, l)) < 0 ) {
