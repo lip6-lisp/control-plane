@@ -73,6 +73,7 @@ struct pe_entry {
 /* y5er */
 struct src_locator {
 	uint8_t weight;
+	uint8_t priority;
 	union sockunion addr;
 };
 /* y5er */
@@ -95,8 +96,9 @@ struct map_entry {
 	uint8_t i_cost;			/* ingress cost */
 	uint8_t e_cost;			/* egress cost */
 	uint8_t encoded_cost;	/* encoded ingress and egress cost */
-	uint8_t n_src_loc;		/* number of source locator */
-	struct src_locator src_loc[MAX_SRC_LOC];  /* list of source locator */
+	uint8_t src_loc_count;		/* number of source locator */
+	//struct src_locator src_loc[MAX_SRC_LOC];  /* list of source locator */
+	struct list_t *src_loc;  /*list of source locator each soruce locator is an src_locator */ // using list instead of array
 	/*y5er*/
 };
 

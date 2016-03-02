@@ -843,24 +843,23 @@ read_rec(union map_reply_record_generic *rec)
 			
 			loc = (union map_reply_locator_generic *)CO(loc, len);	
 		}
-		// here we can add the source locator, also define in map entry a value indicate
-		// how many source locator
-		// now each locator is a mapping entry, each entry is added into the node
-		// locator is read from the message , while entry is created here
+		// the entry is constructed by parsing the message replied from the itr
+		// each locator is a mapping entry, each entry is added into the node
+		// locator is read from the reply message, while entry is created here
 		// we can modify the entry building to allow more field added
+
+		// here after its normal processing
+		// we can add the list of source locator to each entry (destination locator)
+		// need to extend the map entry structure in dh.h
+		// to include a list of source locator and source_locator_count
+
 		// collect the current source locator by looking up the table
-		// consider using opl_get --- how to use ?
-		// add source locator to entry
+		// consider using opl_get --- not using that since it takes time to retrieve data from data plane
+		// we instead using the availabe at control_plane the database etr_db
+
 		// we dont modify the process of adding entry, just including more data to entry
 		/* y5er */
-		/*
-		struct db_node *n_rn = NULL;
-		struct db_table *n_table;
-		struct prefix *p;
-		p = &eid;
-		n_table = ms_get_db_table(ms_db,&p);
-		n_rn = db_node_match_prefix(table, &p);
-		*/
+		// latter on we use another validation, just temporary using this one
 		if ( src_prefix != NULL )
 		{
 			// now we no need the source prefix, since we could get the data directly from the etr_db
@@ -884,21 +883,41 @@ read_rec(union map_reply_record_generic *rec)
 							return 0;
 						struct map_entry *rl;
 						rl_entry = ll->head.next;
-						while (rl_entry != &ll->tail)
+						// create a list of source locator
+						struct list_t *src_loc_list;
+						struct src_locator *src_loc;
+						entry->src_loc = src_loc_list = list_init();
+						int count = 0;
+						while (rl_entry != &ll->tail) // go throught each soure locator
 						{
+
 							rl = (struct map_entry*)rl_entry->data;
-							cp_log(LLOG, " Priority and weight %d %d \n", rl->priority, rl->weight );
-							inet_ntop(rl->rloc.sin.sin_family, (void *)&rl->rloc.sin.sin_addr, buf, BSIZE);
-							cp_log(LLOG, " Source Locator  %s \n", buf );
+
+							src_loc = calloc(1,sizeof(struct src_locator));
+							src_loc->weight = rl->weight;
+							src_loc->priority = rl->priority;
+							src_loc->addr.sin.sin_family = AF_INET;
+							memcpy(&src_loc->addr.sin.sin_addr,&rl->rloc.sin.sin_addr,sizeof(struct in_addr));
+
+							//cp_log(LLOG, " Priority and weight %d %d \n", rl->priority, rl->weight );
+							cp_log(LLOG, " Priority and weight %d %d \n", src_loc->priority, src_loc->weight );
+							//inet_ntop(rl->rloc.sin.sin_family, (void *)&rl->rloc.sin.sin_addr, buf, BSIZE);
+							inet_ntop(src_loc->addr.sin.sin_family, (void *)&src_loc->addr.sin.sin_addr, buf, BSIZE);
+							cp_log(LLOG, " Source Locator from src_loc %s \n", buf );
+
+							//add source locator to list
+							list_insert(src_loc_list,src_loc,NULL);
+							//
+							count++;
 							rl_entry = rl_entry->next;
 						}
+						entry->src_loc_count = count;
 						break; // just temporary put here
 					}
 					db_entry = db_entry->next;
 				}
 			}
 		}
-
 		/* y5er */
 
 		/* add locator to the table */
@@ -1397,6 +1416,11 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 		
 		mcm = CO(mx,sizeof(struct rloc_mtx));
 		mhdr->map_rloc_count +=1;
+		/* y5er */
+		// add source rloc and source rloc property here
+		// no increase the map_rloc_count
+		// need to also hanlde the message parsing at data plane
+		/* y5er */
 		rl_entry = rl_entry->next;
 	}	
 	mhdr->map_msglen = (char *)mcm - (char *)mhdr;	
@@ -1438,6 +1462,7 @@ opl_add(int s, struct db_node *mapp, int db)
 	/*y5er*/
 	if ( db == 1)
 	{
+		// UPDATE: May consider to remove this one, since it is not used
 		//adding to local, so we collect the source prefix
 		//src_prefix is a new defined global variable
 		//latter on, we do lookup the source prefix to find the node
