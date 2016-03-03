@@ -1413,13 +1413,24 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 		mx->weight = rl->weight;
 		mx->flags |= rl->L?RLOCF_LIF:0;
 		mx->flags |= rl->r?RLOCF_UP:0;
-		
+		/* y5er */
+		mx->src_loc_count = 2 ; // temporary for testing purpose only
+		/* y5er */
 		mcm = CO(mx,sizeof(struct rloc_mtx));
 		mhdr->map_rloc_count +=1;
 		/* y5er */
 		// add source rloc and source rloc property here
-		// no increase the map_rloc_count
+		// not increase the map_rloc_count
 		// need to also hanlde the message parsing at data plane
+		// the source locator
+		// the important here is to keep the mcm update after each new field added
+		// start a while loop here
+		// set the pointer of skp to the current mcm
+		// add source locator 1
+		// update mcm ; depending on the length of
+		// add the mtx of source locator 1
+		// update mcm
+
 		/* y5er */
 		rl_entry = rl_entry->next;
 	}	
