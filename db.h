@@ -98,7 +98,7 @@ struct map_entry {
 	uint8_t encoded_cost;	/* encoded ingress and egress cost */
 	uint8_t src_loc_count;		/* number of source locator */
 	//struct src_locator src_loc[MAX_SRC_LOC];  /* list of source locator */
-	struct list_t *src_loc;  /*list of source locator each soruce locator is an src_locator */ // using list instead of array
+	struct list_t *src_loc;  /*list of source locator each source locator is an src_locator */ // using list instead of array
 	/*y5er*/
 };
 

@@ -1413,25 +1413,88 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 		mx->weight = rl->weight;
 		mx->flags |= rl->L?RLOCF_LIF:0;
 		mx->flags |= rl->r?RLOCF_UP:0;
-		/* y5er */
-		mx->src_loc_count = 2 ; // temporary for testing purpose only
-		/* y5er */
-		mcm = CO(mx,sizeof(struct rloc_mtx));
-		mhdr->map_rloc_count +=1;
-		/* y5er */
-		// add source rloc and source rloc property here
-		// not increase the map_rloc_count
-		// need to also hanlde the message parsing at data plane
-		// the source locator
-		// the important here is to keep the mcm update after each new field added
-		// start a while loop here
-		// set the pointer of skp to the current mcm
-		// add source locator 1
-		// update mcm ; depending on the length of
-		// add the mtx of source locator 1
-		// update mcm
 
 		/* y5er */
+		mx->src_loc_count = 0 ;
+		/*
+		if ( rl->src_loc_count )
+		{
+			mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
+			mx->src_loc_count = rl->src_loc_count;
+		}
+		*/
+		/* end y5er */
+
+		mcm = CO(mx,sizeof(struct rloc_mtx));
+		mhdr->map_rloc_count +=1;
+
+		/* y5er */
+		if ( rl->src_loc_count )
+		{
+			mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
+			mx->src_loc_count = rl->src_loc_count;
+			// we should update this latter after adding all the source locator to the message
+			// to ensure that only correctly added src locator is counted
+
+			// add source rloc and source rloc property here
+			// first is to get the list of source locator of that rl
+			// reuse the mx and the skp pointer, skp first than mx
+			// if we reuse mx here we could not update the mx->src_loc_count correctly,
+			// because latter on the mx not refer to same entry
+			int sl_count; // source locator count for each mapping entry
+			struct list_t *lls;  // list of source locator
+			struct list_entry_t *sl_entry; // each source locator in the list
+			struct src_locator *s_loc;
+
+			sl_count = 0; // currently it is not used
+
+			lls = rl->src_loc;
+			// we can also check here lls->count and rl->src_loc_count
+			cp_log(LLOG, "number of src locator %d %d \n",  lls->count,  rl->src_loc_count); // testing purpose only
+
+			sl_entry = lls->head.next;
+			while (sl_entry != &lls->tail) {
+				/* add source locator */
+				s_loc = (struct src_locator *)sl_entry->data;
+				skp = mcm;
+				l = SA_LEN(s_loc->addr.sa.sa_family);
+				switch (s_loc->addr.sa.sa_family) {
+				case AF_INET:
+					memcpy(&skp->sin,&s_loc->addr.sin,l);
+					break;
+				case AF_INET6:
+					memcpy(&skp->sin6,&s_loc->addr.sin6,l);
+					break;
+				default:
+					return -1;
+				}
+				skp->sa.sa_len = l;
+				l = SS_LEN(skp);
+				/* add source locator property */
+				mx = (struct rloc_mtx *)CO(mcm,l);
+				mx->priority = rl->priority;
+				mx->weight = rl->weight;
+				mx->flags |= 0;
+				mx->flags |= 0;
+				mx->flags |= RLOCF_SRC_LOC;  // indicate this is a source locator
+				mx->src_loc_count = 0;
+				// update mcm
+				mcm = CO(mx,sizeof(struct rloc_mtx));
+				sl_count++;
+				sl_entry = sl_entry->next;
+				cp_log(LLOG, " source locator added \n");
+			}
+			// not increase the map_rloc_count and update the mcm
+			// the important here is to keep the mcm update after each new field added
+			// start a while loop here
+			// set the pointer of skp to the current mcm
+			// add source locator 1
+			// update mcm ; depending on the length of
+			// add the mtx of source locator 1
+			// update mcm
+		}
+		/* end y5er */
+
 		rl_entry = rl_entry->next;
 	}	
 	mhdr->map_msglen = (char *)mcm - (char *)mhdr;	
