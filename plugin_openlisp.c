@@ -1511,13 +1511,12 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 			// add the mtx of source locator 1
 			// update mcm
 		}
-
 		/* end y5er */
-
 		rl_entry = rl_entry->next;
 	}	
 
-	mhdr->map_msglen = (char *)mcm - (char *)mhdr;
+	//mhdr->map_msglen = (char *)mcm - (char *)mhdr;
+	mhdr->map_msglen = (char *)mcm - (char *)mhdr - 36*4 ; //just for testing , ignore the new src rloc added
 	cp_log(LLOG, " message length %d \n",mhdr->map_msglen );
 	return mhdr->map_msglen;
 }
