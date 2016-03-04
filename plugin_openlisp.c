@@ -1431,6 +1431,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 		mhdr->map_rloc_count +=1;
 
 		/* y5er */
+		/*
 		if ( rl->src_loc_count )
 		{
 			//mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
@@ -1460,7 +1461,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 
 			sl_entry = lls->head.next;
 			while (sl_entry != &lls->tail) {
-				/* add source locator */
+				// add source locator
 				s_loc = (struct src_locator *)sl_entry->data;
 				skpp = mcm;
 				l = SA_LEN(s_loc->addr.sa.sa_family);
@@ -1476,7 +1477,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 				}
 				skpp->sa.sa_len = l;
 				l = SS_LEN(skpp);
-				/* add source locator property */
+				// add source locator property
 				mxx = (struct rloc_mtx *)CO(mcm,l);
 				mxx->priority = s_loc->priority;
 				mxx->weight = s_loc->weight;
@@ -1500,6 +1501,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 			// add the mtx of source locator 1
 			// update mcm
 		}
+		*/
 		/* end y5er */
 
 		rl_entry = rl_entry->next;
