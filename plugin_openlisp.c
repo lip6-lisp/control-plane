@@ -1510,7 +1510,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 			// add the mtx of source locator 1
 			// update mcm
 		}
-		*/
+
 		/* end y5er */
 
 		rl_entry = rl_entry->next;
