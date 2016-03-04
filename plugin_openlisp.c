@@ -1500,6 +1500,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 				sl_count++;
 				sl_entry = sl_entry->next;
 				cp_log(LLOG, " source locator added \n");
+				cp_log(LLOG, " message length %d \n",(char *)mcm - (char *)mhdr);
 			}
 			// not increase the map_rloc_count and update the mcm
 			// the important here is to keep the mcm update after each new field added
