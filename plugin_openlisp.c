@@ -1433,7 +1433,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 		/* y5er */
 		if ( rl->src_loc_count )
 		{
-			mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
+			//mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
 			mx->src_loc_count = rl->src_loc_count;
 			// we should update this latter after adding all the source locator to the message
 			// to ensure that only correctly added src locator is counted
@@ -1453,7 +1453,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 
 			sl_count = 0; // currently it is not used
 
-			lls = rl->src_loc;
+			lls = (struct list_t *)rl->src_loc;
 			// need also check the availability of the list , in case of NULL , the check via src_loc_count is not enough ?
 			// we can also check here lls->count and rl->src_loc_count
 			cp_log(LLOG, "number of src locator %d %d \n",  lls->count,  rl->src_loc_count); // testing purpose only
@@ -1478,11 +1478,11 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 				l = SS_LEN(skpp);
 				/* add source locator property */
 				mxx = (struct rloc_mtx *)CO(mcm,l);
-				mxx->priority = rl->priority;
-				mxx->weight = rl->weight;
+				mxx->priority = s_loc->priority;
+				mxx->weight = s_loc->weight;
 				mxx->flags |= 0;
 				mxx->flags |= 0;
-				mxx->flags |= RLOCF_SRC_LOC;  // indicate this is a source locator
+				//mxx->flags |= RLOCF_SRC_LOC;  // indicate this is a source locator
 				mxx->src_loc_count = 0;
 
 				// update mcm
@@ -1504,7 +1504,9 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 
 		rl_entry = rl_entry->next;
 	}	
-	mhdr->map_msglen = (char *)mcm - (char *)mhdr;	
+
+	mhdr->map_msglen = (char *)mcm - (char *)mhdr;
+	cp_log(LLOG, " message length %d \n",mhdr->map_msglen );
 	return mhdr->map_msglen;
 }
 
