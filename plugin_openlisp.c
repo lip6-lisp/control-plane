@@ -1448,6 +1448,9 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 			struct list_entry_t *sl_entry; // each source locator in the list
 			struct src_locator *s_loc;
 
+			struct rloc_mtx *mxx;
+			union sockunion *skpp;
+
 			sl_count = 0; // currently it is not used
 
 			lls = rl->src_loc;
@@ -1459,30 +1462,31 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 			while (sl_entry != &lls->tail) {
 				/* add source locator */
 				s_loc = (struct src_locator *)sl_entry->data;
-				skp = mcm;
+				skpp = mcm;
 				l = SA_LEN(s_loc->addr.sa.sa_family);
 				switch (s_loc->addr.sa.sa_family) {
 				case AF_INET:
-					memcpy(&skp->sin,&s_loc->addr.sin,l);
+					memcpy(&skpp->sin,&s_loc->addr.sin,l);
 					break;
 				case AF_INET6:
-					memcpy(&skp->sin6,&s_loc->addr.sin6,l);
+					memcpy(&skpp->sin6,&s_loc->addr.sin6,l);
 					break;
 				default:
 					return -1;
 				}
-				skp->sa.sa_len = l;
-				l = SS_LEN(skp);
+				skpp->sa.sa_len = l;
+				l = SS_LEN(skpp);
 				/* add source locator property */
-				mx = (struct rloc_mtx *)CO(mcm,l);
-				mx->priority = rl->priority;
-				mx->weight = rl->weight;
-				mx->flags |= 0;
-				mx->flags |= 0;
-				mx->flags |= RLOCF_SRC_LOC;  // indicate this is a source locator
-				mx->src_loc_count = 0;
+				mxx = (struct rloc_mtx *)CO(mcm,l);
+				mxx->priority = rl->priority;
+				mxx->weight = rl->weight;
+				mxx->flags |= 0;
+				mxx->flags |= 0;
+				mxx->flags |= RLOCF_SRC_LOC;  // indicate this is a source locator
+				mxx->src_loc_count = 0;
+
 				// update mcm
-				mcm = CO(mx,sizeof(struct rloc_mtx));
+				mcm = CO(mxx,sizeof(struct rloc_mtx));
 				sl_count++;
 				sl_entry = sl_entry->next;
 				cp_log(LLOG, " source locator added \n");
