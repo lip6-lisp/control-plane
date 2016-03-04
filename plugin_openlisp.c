@@ -867,8 +867,10 @@ read_rec(union map_reply_record_generic *rec)
 			struct list_entry_t *db_entry;
 			struct db_node *local_map_node;
 			db_entry = etr_db->head.next;
+			int count = 0;
 			if ( _fncs & (_FNC_XTR | _FNC_RTR )) {
-				while ( db_entry != &etr_db->tail )  // actually we do not go throught the list, we only consider 1 mapping
+				while ( db_entry != &etr_db->tail )
+				// actually we do not go throught the list, we only consider 1 mapping
 				// consider to add the break if found, latter on the exact condition will be put
 				{
 					cp_log(LLOG, " Check local map node \n");
@@ -887,7 +889,6 @@ read_rec(union map_reply_record_generic *rec)
 						struct list_t *src_loc_list;
 						struct src_locator *src_loc;
 						entry->src_loc = src_loc_list = list_init();
-						int count = 0;
 						while (rl_entry != &ll->tail) // go throught each soure locator
 						{
 
@@ -911,11 +912,12 @@ read_rec(union map_reply_record_generic *rec)
 							count++;
 							rl_entry = rl_entry->next;
 						}
-						entry->src_loc_count = count;
 						break; // just temporary put here
 					}
 					db_entry = db_entry->next;
 				}
+				entry->src_loc_count = count;
+				cp_log(LLOG, " Number of source locator for that destination = %d ",entry->src_loc_count);
 			}
 		}
 		/* y5er */
@@ -1449,6 +1451,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 			sl_count = 0; // currently it is not used
 
 			lls = rl->src_loc;
+			// need also check the availability of the list , in case of NULL , the check via src_loc_count is not enough ?
 			// we can also check here lls->count and rl->src_loc_count
 			cp_log(LLOG, "number of src locator %d %d \n",  lls->count,  rl->src_loc_count); // testing purpose only
 
