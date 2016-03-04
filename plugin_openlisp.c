@@ -1380,6 +1380,16 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 	
 	union sockunion *skp;	
 	
+	/* y5er */
+	int sl_count; 			// source locator count for each mapping entry
+	struct list_t *lls;  	// list of source locator
+	struct list_entry_t *sl_entry; // each source locator in the list as a list entry
+	struct src_locator *s_loc; // source locator
+	struct rloc_mtx *mxx; // same role as mx
+	union sockunion *skpp; // same role as skp
+
+	/* y5er */
+
 	if (!(ll = (struct list_t *)mapp->info) || (ll->count <= 0))
 		return 0;
 	
@@ -1431,7 +1441,6 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 		mhdr->map_rloc_count +=1;
 
 		/* y5er */
-		/*
 		if ( rl->src_loc_count )
 		{
 			//mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
@@ -1444,13 +1453,13 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 			// reuse the mx and the skp pointer, skp first than mx
 			// if we reuse mx here we could not update the mx->src_loc_count correctly,
 			// because latter on the mx not refer to same entry
-			int sl_count; // source locator count for each mapping entry
-			struct list_t *lls;  // list of source locator
-			struct list_entry_t *sl_entry; // each source locator in the list
-			struct src_locator *s_loc;
+			//int sl_count; // source locator count for each mapping entry
+			//struct list_t *lls;  // list of source locator
+			//struct list_entry_t *sl_entry; // each source locator in the list
+			//struct src_locator *s_loc;
 
-			struct rloc_mtx *mxx;
-			union sockunion *skpp;
+			//struct rloc_mtx *mxx;
+			//union sockunion *skpp;
 
 			sl_count = 0; // currently it is not used
 
