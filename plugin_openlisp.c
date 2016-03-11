@@ -589,6 +589,7 @@ read_rec(union map_reply_record_generic *rec)
 	//struct db_node *local_map_node;
 	//db_entry = etr_db->head.next;
 	int is_peer = 1 ;
+	int is_RC = 0;
 	/* y5er */
 	
 	node.flags = NULL;
@@ -664,6 +665,7 @@ read_rec(union map_reply_record_generic *rec)
 		entry->p = loc->rloc.p;
 		/* y5er */
 		entry->RC = loc->rloc.RC; //include routing cost or not
+		is_RC  = entry->RC;
 		/* y5er */
 		lcaf = (struct lcaf_hdr *)&loc->rloc.rloc_afi;
 
@@ -860,8 +862,8 @@ read_rec(union map_reply_record_generic *rec)
 		// this one could be done before
 		// without any validation every map reply will be treated in the same way
 
-		/*
-		if ( entry->RC && is_peer )
+
+		if ( is_RC && is_peer )
 		{
 			// we dont need to source prefix
 			// since we could get local maping directly from the etr_db
@@ -932,7 +934,6 @@ read_rec(union map_reply_record_generic *rec)
 				cp_log(LLOG, " Number of source locator for that destination = %d ",entry->src_loc_count);
 			}
 		}
-		*/
 		/* y5er */
 
 		/* add locator to the table */
