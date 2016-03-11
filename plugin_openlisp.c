@@ -894,7 +894,7 @@ read_rec(union map_reply_record_generic *rec)
 						rl_entry = ll->head.next;
 						// create a list of source locator
 						struct list_t *src_loc_list;
-						struct src_locator *src_loc;
+						struct source_locator *src_loc;
 						entry->src_loc = src_loc_list = list_init();
 						while (rl_entry != &ll->tail) // go throught each soure locator
 						{
@@ -909,7 +909,7 @@ read_rec(union map_reply_record_generic *rec)
 							// the priority and weight is same as the configured value
 							// for routing game implementation these value
 							// need to be calculated
-							src_loc = calloc(1,sizeof(struct src_locator));
+							src_loc = calloc(1,sizeof(struct source_locator));
 							src_loc->weight = rl->weight;
 							src_loc->priority = rl->priority;
 							src_loc->addr.sin.sin_family = AF_INET;
@@ -1398,7 +1398,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 	int sl_count; 					// source locator count for each mapping entry
 	struct list_t *lls;  			// list of source locator
 	struct list_entry_t *sl_entry; 	// each source locator in the list as a list entry
-	struct src_locator *s_loc; 		// source locator
+	struct source_locator *s_loc; 		// source locator
 	struct rloc_mtx *mxx; 			// same role as mx
 	union sockunion *skpp; 			// same role as skp
 	/* y5er */
@@ -1470,7 +1470,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 			sl_entry = lls->head.next;
 			while (sl_entry != &lls->tail) {
 				// add source locator
-				s_loc = (struct src_locator *)sl_entry->data;
+				s_loc = (struct source_locator *)sl_entry->data;
 				skpp = mcm;
 				l = SA_LEN(s_loc->addr.sa.sa_family);
 				switch (s_loc->addr.sa.sa_family) {
