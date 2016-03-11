@@ -859,6 +859,8 @@ read_rec(union map_reply_record_generic *rec)
 		// compare the received eid with local eid -> peer to decide the node in local db will be used
 		// this one could be done before
 		// without any validation every map reply will be treated in the same way
+
+		/*
 		if ( entry->RC && is_peer )
 		{
 			// we dont need to source prefix
@@ -930,6 +932,7 @@ read_rec(union map_reply_record_generic *rec)
 				cp_log(LLOG, " Number of source locator for that destination = %d ",entry->src_loc_count);
 			}
 		}
+		*/
 		/* y5er */
 
 		/* add locator to the table */
