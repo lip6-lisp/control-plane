@@ -585,11 +585,10 @@ read_rec(union map_reply_record_generic *rec)
 	union rloc_te_generic *hop;
 	void *barr;
 	/* y5er */
-	//struct list_entry_t *db_entry;
-	//struct db_node *local_map_node;
-	//db_entry = etr_db->head.next;
-	int is_peer = 1 ;
-	int is_RC = 0;
+	struct list_entry_t *db_entry;
+	struct db_node *local_map_node;
+	db_entry = etr_db->head.next;
+	int is_peer = 0 ;
 	/* y5er */
 	
 	node.flags = NULL;
@@ -650,6 +649,25 @@ read_rec(union map_reply_record_generic *rec)
 	
 	/* ====================================================== */
 
+	// the received eid is peer with any local eid or not
+	/* y5er */
+	if ( _fncs & (_FNC_XTR | _FNC_RTR )) {
+		while ( db_entry != &etr_db->tail )
+		{
+			if ((local_map_node = (struct db_node *)(db_entry->data)))
+			{
+				if ( !memcmp(&(local_map_node->peer.u.prefix4),&(eid.u.prefix4), sizeof(struct in_addr)) );
+				{
+					is_peer = 1;
+					cp_log(LDEBUG, " peer eid  \n");
+					break;
+				}
+			}
+			db_entry = db_entry->next;
+		}
+	}
+	/* y5er */
+
 	loc = (union map_reply_locator_generic *)CO(rec, rlen);
 
 	/* ==================== RLOCs ========================= */
@@ -665,7 +683,6 @@ read_rec(union map_reply_record_generic *rec)
 		entry->p = loc->rloc.p;
 		/* y5er */
 		entry->RC = loc->rloc.RC; //include routing cost or not
-		is_RC  = entry->RC;
 		/* y5er */
 		lcaf = (struct lcaf_hdr *)&loc->rloc.rloc_afi;
 
@@ -863,12 +880,12 @@ read_rec(union map_reply_record_generic *rec)
 		// without any validation every map reply will be treated in the same way
 
 
-		if ( is_RC && is_peer )
+		if ( entry->RC && is_peer )
 		{
 			// we dont need to source prefix
 			// since we could get local maping directly from the etr_db
-			struct list_entry_t *db_entry;
-			struct db_node *local_map_node;
+			// struct list_entry_t *db_entry;
+			// struct db_node *local_map_node;
 			db_entry = etr_db->head.next;
 			int count = 0;
 			if ( _fncs & (_FNC_XTR | _FNC_RTR )) {
