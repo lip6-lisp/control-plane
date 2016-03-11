@@ -656,12 +656,13 @@ read_rec(union map_reply_record_generic *rec)
 			{
 				if ((local_map_node = (struct db_node *)(db_entry->data)))
 				{
-					if ( !memcmp(&(local_map_node->peer.u.prefix4),&(eid.u.prefix4), sizeof(struct in_addr)) );
-					{
-						is_peer = 1;
-						cp_log(LDEBUG, " peer eid  \n");
-						break;
-					}
+					cp_log(LDEBUG, " node  \n");
+					//if ( !memcmp(&(local_map_node->peer.u.prefix4),&(eid.u.prefix4), sizeof(struct in_addr)) );
+					//{
+					//	is_peer = 1;
+					//	cp_log(LDEBUG, " peer eid  \n");
+					//	break;
+					// }
 				}
 				db_entry = db_entry->next;
 			}
