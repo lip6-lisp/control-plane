@@ -67,7 +67,7 @@ struct pe_entry {
 };
 
 /* y5er */
-struct _src_locator {
+struct src_locator {
 	uint8_t weight;
 	uint8_t priority;
 	union sockunion addr;
