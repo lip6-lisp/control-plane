@@ -951,6 +951,10 @@ read_rec(union map_reply_record_generic *rec)
 				cp_log(LLOG, " Number of source locator for that destination = %d ",entry->src_loc_count);
 			}
 		}
+		else
+		{
+			entry->src_loc_count = 0;
+		}
 		/* y5er */
 
 		/* add locator to the table */
@@ -1468,7 +1472,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 			// TODO enable these flag again
 			// also add validation at data plane
 			// mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
-			// mx->flags |= RLOCF_HAVE_SRC;
+			mx->flags |= RLOCF_HAVE_SRC;
 			mx->src_loc_count = rl->src_loc_count;
 			// we should update this latter after adding all the source locator to the message
 			// to ensure that only correctly added src locator is counted
@@ -1508,7 +1512,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 				mxx->weight = s_loc->weight;
 				mxx->flags |= 0;
 				mxx->flags |= 0;
-				// mxx->flags |= RLOCF_SRC_LOC;
+				mxx->flags |= RLOCF_SRC_LOC;
 				mxx->src_loc_count = 0;
 
 				// update mcm
