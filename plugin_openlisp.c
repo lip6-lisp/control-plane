@@ -8,7 +8,7 @@
 static int timeout = MAP_REPLY_TIMEOUT;
 
 struct eid_lookup {
-    union sockunion eid;/* Destination EID */
+    union sockunion eid;		/* Destination EID */
     int rx;                     /* Receiving socket */
     uint32_t nonce0[MAX_COUNT]; /* First half of the nonce */
     uint32_t nonce1[MAX_COUNT]; /* Second half of the nonce */
@@ -31,12 +31,7 @@ int udpproto;
 int seq;
 int openlispsck;
 /* y5er */
-struct prefix *src_prefix = NULL;
 struct db_node *local_map_node = NULL;
-// currently we only get one local node
-// it is the case of multiple local node (one locator handle multiple eid)
-// in that case we need to perform additional validations
-// all the local map node can be collected from the etr_db which is a global variable
 /* y5er */
 static void map_message_handler(union sockunion *mr);
 int check_eid(union sockunion *eid);
@@ -167,23 +162,17 @@ map_message_handler(union sockunion *mr)
     if (((struct map_msghdr *)msg)->map_type == MAPM_MISS_EID) {
         eid = (union sockunion *)CO(msg,sizeof(struct map_msghdr));
         /* y5er */
-        // ip_hdr = (struct ip *)CO(eid,sizeof(union sockunion));
         ip_hdr = (struct ip *)CO(eid,_get_sock_size(eid));
-        //cp_log(LLOG, "Handling MAPM_MISS_EID \n");
+        // get the IP header attached in the MAPM_MISS_EID message
+        // this message is sent by data plane when destination EID not found
         if ( ip_hdr != NULL)
-        {
-        	//char buff[512];
-        	//bzero(buff,512);
-        	//inet_ntop(AF_INET,(void *)&ip_hdr->ip_src.s_addr,buff,512);
         	cp_log(LLOG, "Handling MAPM_MISS_EID with attached IP Header \n");
 
-        }
-        //lookup[x].source_eid = ip_hdr->ip_src.s_addr
-        //need to define a new look up function to add the ip address of source eid
         /* y5er */
 		if (check_eid(eid)) {
 			//new_lookup(eid, mr);
 			/* y5er */
+			// add new EID, also including the "source ip address" to poll
 			new_lookup_with_src(eid, mr,&ip_hdr->ip_src);
 			/* y5er */
 		}
@@ -273,10 +262,10 @@ new_lookup_with_src(union sockunion *eid,  union sockunion *mr, struct in_addr *
 	lookups[i].mr = mr;
 	/* y5er */
 	memcpy(&lookups[i].source_eid, ip_src, sizeof(struct in_addr));
-	char buff[512];
-	bzero(buff,512);
-	inet_ntop(AF_INET,(void *)&lookups[i].source_eid.s_addr,buff,512);
-	cp_log(LLOG, "Add new lookup with source eid %s \n",buff);
+	// char buff[512];
+	// bzero(buff,512);
+	// inet_ntop(AF_INET,(void *)&lookups[i].source_eid.s_addr,buff,512);
+	// cp_log(LLOG, "Add new lookup with source eid %s \n",buff);
 	/* y5er */
 	send_mr(i);
 }
@@ -448,13 +437,15 @@ send_mr(int idx)
 	lcm->lisp_nonce1 = htonl(nonce1);
 
 	/* y5er */
-	// add source eid with AFI = LISP_AFI_IP and source eid address
-	// use type "union afi_address_generic" defined in udp.h for <source eid afi,source eid address>
-	// update itr_rloc pointer, point to address after the source eid
+	// add source eid address to request message with AFI=LISP_AFI_IP
+	// the field for soruce eid is already defined in legacy map request message
+	// src_eid is of type "union afi_address_generic" defined in udp.h include <afi,address>
+	// update itr_rloc pointer, point to address after the source eid field
 	if (lookups[idx].source_eid.s_addr)
 	{
 		src_eid = ( union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr));
-		// case AF_INET, currently we only handle the IPv4
+		// add source eid <AFI,Address> into the
+		// currently only support IPv4 so using LISP_AFI_IP
 		src_eid->ip.afi = htons(LISP_AFI_IP);
 		memcpy(&src_eid->ip.address, (struct in_addr *)&(lookups[idx].source_eid),sizeof(struct in_addr));
 		cp_log(LLOG, "Add Source EID to request message \n");
@@ -593,6 +584,12 @@ read_rec(union map_reply_record_generic *rec)
 	struct lcaf_hdr *lcaf;
 	union rloc_te_generic *hop;
 	void *barr;
+	/* y5er */
+	struct list_entry_t *db_entry;
+	struct db_node *local_map_node;
+	db_entry = etr_db->head.next;
+	int is_peer = 0;
+	/* y5er */
 	
 	node.flags = NULL;
 	rlen = 0;
@@ -652,6 +649,24 @@ read_rec(union map_reply_record_generic *rec)
 	
 	/* ====================================================== */
 
+	/* y5er */
+	// the received eid is peer with any local eid or not
+	if ( _fncs & (_FNC_XTR | _FNC_RTR )) {
+			while ( db_entry != &etr_db->tail )
+			{
+				if ((local_map_node = (struct db_node *)(db_entry->data)))
+				{
+					if ( !memcmp(&(local_map_node->peer.u.prefix4),&(eid.u.prefix4), sizeof(struct in_addr)) );
+					{
+						is_peer = 1;
+						cp_log(LDEBUG, " peer eid  \n");
+						break;
+					}
+				}
+				db_entry = db_entry->next;
+			}
+		}
+	/* y5er */
 	loc = (union map_reply_locator_generic *)CO(rec, rlen);
 
 	/* ==================== RLOCs ========================= */
@@ -823,11 +838,7 @@ read_rec(union map_reply_record_generic *rec)
 			
 			/* y5er */
 			if (entry->RC)
-			{
 				cp_log(LDEBUG, " Routing cost included in priority and weight \n");
-				if (ms_db)
-					cp_log(LDEBUG, "  local database detected \n");
-			}
 			/* y5er */
 
 			inet_ntop(entry->rloc.sin.sin_family, (void *)&loc->rloc.rloc, buf, BSIZE);
@@ -843,35 +854,45 @@ read_rec(union map_reply_record_generic *rec)
 			
 			loc = (union map_reply_locator_generic *)CO(loc, len);	
 		}
-		// the entry is constructed by parsing the message replied from the itr
-		// each locator is a mapping entry, each entry is added into the node
-		// locator is read from the reply message, while entry is created here
-		// we can modify the entry building to allow more field added
+		// The map entry is constructed by parsing the message replied from the ITR
+		// each locator is considered as a mapping entry for an EID
+		// an EID is consider as a node, all corresponding entries is added to that node
+		// a mapping entry is constructed here by reading locator field in the Reply message
+		// we can modify the entry building process to allow more field added
 
-		// here after its normal processing
+		// after a mapping entry has been constructed
 		// we can add the list of source locator to each entry (destination locator)
-		// need to extend the map entry structure in dh.h
-		// to include a list of source locator and source_locator_count
+		// the map entry structure in dh.h need to be extended to hold the list
 
 		// collect the current source locator by looking up the table
-		// consider using opl_get --- not using that since it takes time to retrieve data from data plane
-		// we instead using the availabe at control_plane the database etr_db
+		// not using opl_get  since it takes time to retrieve data from data plane
+		// using the availabe db at control_plane the etr_db
 
-		// we dont modify the process of adding entry, just including more data to entry
+		// we dont modify the process of adding entry to node, just including more data to entry
 		/* y5er */
 		// latter on we use another validation, just temporary using this one
-		if ( src_prefix != NULL )
+
+		// any special flag value on the received message ?
+		// is the recevied eid peer with any local eid ?
+		// compare the received eid with local eid -> peer to decide the node in local db will be used
+		// this one could be done before
+		// without any validation every map reply will be treated in the same way
+		if ( entry->RC && is_peer )
 		{
-			// now we no need the source prefix, since we could get the data directly from the etr_db
-			cp_log(LLOG, "\n Source prefix %s \n", (char *)prefix2str(src_prefix));
-			struct list_entry_t *db_entry;
-			struct db_node *local_map_node;
+			// we dont need to source prefix
+			// since we could get local maping directly from the etr_db
+			// struct list_entry_t *db_entry;
+			// struct db_node *local_map_node;
 			db_entry = etr_db->head.next;
 			int count = 0;
 			if ( _fncs & (_FNC_XTR | _FNC_RTR )) {
 				while ( db_entry != &etr_db->tail )
 				// actually we do not go throught the list, we only consider 1 mapping
 				// consider to add the break if found, latter on the exact condition will be put
+				// TODO determine the correct node in local db
+			    // there are multiple nodes in the local db, each for a local EID
+			    // how to select the node that peering with the received EID entry
+				// for each node we have the peer attribute -> can use that to check
 				{
 					cp_log(LLOG, " Check local map node \n");
 					if ((local_map_node = (struct db_node *)(db_entry->data)))
@@ -891,9 +912,17 @@ read_rec(union map_reply_record_generic *rec)
 						entry->src_loc = src_loc_list = list_init();
 						while (rl_entry != &ll->tail) // go throught each soure locator
 						{
-
+							// currently we add all the source locator
+							// TODO add only local ones
+							// the source locators that have same ip address
+							// as outgoing interfaces of this router
+							// we could do usin the "local" in configuration file
+							// could also perform a check at data plane
 							rl = (struct map_entry*)rl_entry->data;
 
+							// the priority and weight is same as the configured value
+							// for routing game implementation these value
+							// need to be calculated
 							src_loc = calloc(1,sizeof(struct src_locator));
 							src_loc->weight = rl->weight;
 							src_loc->priority = rl->priority;
@@ -908,7 +937,6 @@ read_rec(union map_reply_record_generic *rec)
 
 							//add source locator to list
 							list_insert(src_loc_list,src_loc,NULL);
-							//
 							count++;
 							rl_entry = rl_entry->next;
 						}
@@ -1381,13 +1409,12 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 	union sockunion *skp;	
 	
 	/* y5er */
-	int sl_count; 			// source locator count for each mapping entry
-	struct list_t *lls;  	// list of source locator
-	struct list_entry_t *sl_entry; // each source locator in the list as a list entry
-	struct src_locator *s_loc; // source locator
-	struct rloc_mtx *mxx; // same role as mx
-	union sockunion *skpp; // same role as skp
-
+	int sl_count; 					// source locator count for each mapping entry
+	struct list_t *lls;  			// list of source locator
+	struct list_entry_t *sl_entry; 	// each source locator in the list as a list entry
+	struct src_locator *s_loc; 		// source locator
+	struct rloc_mtx *mxx; 			// same role as mx
+	union sockunion *skpp; 			// same role as skp
 	/* y5er */
 
 	if (!(ll = (struct list_t *)mapp->info) || (ll->count <= 0))
@@ -1428,14 +1455,6 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 
 		/* y5er */
 		mx->src_loc_count = 0 ;
-		/*
-		if ( rl->src_loc_count )
-		{
-			mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
-			mx->src_loc_count = rl->src_loc_count;
-		}
-		*/
-		/* end y5er */
 
 		mcm = CO(mx,sizeof(struct rloc_mtx));
 		mhdr->map_rloc_count +=1;
@@ -1443,30 +1462,24 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 		/* y5er */
 		if ( rl->src_loc_count )
 		{
-			//mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
+			// TODO enable these flag again
+			// also add validation at data plane
+			// mx->flags |= rl->src_loc_count?RLOCF_HAVE_SRC:0;
+			mx->flags |= RLOCF_HAVE_SRC;
 			mx->src_loc_count = rl->src_loc_count;
 			// we should update this latter after adding all the source locator to the message
 			// to ensure that only correctly added src locator is counted
 
 			// add source rloc and source rloc property here
 			// first is to get the list of source locator of that rl
-			// reuse the mx and the skp pointer, skp first than mx
-			// if we reuse mx here we could not update the mx->src_loc_count correctly,
-			// because latter on the mx not refer to same entry
-			//int sl_count; // source locator count for each mapping entry
-			//struct list_t *lls;  // list of source locator
-			//struct list_entry_t *sl_entry; // each source locator in the list
-			//struct src_locator *s_loc;
-
-			//struct rloc_mtx *mxx;
-			//union sockunion *skpp;
-
 			sl_count = 0; // currently it is not used
 
 			lls = (struct list_t *)rl->src_loc;
-			// need also check the availability of the list , in case of NULL , the check via src_loc_count is not enough ?
-			// we can also check here lls->count and rl->src_loc_count
-			cp_log(LLOG, "number of src locator %d %d \n",  lls->count,  rl->src_loc_count); // testing purpose only
+			// Do we need to check for the availability of the list ?
+			// Or just need to the check via src_loc_count ?
+			// we can also compare the lls->count and rl->src_loc_count
+			// it shoud be the same
+			// cp_log(LLOG, "number of src locator %d %d \n",  lls->count,  rl->src_loc_count);
 
 			sl_entry = lls->head.next;
 			while (sl_entry != &lls->tail) {
@@ -1492,7 +1505,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 				mxx->weight = s_loc->weight;
 				mxx->flags |= 0;
 				mxx->flags |= 0;
-				//mxx->flags |= RLOCF_SRC_LOC;  // indicate this is a source locator
+				mxx->flags |= RLOCF_SRC_LOC;
 				mxx->src_loc_count = 0;
 
 				// update mcm
@@ -1503,20 +1516,13 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 				cp_log(LLOG, " message length %d \n",(char *)mcm - (char *)mhdr);
 			}
 			// not increase the map_rloc_count and update the mcm
-			// the important here is to keep the mcm update after each new field added
-			// start a while loop here
-			// set the pointer of skp to the current mcm
-			// add source locator 1
-			// update mcm ; depending on the length of
-			// add the mtx of source locator 1
-			// update mcm
+			// remember to keep the mcm update after a new field added
 		}
 		/* end y5er */
 		rl_entry = rl_entry->next;
 	}	
 
 	mhdr->map_msglen = (char *)mcm - (char *)mhdr;
-	//mhdr->map_msglen = (char *)mcm - (char *)mhdr - 36*4 ; //just for testing , ignore the new src rloc added
 	cp_log(LLOG, " message length %d \n",mhdr->map_msglen );
 	return mhdr->map_msglen;
 }
@@ -1553,20 +1559,7 @@ opl_add(int s, struct db_node *mapp, int db)
 		return -1;
 	cp_log(LLOG, "add %s %s", (db ==1 ? "database":"cache"), (char *)prefix2str(&mapp->p));	
 	
-	/*y5er*/
-	if ( db == 1)
-	{
-		// UPDATE: May consider to remove this one, since it is not used
-		//adding to local, so we collect the source prefix
-		//src_prefix is a new defined global variable
-		//latter on, we do lookup the source prefix to find the node
-		//why dont we just store the pointer to node ? mapp ?
-		//latter on no need to do the lookup, just extend the data from the node ????
-		//where the struct dbnode is defined ? in db_table.h
-		src_prefix = &mapp->p;
-		//cp_log(LLOG, "source prefix %s", (char *)prefix2str(src_prefix));
-	}
-	/*y5er*/
+
 	/*send to openlisp database */
 	errno = 0;
 	if ((l = write(s, (char *)buf, l)) < 0 ) {

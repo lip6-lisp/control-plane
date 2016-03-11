@@ -421,11 +421,10 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 				atts++;
 				_mflags.ttl = atoi(*atts);
 			}
-			/* y5er */
+			/*y5er*/
+			// getting peer's eid prefix, a new configuration parameter from configuration file
 			if (0 == strcasecmp(*atts, "peer")){
 				struct prefix peer_prefix;
-				/* getting peer eid from buf string*/
-				// NOTICE: we reuse the len, use _peer to replace _prefix
 				atts++;
 				len = strlen(*atts);
 				_peer = (char *)calloc(1, len+1);
@@ -444,7 +443,7 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 				}
 
 			}
-			/* y5er */
+			/*end y5er*/
 
 			/**/
 			atts++;

@@ -74,7 +74,7 @@ generic_mapping_add_rloc(void *mapping, struct map_entry *entry)
 }
 
 /*y5er*/
-/* remember to add to lib.h */
+/* add to lib.h */
 /* assign peer prefix  */
 	int
 generic_mapping_set_peer(void *mapping, struct prefix *peer)
@@ -348,18 +348,16 @@ _request_reply(void *data, struct communication_fct *fct, \
 	
 	/* y5er */
 	rpk->reply_to_peer = 0;
-
 	if (pke->have_source_eid)
 	{
-		//check whether the source eid belong to configured peer
-		//information about configured peer is stored at the input dbnode rn ( rn->peer , type prefix )
-		//similar to the check source IP address at the data-plane when receiving the incoming packet
-		//the reply_to_peer flag will be used latter by rely_add_locator function to determine the value of priority and weight for each locator
+		// check source eid belong to configured peer or not
+		// if yes, set the reply_to_peer flag ON
+		// latter the rely_add_locator checks that flag
 		struct prefix *pr;
-		pr = &rn->peer;
+		pr = &rn->peer; // get the corresponding peer EID prefix from the local db
 		if ( source_eid_check(pke->seid.s_addr,(pr->u.prefix4).s_addr,pr->prefixlen) )
 		{
-			rpk->reply_to_peer = 1;
+			rpk->reply_to_peer = 1; // turn on the flag
 			char buff[512];
 			bzero(buff,512);
 			inet_ntop(AF_INET,(void *)&pke->seid,buff,512);

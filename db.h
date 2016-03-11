@@ -15,10 +15,6 @@
 #define _NOACTIVE 	0
 #define _NONESIZE	8
 
-/*y5er*/
-#define MAX_SRC_LOC 3
-/*y5er*/
-
 union sockunion {
 	struct  sockaddr sa;
 	struct  sockaddr_in sin;
@@ -43,14 +39,14 @@ struct site_info {
 };
 
 struct mapping_flags {
-	uint32_t iid;	/*InstanceID */
+	uint32_t iid;			/* InstanceID */
 	uint16_t act:3,			/* Action bit */
-		 A:1,			/* Authoritative bit */
+		 A:1,				/* Authoritative bit */
 		 version:12,		/* Version */
-		 proxy:1;			/*Proxy-map-reply*/
+		 proxy:1;			/* Proxy-map-reply*/
 	uint32_t ttl;			/* TTL */
 	uint8_t referral:4;		/* Is referral */
-	uint8_t incomplete:1;		/* incomplete DDT entry */
+	uint8_t incomplete:1;	/* incomplete DDT entry */
 	uint8_t range;	/*range of EID: an mapping, a global EID-range */
 	uint8_t active:1;
 	void *rsvd;
@@ -79,58 +75,58 @@ struct src_locator {
 /* y5er */
 
 struct map_entry {
-	union sockunion rloc;		/* RLOC address */
+	union sockunion rloc;	/* RLOC address */
 	uint8_t priority;		/* priority */
 	uint8_t weight;			/* weight */
 	uint8_t m_priority;		/* multicast priority */
 	uint8_t m_weight;		/* multicast weight */
 	uint8_t L:1,			/* Local locator */
-		p:1,			/* RLOC-probing locator */
-		r:1,			/* reachability bit */
+		p:1,				/* RLOC-probing locator */
+		r:1,				/* reachability bit */
 		/* y5er */
-		RC:1;			/* indicate routing cost included in priority and weight ;
-						it's only applicable for entry learnt from peer ; store in map cache */
+		RC:1;				/* indicate the availability of
+							   routing cost in priority,weight*/
 		/* y5er */
-	struct list_t *pe;	/* list of pe, each pe is an pe_entry */
+	struct list_t *pe;		/* list of pe, each pe is an pe_entry */
 	/*y5er*/
 	uint8_t i_cost;			/* ingress cost */
 	uint8_t e_cost;			/* egress cost */
 	uint8_t encoded_cost;	/* encoded ingress and egress cost */
-	uint8_t src_loc_count;		/* number of source locator */
-	//struct src_locator src_loc[MAX_SRC_LOC];  /* list of source locator */
-	struct list_t *src_loc;  /*list of source locator each source locator is an src_locator */ // using list instead of array
+	uint8_t src_loc_count;	/* number of source locator */
+	struct list_t *src_loc; /* list of source locator
+							   each locator is a src_locator */
 	/*y5er*/
 };
 
 struct pk_req_entry {	
-	uint8_t ecm:1;		/*Encapsulate Message Control*/
-	uint8_t ddt:1;		/*Encapsulate Message Control*/
-	uint8_t type;  	/*type of lisp message*/
-	uint32_t nonce0; /*nonce in map-request with ddt */
-	uint32_t nonce1; /*nonce in map-request with ddt */
-	union sockunion  si; /* source address OH */
-	union sockunion  di; /* destination address OH */
-	void *lh;	/*EMC lisp header */
-	union sockunion  ih_si;/* source address IH */
-	void *ih;	/*IH ip header */
-	void *udp;	/*IH udp header */
-	void *lcm;	/*Lisp control message */
-	void *buf; /*package content */
-	uint32_t *nonce_0; /*nonce0*/
+	uint8_t ecm:1;			/*Encapsulate Message Control*/
+	uint8_t ddt:1;			/*Encapsulate Message Control*/
+	uint8_t type;  			/*type of lisp message*/
+	uint32_t nonce0; 		/*nonce in map-request with ddt */
+	uint32_t nonce1; 		/*nonce in map-request with ddt */
+	union sockunion  si; 	/* source address OH */
+	union sockunion  di; 	/* destination address OH */
+	void *lh;				/*EMC lisp header */
+	union sockunion  ih_si;	/* source address IH */
+	void *ih;				/*IH ip header */
+	void *udp;				/*IH udp header */
+	void *lcm;				/*Lisp control message */
+	void *buf; 				/*package content */
+	uint32_t *nonce_0; 		/*nonce0*/
 	uint32_t *nonce_1;
 	/* y5er */
-	uint8_t have_source_eid;  /*request message includes source eid*/
-	struct in_addr seid; /*source EID*/
+	uint8_t have_source_eid;/*map request includes source EID*/
+	struct in_addr seid; 	/*source EID*/
 	/* y5er */
 	struct list_t *itr;
 	struct list_t *eid;
-	uint16_t buf_len; /*package len */
-	uint8_t ttl; /* how long exist in queue, ttl = n (n second) */
-	uint8_t hop; /* number of recue - use for map-request */
+	uint16_t buf_len; 		/*package len */
+	uint8_t ttl; 			/* how long exist in queue, ttl = n (n second) */
+	uint8_t hop; 			/* number of recue - use for map-request */
 };
 
 struct pk_rpl_entry {
-	void *buf; /*package content */
+	void *buf; 				/*package content */
 	uint16_t buf_len;
 	void *curs;
 	void *request_id;

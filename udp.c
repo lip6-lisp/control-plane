@@ -41,7 +41,6 @@ struct communication_fct udp_fct = {\
 	.request_terminate	= udp_request_terminate, \
 	.request_get_eid	= udp_request_get_eid , \
 	.request_get_nonce	= udp_request_get_nonce, \
-	//.request_get_seid	= udp_request_get_seid, \  // y5er no need to define, already get the source eid when parsing the message with udp_prc_request(pke)
 	.request_is_ddt		= udp_request_is_ddt, \
 	.request_get_itr	= udp_request_get_itr, \
 	.request_get_port	= udp_request_get_port,\
@@ -340,19 +339,6 @@ udp_new_reply_entry(void *data)
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
 	
-	/* y5er */
-	// check the source eid belonging to peer our not
-	/*
-	if (pke->seid)
-	{
-		char buff[512];
-		bzero(buff,512);
-		inet_ntop(AF_INET,(void *)&pke->seid,buff,512);
-		cp_log(LDEBUG, " source eid of the request is %s \n",buff);
-	}
-	*/
-	/* y5er */
-
 	if (!(rpk = _get_rpl_pool_place()))
 		return NULL;
 	rpk->curs = rpk->buf;
@@ -861,14 +847,16 @@ udp_reply_add_locator(void *data, struct map_entry *e)
 		loc->rloc.m_weight = e->m_weight;
 
 		/* y5er */
-		// only reply to peer with priority = ingress cost and weight = egress cost
+		// reply to peer with priority=ingress,weight=egress cost
 		if (rpk->reply_to_peer)
 		{
-			if ( e->e_cost && e->i_cost ) // rememeber to avoid case of routing cost = 0 and routing cost = 255
+			// TODO consider to prevent the case
+			// 		that routing cost = 0 or 255 or not
+			if ( e->e_cost && e->i_cost )
 			{
-				loc->rloc.priority = e->i_cost; 	// encode the ingress routing cost to priority
-				loc->rloc.weight = e->e_cost;		// encode the egress routing cost to weight
-				loc->rloc.RC = 1;					// turn on the RC flag; consider that bit when requester parses the map-reply
+				loc->rloc.priority 	= e->i_cost;
+				loc->rloc.weight 	= e->e_cost;
+				loc->rloc.RC 		= 1;	// turn on the RC flag
 			}
 		}
 		/* y5er */
@@ -1311,19 +1299,6 @@ udp_request_get_nonce(void *data, uint64_t * nonce)
 	
 	return (TRUE);
 }
-
-/* y5er */
-/*
-	int
-udp_request_get_seid(void *data, struct in_addr * ip_src)
-{
-	struct pk_req_entry *pke = data;
-	ip_src = pke->seid;
-	memcpy(ip_src,pke->seid,sizeof(struct in_addr));
-	return (TRUE);
-}
-*/
-/* y5er */
 
 /* check if map-request is ddt bit set or not */
 	int 
@@ -2318,10 +2293,8 @@ udp_prc_request(void *data)
 					ntohl(lcm->lisp_nonce0), \
 				ntohl(lcm->lisp_nonce1));
 	
-	
 	eid_source = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr));
 	/* y5er */
-	// init the source eid as no source eid presented
 	pke->have_source_eid = LISP_REQ_NOT_INCLUDE_SOURCE_EID;
 	/* y5er */
 	ret = _afi_address_str(eid_source, buf, BSIZE);
@@ -2330,8 +2303,7 @@ udp_prc_request(void *data)
 		/* size is [Source EID AFI field + Source EID Address field] */
 		eid_size = _get_address_size(eid_source);
 		/* y5er */
-		// consider IPv4
-		cp_log(LDEBUG, " add source eid to pke \n");
+		cp_log(LDEBUG, " add source eid to pke  \n");
 		pke->have_source_eid = LISP_REQ_INCLUDE_SOURCE_EID;
 		memcpy(&pke->seid,&eid_source->ip.address , sizeof(struct in_addr));
 		/* y5er */
