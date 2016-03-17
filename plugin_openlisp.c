@@ -1067,11 +1067,14 @@ read_rec(union map_reply_record_generic *rec)
 	/* y5er */
 	// converting the rg_src_loc and rg_dst_loc into 2 routing strategy array
 	// number of source locator and destination locator is i_src and i_dst
-	struct routing_strategy local_strategy[i_src*i_dst],remote_strategy[i_src*i_dst];
-	// contruct the local routing strategy
-	construct_routing_strategy(i_src,i_dst,rg_src_locator,rg_dst_locator,local_strategy);
-	// contruct the remote routing strategy
-	construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
+	if ( i_dst >= 2 && i_src >= 2 )
+	{
+		struct routing_strategy local_strategy[i_src*i_dst],remote_strategy[i_src*i_dst];
+		// contruct the local routing strategy
+		construct_routing_strategy(i_src,i_dst,rg_src_locator,rg_dst_locator,local_strategy);
+		// contruct the remote routing strategy
+		construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
+	}
 
 	// build routing game
 	// update the weight and priority for entry before adding to data plane
