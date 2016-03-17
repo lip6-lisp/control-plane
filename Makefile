@@ -24,13 +24,13 @@ LDFLAGS  =
 LISP_H = /usr/src/sys/net/lisp/lisp.h
 ${EXE}: 
 	@if test -f $(LISP_H); then \
-	${CC}    radix/*_*.c server.c  db.c udp.c hmac/*.c cli.c list/list.c thr_pool/*.c parser.c plumbing.c -D OPENLISP plugin_openlisp.c -o ${EXE} -g  -O2  -I/usr/local/include  -L/usr/local/lib -lexpat -L. -DHAVE_IPV6 -Wall -lpthread ; \
+	${CC}    radix/*_*.c server.c  db.c udp.c hmac/*.c cli.c list/list.c thr_pool/*.c parser.c rgl.c plumbing.c -D OPENLISP plugin_openlisp.c -o ${EXE} -g  -O2  -I/usr/local/include  -L/usr/local/lib -lexpat -L. -DHAVE_IPV6 -Wall -lpthread ; \
 	else\
-	${CC}  radix/*_*.c server.c  db.c udp.c hmac/*.c cli.c list/list.c thr_pool/*.c parser.c plumbing.c plugin_openlisp.c  -o ${EXE} -g  -O2  -I/usr/local/include  -L/usr/local/lib -lexpat -L. -DHAVE_IPV6 -Wall -lpthread  ;\
+	${CC}  radix/*_*.c server.c  db.c udp.c hmac/*.c cli.c list/list.c thr_pool/*.c parser.c rgl.c plumbing.c plugin_openlisp.c  -o ${EXE} -g  -O2  -I/usr/local/include  -L/usr/local/lib -lexpat -L. -DHAVE_IPV6 -Wall -lpthread  ;\
 	fi;
 
 with_openlisp: 
-	${CC}    radix/*_*.c server.c  db.c udp.c hmac/*.c cli.c list/list.c thr_pool/*.c parser.c plumbing.c -D ${OPENLISP} plugin_openlisp.c -o ${EXE} -g  -O2  -I/usr/local/include  -L/usr/local/lib -lexpat -L. -DHAVE_IPV6 -Wall -lpthread 
+	${CC}    radix/*_*.c server.c  db.c udp.c hmac/*.c cli.c list/list.c thr_pool/*.c parser.c rgl.c plumbing.c -D ${OPENLISP} plugin_openlisp.c -o ${EXE} -g  -O2  -I/usr/local/include  -L/usr/local/lib -lexpat -L. -DHAVE_IPV6 -Wall -lpthread 
 
 install:
 	/bin/cp ${EXE} /sbin/

@@ -3,6 +3,9 @@
 #include "udp.h"
 #include <net/lisp/lisp.h>
 #include <net/lisp/maptables.h>
+/* y5er */
+#include "rgl.h"
+/* y5er */
 
 #define PSIZE	4089
 static int timeout = MAP_REPLY_TIMEOUT;
@@ -32,6 +35,7 @@ int seq;
 int openlispsck;
 /* y5er */
 struct db_node *local_map_node = NULL;
+int n_src = 0; // number of source locator
 /* y5er */
 static void map_message_handler(union sockunion *mr);
 int check_eid(union sockunion *eid);
@@ -668,6 +672,17 @@ read_rec(union map_reply_record_generic *rec)
 	}
 	/* y5er */
 
+	/* y5er */
+	int n_dst = lcount;
+	int i_src = 0;
+	int i_dst = 0;
+	// set the number of destination locator to lcount
+	// notice: it could be smaller than lcount
+	// only count destination locator with RC flag on
+	struct rg_locator rg_src_loc[n_src];
+	struct rg_locator rg_dst_loc[n_dst];
+
+	/* y5er */
 	loc = (union map_reply_locator_generic *)CO(rec, rlen);
 
 	/* ==================== RLOCs ========================= */
@@ -941,6 +956,19 @@ read_rec(union map_reply_record_generic *rec)
 							//add source locator to list
 							list_insert(src_loc_list,src_loc,NULL);
 							count++;
+							/* y5er rg */
+							if (i_src < n_src)
+							{
+								rg_src_locator[i_dst].id 		= i_dst;
+								rg_src_locator[i_dst].addr 		= &src_loc->addr.sin.sin_addr;
+								rg_src_locator[i_dst].icost 	= rl->i_cost;
+								rg_src_locator[i_dst].ecost 	= rl->e_cost;
+								rg_src_locator[i_dst].weight 	= 0;
+								rg_src_locator[i_dst].selected 	= 0;
+								i_src++;
+							}
+							/* y5er rg */
+
 							rl_entry = rl_entry->next;
 						}
 						break; // just temporary put here
@@ -950,6 +978,18 @@ read_rec(union map_reply_record_generic *rec)
 				entry->src_loc_count = count;
 				cp_log(LLOG, " Number of source locator for that destination = %d ",entry->src_loc_count);
 			}
+			/* y5er rg */
+			if (i_dst < n_dst)
+			{
+				rg_dst_locator[i_dst].id 		= i_dst;
+				rg_dst_locator[i_dst].addr 		= &entry->rloc.sin.sin_addr;
+				rg_dst_locator[i_dst].icost 	= entry->priority;
+				rg_dst_locator[i_dst].ecost 	= entry->weight;
+				rg_dst_locator[i_dst].weight 	= 0;
+				rg_dst_locator[i_dst].selected 	= 0;
+				i_dst++;
+			}
+			/* y5er rg */
 		}
 		else
 		{
@@ -980,8 +1020,15 @@ read_rec(union map_reply_record_generic *rec)
 		else{
 			free(entry);
 			return 0;
-		}		
+		}
+	// continue with next destination locator
 	}
+	/* y5er */
+	// converting the rg_src_loc and rg_dst_loc into 2 routing strategy array
+	// number of source locator and destination locator is i_src and i_dst
+	// build routing game
+	// update the weight and priority for entry before adding to data plane
+	/* y5er */
 	/* add to OpenLISP mapping cache */
 	opl_add(openlispsck, &node, 0);
 	if (node.info)
@@ -1010,6 +1057,7 @@ read_mr(int idx)
 		sockaddr_len = sizeof(struct sockaddr_in6);
 		
 	/* read package */
+
 	if ((rcvl = recvfrom(lookups[idx].rx,
 			 buf,
 			 PSIZE,
@@ -1419,7 +1467,7 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 	int sl_count; 					// source locator count for each mapping entry
 	struct list_t *lls;  			// list of source locator
 	struct list_entry_t *sl_entry; 	// each source locator in the list as a list entry
-	struct source_locator *s_loc; 		// source locator
+	struct source_locator *s_loc; 	// source locator
 	struct rloc_mtx *mxx; 			// same role as mx
 	union sockunion *skpp; 			// same role as skp
 	/* y5er */
@@ -1557,7 +1605,11 @@ opl_add(int s, struct db_node *mapp, int db)
 						MAPM_ADD,\
 						((db == 1? MAPF_DB: 0) | MAPF_STATIC | MAPF_UP) | map_neg,\
                                                 MAPA_EID | (map_neg? 0 : MAPA_RLOC));
-	
+	/* y5er */
+	if (db == 1)
+		n_src = lcount;
+	/* y5er */
+
 	if ((l = opl_add_mapp(buf, mapp)) <= 0)
 		return -1;
 	if (lcount > 0 && (l=opl_add_rloc(buf, mapp))<= 0)
