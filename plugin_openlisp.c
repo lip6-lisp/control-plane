@@ -1001,17 +1001,15 @@ read_rec(union map_reply_record_generic *rec)
 							/* y5er rg */
 							if (i_src < n_src && !all_src_loc_added)
 							{
-								rg_src_locator[i_dst].id 		= i_dst;
-								rg_src_locator[i_dst].addr 		= &src_loc->addr.sin.sin_addr;
-								rg_src_locator[i_dst].icost 	= rl->i_cost;
-								rg_src_locator[i_dst].ecost 	= rl->e_cost;
-								rg_src_locator[i_dst].weight 	= 0;
-								rg_src_locator[i_dst].selected 	= 0;
+								rg_src_locator[i_src].id 		= i_dst;
+								rg_src_locator[i_src].addr 		= &src_loc->addr.sin.sin_addr;
+								rg_src_locator[i_src].icost 	= rl->i_cost;
+								rg_src_locator[i_src].ecost 	= rl->e_cost;
+								rg_src_locator[i_src].weight 	= 0;
+								rg_src_locator[i_src].selected 	= 0;
 								i_src++;
-								all_src_loc_added++;
 							}
 							/* y5er rg */
-
 							rl_entry = rl_entry->next;
 						}
 						break; // just temporary put here
@@ -1019,6 +1017,10 @@ read_rec(union map_reply_record_generic *rec)
 					db_entry = db_entry->next;
 				}
 				entry->src_loc_count = count;
+				/* rg */
+				if ( i_src == count && !all_src_loc_added )
+					all_src_loc_added++;
+
 				cp_log(LLOG, " Number of source locator for that destination = %d ",entry->src_loc_count);
 			}
 			/* y5er rg */
