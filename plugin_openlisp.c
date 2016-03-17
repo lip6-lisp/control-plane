@@ -46,7 +46,7 @@ int construct_routing_strategy(int ns, int nd,
 							struct rg_locator local_loc[ns],struct rg_locator remote_loc[nd],
 							struct routing_strategy strategy[ns*nd]);
 void update_dst_locator_weight(int n,struct routing_strategy strategy[],struct rg_locator dst_loc[]);
-void calculating_weight(int n,int dst_loc_id,struct routing_strategy strategy[],struct rg_locator src_loc[],struct rg_locator dst_loc[])
+void calculating_weight(int n,int dst_loc_id,struct routing_strategy strategy[],struct rg_locator src_loc[],struct rg_locator dst_loc[]);
 
 /* y5er */
 int  send_mr(int idx);
