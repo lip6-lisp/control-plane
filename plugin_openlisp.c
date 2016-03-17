@@ -80,7 +80,7 @@ int construct_routing_strategy(int ns, int nd,
 			strategy[i].rmt_eg_cost = remote_loc[j].ecost;
 			// strategy[i].rmt_eg_cost = remote_loc[j].ecost + remote_as_fwcost[j][i];
 			//printf("\n %d (%d,%d) %d %d %d %d \n", n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
-			cp_log(LLOG, "\n Strategy %d (%d,%d) %d %d %d %d \n", n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
+			cp_log(LDEBUG, "\n Strategy %d (%d,%d) %d %d %d %d \n", n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
 
 			n++;
 		}
@@ -1069,7 +1069,7 @@ read_rec(union map_reply_record_generic *rec)
 	/* y5er */
 	// converting the rg_src_loc and rg_dst_loc into 2 routing strategy array
 	// number of source locator and destination locator is i_src and i_dst
-	if ( i_dst >= 2 && i_src >= 2 )
+	if ( i_dst > 1 && i_src > 1 )
 	{
 		struct routing_strategy local_strategy[i_src*i_dst],remote_strategy[i_src*i_dst];
 		// contruct the local routing strategy
