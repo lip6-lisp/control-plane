@@ -1000,7 +1000,7 @@ read_rec(union map_reply_record_generic *rec)
 							list_insert(src_loc_list,src_loc,NULL);
 							count++;
 							/* y5er rg */
-							if (i_src < n_src && !all_src_loc_added)
+							if (i_src <= n_src && !all_src_loc_added)
 							{
 								rg_src_locator[i_src].id 		= i_src;
 								rg_src_locator[i_src].addr 		= &src_loc->addr.sin.sin_addr;
@@ -1026,7 +1026,7 @@ read_rec(union map_reply_record_generic *rec)
 				cp_log(LLOG, " Number of source locator for that destination = %d ",entry->src_loc_count);
 			}
 			/* y5er rg */
-			if (i_dst < n_dst)
+			if (i_dst <= n_dst)
 			{
 				rg_dst_locator[i_dst].id 		= i_dst;
 				rg_dst_locator[i_dst].addr 		= &entry->rloc.sin.sin_addr;
@@ -1087,11 +1087,11 @@ read_rec(union map_reply_record_generic *rec)
 			char buff[BSIZE];
 			cp_log(LDEBUG, "\n Strategy %d ",i);
 			bzero(buff,BSIZE);
-			inet_ntop(AF_INET,rg_src_locator[sid].addr, buff, BSIZE);
-			cp_log(LDEBUG, " source locator %s destination locator %s ",buff);
-			bzero(buff,BSIZE);
-			inet_ntop(AF_INET,rg_dst_locator[did].addr, buff, BSIZE);
-			cp_log(LDEBUG, " destination locator %s \n",buff);
+			inet_ntop(AF_INET,(void *)rg_src_locator[sid].addr, buff, BSIZE);
+			cp_log(LDEBUG, " source locator %s ",buff);
+			//bzero(buff,BSIZE);
+			//inet_ntop(AF_INET,rg_dst_locator[did].addr, buff, BSIZE);
+			//cp_log(LDEBUG, " destination locator %s \n",buff);
 		}
 
 		// contruct the remote routing strategy
