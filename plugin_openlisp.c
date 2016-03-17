@@ -45,6 +45,9 @@ void  new_lookup_with_src(union sockunion *eid,  union sockunion *mr, struct in_
 int construct_routing_strategy(int ns, int nd,
 							struct rg_locator local_loc[ns],struct rg_locator remote_loc[nd],
 							struct routing_strategy strategy[ns*nd]);
+void update_dst_locator_weight(int n,struct routing_strategy strategy[],struct rg_locator dst_loc[]);
+void calculating_weight(int n,int dst_loc_id,struct routing_strategy strategy[],struct rg_locator src_loc[],struct rg_locator dst_loc[])
+
 /* y5er */
 int  send_mr(int idx);
 int read_rec(union map_reply_record_generic *rec);
@@ -86,6 +89,41 @@ int construct_routing_strategy(int ns, int nd,
 	}
 	return n;
 }
+
+// decide the weight for selected destination locator
+void update_dst_locator_weight(int n,struct routing_strategy strategy[],struct rg_locator dst_loc[])
+{
+	int i;
+	for (i=0;i <n;i++)
+		if ( strategy[i].selected )
+		{
+			int d_id = strategy[i].dst_id;
+			dst_loc[d_id].selected 	= 1;
+			dst_loc[d_id].weight 	= dst_loc[d_id].weight +strategy[i].weight;
+		}
+}
+// for each selected destination locator dst_loc_id , find the weight for its followed source locator
+void calculating_weight(int n,int dst_loc_id,struct routing_strategy strategy[],struct rg_locator src_loc[],struct rg_locator dst_loc[])
+{
+	int i;
+	int sum=0;
+
+	if (dst_loc[dst_loc_id].selected)
+		sum = dst_loc[dst_loc_id].weight;
+
+	if (sum)
+	{
+		// calculate the weight for each source locator that have destination as dst_loc_id
+		for (i=0;i<n;i++)
+			if (strategy[i].selected && (strategy[i].dst_id == dst_loc ))
+			{
+				src_loc[strategy[i].src_id].selected = 1;
+				src_loc[strategy[i].src_id].weight =(strategy[i].weight * 100)/sum;
+			}
+	}
+}
+
+
 /* y5er rg */
 	size_t
 prefix2sockaddr(struct prefix *p, union sockunion *rs)
@@ -1077,6 +1115,7 @@ read_rec(union map_reply_record_generic *rec)
 		// contruct the local routing strategy
 		construct_routing_strategy(i_src,i_dst,rg_src_locator,rg_dst_locator,local_strategy);
 
+		/*
 		int i;
 		for (i=0;i<i_src*i_dst;i++)
 		{
@@ -1091,9 +1130,62 @@ read_rec(union map_reply_record_generic *rec)
 			inet_ntop(AF_INET,(void *)rg_dst_locator[did].addr, buff, BSIZE);
 			cp_log(LDEBUG, " destination locator %s \n",buff);
 		}
-
+		 */
 		// contruct the remote routing strategy
 		construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
+		routing_game_result_LISP(i_src*i_dst,1,local_strategy,remote_strategy);
+
+		update_dst_locator_weight(i_src*i_dst,local_strategy,rg_dst_locator);
+		for (i=0;i<i_dst;i++)
+		{
+			if (rg_dst_locator[i].selected);
+			{
+				char buff[BSIZE];
+				bzero(buff,BSIZE);
+				inet_ntop(AF_INET,(void *)rg_dst_locator[i].addr, buff, BSIZE);
+				cp_log(LDEBUG, " Destination locator %s with weight %d \n",buff,rg_dst_locator[i].weight);
+				calculating_weight(i_src*i_dst,rg_dst_locator[i].dst_id,local_strategy,rg_src_locator,rg_dst_locator);
+				int j;
+				for (j=0;j<i_src;j++)
+				{
+					if (rg_src_locator[j].selected);
+					{
+						bzero(buff,BSIZE);
+						inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, buff, BSIZE);
+						cp_log(LDEBUG, " Source locator %s with weight %d \n",buff,rg_src_locator[j].weight);
+
+					}
+				}
+			}
+		}
+
+		//weight_assignment(i_src*i_dst,i_dst,local_strategy,rg_src_locator,rg_dst_locator);
+		/*
+		int i;
+		for (i=0;i<i_src;i++)
+		{
+			if (rg_src_locator[i].selected);
+			{
+				char buff[BSIZE];
+				bzero(buff,BSIZE);
+				inet_ntop(AF_INET,(void *)rg_src_locator[i].addr, buff, BSIZE);
+				cp_log(LDEBUG, " Source locator %s with weight %d \n",buff,rg_src_locator[i].weight);
+
+			}
+		}
+		for (i=0;i<i_dst;i++)
+		{
+			if (rg_dst_locator[i].selected);
+			{
+				char buff[BSIZE];
+				bzero(buff,BSIZE);
+				inet_ntop(AF_INET,(void *)rg_dst_locator[i].addr, buff, BSIZE);
+				cp_log(LDEBUG, " Destination locator %s with weight %d \n",buff,rg_dst_locator[i].weight);
+
+			}
+		}
+		*/
+
 	}
 
 	// build routing game
