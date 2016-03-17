@@ -44,7 +44,7 @@ void  new_lookup(union sockunion *eid,  union sockunion *mr);
 void  new_lookup_with_src(union sockunion *eid,  union sockunion *mr, struct in_addr *ip_src);
 int construct_routing_strategy(int ns, int nd,
 							struct rg_locator local_loc[ns],struct rg_locator remote_loc[nd],
-							struct routing_strategy strategy[ns*nd])
+							struct routing_strategy strategy[ns*nd]);
 /* y5er */
 int  send_mr(int idx);
 int read_rec(union map_reply_record_generic *rec);
@@ -1006,7 +1006,7 @@ read_rec(union map_reply_record_generic *rec)
 								rg_src_locator[i_dst].weight 	= 0;
 								rg_src_locator[i_dst].selected 	= 0;
 								i_src++;
-								all_src_loc_added;
+								all_src_loc_added++;
 							}
 							/* y5er rg */
 
