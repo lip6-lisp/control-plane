@@ -42,6 +42,9 @@ int check_eid(union sockunion *eid);
 void  new_lookup(union sockunion *eid,  union sockunion *mr);
 /* y5er */
 void  new_lookup_with_src(union sockunion *eid,  union sockunion *mr, struct in_addr *ip_src);
+int construct_routing_strategy(int ns, int nd,
+							struct rg_locator local_loc[ns],struct rg_locator remote_loc[nd],
+							struct routing_strategy strategy[ns*nd])
 /* y5er */
 int  send_mr(int idx);
 int read_rec(union map_reply_record_generic *rec);
@@ -50,6 +53,39 @@ int opl_del(int s, struct db_node *node, int db);
 int opl_get(int s, struct db_node *mapp, int db, struct db_node *rs);
 int opl_update(int s, struct db_node *node, uint8_t);
 
+
+/* y5er rg */
+int construct_routing_strategy(int ns, int nd,
+							struct rg_locator local_loc[ns],struct rg_locator remote_loc[nd],
+							struct routing_strategy strategy[ns*nd])
+{
+	int i,j;
+	int n=0;
+	for (i=0;i<ns;i++ )
+	{
+		local_loc[i].weight = 0;
+		local_loc[i].selected = 0;
+		for (j=0;j<nd;j++)
+		{
+			strategy[i].s_id = i;
+			strategy[i].selected = 0;
+			strategy[i].weight = 0;
+			strategy[i].src_id = i;
+			strategy[i].dst_id = j;
+			strategy[i].loc_in_cost = local_loc[i].icost;
+			strategy[i].loc_eg_cost = local_loc[i].ecost;
+			// strategy[i].loc_eg_cost = local_loc[i].ecost + local_as_fwcost[i][j];
+
+			strategy[i].rmt_in_cost = remote_loc[j].icost;
+			strategy[i].rmt_eg_cost = remote_loc[j].ecost;
+			// strategy[i].rmt_eg_cost = remote_loc[j].ecost + remote_as_fwcost[j][i];
+			printf(" %d (%d,%d) %d %d %d %d \n", i, ii,jj, local[i].loc_in_cost,local[i].loc_eg_cost,local[i].rmt_in_cost,local[i].rmt_eg_cost);
+			n++;
+		}
+	}
+	return n;
+}
+/* y5er rg */
 	size_t
 prefix2sockaddr(struct prefix *p, union sockunion *rs)
 {	
@@ -674,11 +710,15 @@ read_rec(union map_reply_record_generic *rec)
 
 	/* y5er */
 	int n_dst = lcount;
-	int i_src = 0;
-	int i_dst = 0;
 	// set the number of destination locator to lcount
 	// notice: it could be smaller than lcount
 	// only count destination locator with RC flag on
+	int all_src_loc_added = 0;
+	// same list of src_loc added for all destination locator
+	// so just need to process one to contructe the rg_src_locator
+
+	int i_src = 0; // index for rg_src_locator array
+	int i_dst = 0; // index for dst_src_locator array
 	struct rg_locator rg_src_locator[n_src];
 	struct rg_locator rg_dst_locator[n_dst];
 
@@ -957,7 +997,7 @@ read_rec(union map_reply_record_generic *rec)
 							list_insert(src_loc_list,src_loc,NULL);
 							count++;
 							/* y5er rg */
-							if (i_src < n_src)
+							if (i_src < n_src && !all_src_loc_added)
 							{
 								rg_src_locator[i_dst].id 		= i_dst;
 								rg_src_locator[i_dst].addr 		= &src_loc->addr.sin.sin_addr;
@@ -966,6 +1006,7 @@ read_rec(union map_reply_record_generic *rec)
 								rg_src_locator[i_dst].weight 	= 0;
 								rg_src_locator[i_dst].selected 	= 0;
 								i_src++;
+								all_src_loc_added;
 							}
 							/* y5er rg */
 
@@ -1026,6 +1067,12 @@ read_rec(union map_reply_record_generic *rec)
 	/* y5er */
 	// converting the rg_src_loc and rg_dst_loc into 2 routing strategy array
 	// number of source locator and destination locator is i_src and i_dst
+	struct routing_strategy local_strategy[i_src*i_dst],remote_strategy[i_src*i_dst];
+	// contruct the local routing strategy
+	construct_routing_strategy(i_src,i_dst,rg_src_locator,rg_dst_locator,local_strategy);
+	// contruct the remote routing strategy
+	construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
+
 	// build routing game
 	// update the weight and priority for entry before adding to data plane
 	/* y5er */
