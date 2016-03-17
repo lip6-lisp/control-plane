@@ -81,6 +81,7 @@ int construct_routing_strategy(int ns, int nd,
 			// strategy[i].rmt_eg_cost = remote_loc[j].ecost + remote_as_fwcost[j][i];
 			//printf("\n %d (%d,%d) %d %d %d %d \n", n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
 			cp_log(LDEBUG, "\n Strategy %d (%d,%d) %d %d %d %d \n", n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
+			//cp_log(LDEBUG, "\n Strategy %d (%d,%d) %d %d %d %d \n", n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
 
 			n++;
 		}
@@ -1001,7 +1002,7 @@ read_rec(union map_reply_record_generic *rec)
 							/* y5er rg */
 							if (i_src < n_src && !all_src_loc_added)
 							{
-								rg_src_locator[i_src].id 		= i_dst;
+								rg_src_locator[i_src].id 		= i_src;
 								rg_src_locator[i_src].addr 		= &src_loc->addr.sin.sin_addr;
 								rg_src_locator[i_src].icost 	= rl->i_cost;
 								rg_src_locator[i_src].ecost 	= rl->e_cost;
@@ -1012,14 +1013,15 @@ read_rec(union map_reply_record_generic *rec)
 							/* y5er rg */
 							rl_entry = rl_entry->next;
 						}
+						if ( i_src == count && !all_src_loc_added )
+							all_src_loc_added++;
 						break; // just temporary put here
 					}
 					db_entry = db_entry->next;
 				}
 				entry->src_loc_count = count;
 				/* rg */
-				if ( i_src == count && !all_src_loc_added )
-					all_src_loc_added++;
+
 
 				cp_log(LLOG, " Number of source locator for that destination = %d ",entry->src_loc_count);
 			}
@@ -1076,6 +1078,22 @@ read_rec(union map_reply_record_generic *rec)
 		struct routing_strategy local_strategy[i_src*i_dst],remote_strategy[i_src*i_dst];
 		// contruct the local routing strategy
 		construct_routing_strategy(i_src,i_dst,rg_src_locator,rg_dst_locator,local_strategy);
+
+		int i;
+		for (i=0;i<i_src*i_dst;i++)
+		{
+			int sid = local_strategy[i].src_id;
+			int did = local_strategy[i].dst_id;
+			char buff[BSIZE];
+			cp_log(LDEBUG, "\n Strategy %d ",i);
+			bzero(buff,BSIZE);
+			inet_ntop(AF_INET,rg_src_locator[sid].addr, buff, BSIZE);
+			cp_log(LDEBUG, " source locator %s destination locator %s ",buff);
+			bzero(buff,BSIZE);
+			inet_ntop(AF_INET,rg_dst_locator[did].addr, buff, BSIZE);
+			cp_log(LDEBUG, " destination locator %s \n",buff);
+		}
+
 		// contruct the remote routing strategy
 		construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
 	}
