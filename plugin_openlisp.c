@@ -115,7 +115,7 @@ void calculating_weight(int n,int dst_loc_id,struct routing_strategy strategy[],
 	{
 		// calculate the weight for each source locator that have destination as dst_loc_id
 		for (i=0;i<n;i++)
-			if (strategy[i].selected && (strategy[i].dst_id == dst_loc ))
+			if ( (strategy[i].selected) && (strategy[i].dst_id == dst_loc_id ))
 			{
 				src_loc[strategy[i].src_id].selected = 1;
 				src_loc[strategy[i].src_id].weight =(strategy[i].weight * 100)/sum;
@@ -1145,7 +1145,7 @@ read_rec(union map_reply_record_generic *rec)
 				bzero(buff,BSIZE);
 				inet_ntop(AF_INET,(void *)rg_dst_locator[i].addr, buff, BSIZE);
 				cp_log(LDEBUG, " Destination locator %s with weight %d \n",buff,rg_dst_locator[i].weight);
-				calculating_weight(i_src*i_dst,rg_dst_locator[i].dst_id,local_strategy,rg_src_locator,rg_dst_locator);
+				calculating_weight(i_src*i_dst,rg_dst_locator[i].id,local_strategy,rg_src_locator,rg_dst_locator);
 				int j;
 				for (j=0;j<i_src;j++)
 				{
