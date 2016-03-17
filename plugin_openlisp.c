@@ -63,21 +63,19 @@ int construct_routing_strategy(int ns, int nd,
 	int n=0;
 	for (i=0;i<ns;i++ )
 	{
-		local_loc[i].weight = 0;
-		local_loc[i].selected = 0;
 		for (j=0;j<nd;j++)
 		{
-			strategy[i].s_id = i;
-			strategy[i].selected = 0;
-			strategy[i].weight = 0;
-			strategy[i].src_id = i;
-			strategy[i].dst_id = j;
-			strategy[i].loc_in_cost = local_loc[i].icost;
-			strategy[i].loc_eg_cost = local_loc[i].ecost;
+			strategy[n].s_id = i;
+			strategy[n].selected = 0;
+			strategy[n].weight = 0;
+			strategy[n].src_id = i;
+			strategy[n].dst_id = j;
+			strategy[n].loc_in_cost = local_loc[i].icost;
+			strategy[n].loc_eg_cost = local_loc[i].ecost;
 			// strategy[i].loc_eg_cost = local_loc[i].ecost + local_as_fwcost[i][j];
 
-			strategy[i].rmt_in_cost = remote_loc[j].icost;
-			strategy[i].rmt_eg_cost = remote_loc[j].ecost;
+			strategy[n].rmt_in_cost = remote_loc[j].icost;
+			strategy[n].rmt_eg_cost = remote_loc[j].ecost;
 			// strategy[i].rmt_eg_cost = remote_loc[j].ecost + remote_as_fwcost[j][i];
 			//printf("\n %d (%d,%d) %d %d %d %d \n", n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
 			cp_log(LDEBUG, "\n Strategy %d (%d,%d) %d %d %d %d \n", n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
@@ -1000,7 +998,7 @@ read_rec(union map_reply_record_generic *rec)
 							list_insert(src_loc_list,src_loc,NULL);
 							count++;
 							/* y5er rg */
-							if (i_src <= n_src && !all_src_loc_added)
+							if (i_src < n_src && !all_src_loc_added)
 							{
 								rg_src_locator[i_src].id 		= i_src;
 								rg_src_locator[i_src].addr 		= &src_loc->addr.sin.sin_addr;
@@ -1026,7 +1024,7 @@ read_rec(union map_reply_record_generic *rec)
 				cp_log(LLOG, " Number of source locator for that destination = %d ",entry->src_loc_count);
 			}
 			/* y5er rg */
-			if (i_dst <= n_dst)
+			if (i_dst < n_dst)
 			{
 				rg_dst_locator[i_dst].id 		= i_dst;
 				rg_dst_locator[i_dst].addr 		= &entry->rloc.sin.sin_addr;
@@ -1089,9 +1087,9 @@ read_rec(union map_reply_record_generic *rec)
 			bzero(buff,BSIZE);
 			inet_ntop(AF_INET,(void *)rg_src_locator[sid].addr, buff, BSIZE);
 			cp_log(LDEBUG, " source locator %s ",buff);
-			//bzero(buff,BSIZE);
-			//inet_ntop(AF_INET,rg_dst_locator[did].addr, buff, BSIZE);
-			//cp_log(LDEBUG, " destination locator %s \n",buff);
+			bzero(buff,BSIZE);
+			inet_ntop(AF_INET,(void *)rg_dst_locator[did].addr, buff, BSIZE);
+			cp_log(LDEBUG, " destination locator %s \n",buff);
 		}
 
 		// contruct the remote routing strategy
