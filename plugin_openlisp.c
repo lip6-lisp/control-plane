@@ -679,8 +679,8 @@ read_rec(union map_reply_record_generic *rec)
 	// set the number of destination locator to lcount
 	// notice: it could be smaller than lcount
 	// only count destination locator with RC flag on
-	struct rg_locator rg_src_loc[n_src];
-	struct rg_locator rg_dst_loc[n_dst];
+	struct rg_locator rg_src_locator[n_src];
+	struct rg_locator rg_dst_locator[n_dst];
 
 	/* y5er */
 	loc = (union map_reply_locator_generic *)CO(rec, rlen);
