@@ -1136,6 +1136,7 @@ read_rec(union map_reply_record_generic *rec)
 		routing_game_result_LISP(i_src*i_dst,1,local_strategy,remote_strategy);
 
 		update_dst_locator_weight(i_src*i_dst,local_strategy,rg_dst_locator);
+		int i;
 		for (i=0;i<i_dst;i++)
 		{
 			if (rg_dst_locator[i].selected);
