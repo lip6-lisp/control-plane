@@ -1133,7 +1133,9 @@ read_rec(union map_reply_record_generic *rec)
 		 */
 		// contruct the remote routing strategy
 		construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
-		routing_game_result_LISP(i_src*i_dst,1,local_strategy,remote_strategy);
+
+		int n_selected = routing_game_result_LISP(i_src*i_dst,1,local_strategy,remote_strategy);
+		cp_log(LDEBUG, " Number of selected strategy is %d \n",n_selected);
 
 		update_dst_locator_weight(i_src*i_dst,local_strategy,rg_dst_locator);
 		int i;
