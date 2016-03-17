@@ -79,7 +79,7 @@ int construct_routing_strategy(int ns, int nd,
 			strategy[i].rmt_in_cost = remote_loc[j].icost;
 			strategy[i].rmt_eg_cost = remote_loc[j].ecost;
 			// strategy[i].rmt_eg_cost = remote_loc[j].ecost + remote_as_fwcost[j][i];
-			printf(" %d (%d,%d) %d %d %d %d \n", i, ii,jj, local[i].loc_in_cost,local[i].loc_eg_cost,local[i].rmt_in_cost,local[i].rmt_eg_cost);
+			printf(" %d (%d,%d) %d %d %d %d \n", n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
 			n++;
 		}
 	}
