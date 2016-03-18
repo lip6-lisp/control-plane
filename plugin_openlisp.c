@@ -1191,15 +1191,20 @@ read_rec(union map_reply_record_generic *rec)
 				while (src_loc_entry != &src_loc_ls->tail) {
 					src_selected = 0;
 					src_loc_tmp = (struct source_locator *)src_loc_entry->data;
+					bzero(buff,BSIZE);
+					inet_ntop(AF_INET,(void *)src_loc_tmp->addr, buff, BSIZE);
+					cp_log(LDEBUG, " Check source %s  \n",buff);
+
+
 					for (j=0;j<i_src;j++)
 					{
 						if ( (rg_src_locator[j].selected)
-								&& (!memcmp(&(src_loc_tmp->addr),&(rg_src_locator[j].addr), sizeof(struct in_addr))) );
+								&& (!memcmp(&(src_loc_tmp->addr),&(rg_src_locator[j].addr),sizeof(struct in_addr))) );
 						{
 
 							bzero(buff,BSIZE);
 							inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, buff, BSIZE);
-							cp_log(LDEBUG, " Source locator %s with weight %d \n",buff,rg_src_locator[j].weight);
+							cp_log(LDEBUG, " ++Source locator %s with weight %d \n",buff,rg_src_locator[j].weight);
 
 							src_loc_tmp->priority = 1; // this is not used in the data plane yet
 							src_loc_tmp->weight  = rg_src_locator[j].weight;
@@ -1212,6 +1217,7 @@ read_rec(union map_reply_record_generic *rec)
 						src_loc_tmp->priority = 100; // this is not used in the data plane yet
 						src_loc_tmp->weight  = 0;
 					}
+
 					src_loc_entry = src_loc_entry->next;
 				}
 				/*
