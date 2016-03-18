@@ -25,6 +25,21 @@ struct eid_lookup {
 	/* y5er */
 };
 
+/* y5er */
+// locator structure designed to support routing game
+// it is used in LISP only, so not include in the library
+struct rg_locator
+{
+	uint8_t 			id;
+	struct in_addr 		*addr;
+	struct map_entry 	*entry; // only used for destination locator
+	uint8_t 			icost;
+	uint8_t 			ecost;
+	uint8_t 			weight;
+	uint8_t 			selected;
+};
+/* y5er */
+
 struct eid_lookup lookups[MAX_LOOKUPS];
 struct pollfd fds[MAX_LOOKUPS + 1];
 int fds_idx[MAX_LOOKUPS +1];
@@ -1183,6 +1198,8 @@ read_rec(union map_reply_record_generic *rec)
 						// + set weight = 0
 						// + set priority = 100
 						// need to define how to handle priority at the data plane
+						// need to modify map_insertrloc_withsrc in maptables.c
+						// when setting up the load balancing ring, only add when priority = 1 (for example)
 						// for the weight set to 0
 						// no need to add to the data plane, however the it impact processing time
 					}

@@ -5,7 +5,6 @@
  *      Author: sirius
  */
 #include <stdint.h>
-#include "db.h"
 
 #ifndef RGLIB_H_
 #define RGLIB_H_
@@ -16,16 +15,18 @@
 #define PARETO_INFERIOR 	0
 
 /* added 15Feb */
+/*
 struct rg_locator
 {
 	uint8_t 			id;
 	struct in_addr 		*addr;
-	struct map_entry 	*entry; // only used for destination locator
+	struct map_entry 	*entry;
 	uint8_t 			icost;
 	uint8_t 			ecost;
 	uint8_t 			weight;
 	uint8_t 			selected;
 };
+*/
 
 /* define coordination cost structure to hold multiple cost value into a 32bit variable */
 struct coordination_cost5 {
