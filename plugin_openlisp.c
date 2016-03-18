@@ -1199,7 +1199,7 @@ read_rec(union map_reply_record_generic *rec)
 					for (j=0;j<i_src;j++)
 					{
 						if ( (rg_src_locator[j].selected)
-								&& (!memcmp(&(src_loc_tmp->addr.sin.sin_addr),&(rg_src_locator[j].addr),sizeof(struct in_addr))) );
+								&& (memcmp(&(src_loc_tmp->addr.sin.sin_addr),&(rg_src_locator[j].addr),sizeof(struct in_addr)))==0);
 						{
 
 							bzero(buff,BSIZE);
