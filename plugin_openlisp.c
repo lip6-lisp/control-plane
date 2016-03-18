@@ -1195,13 +1195,11 @@ read_rec(union map_reply_record_generic *rec)
 					inet_ntop(AF_INET,(void *)&src_loc_tmp->addr.sin.sin_addr, buff, BSIZE);
 					cp_log(LDEBUG, " Check source %s  \n",buff);
 
-
 					for (j=0;j<i_src;j++)
 					{
 						if ( (rg_src_locator[j].selected)
-								&& (memcmp(&(src_loc_tmp->addr.sin.sin_addr),&(rg_src_locator[j].addr),sizeof(struct in_addr)))==0);
+								&& (memcmp(&(src_loc_tmp->addr.sin.sin_addr),&(rg_src_locator[j].addr),sizeof(struct in_addr)))==0)
 						{
-
 							bzero(buff,BSIZE);
 							inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, buff, BSIZE);
 							cp_log(LDEBUG, " ++Source locator %s with weight %d \n",buff,rg_src_locator[j].weight);
