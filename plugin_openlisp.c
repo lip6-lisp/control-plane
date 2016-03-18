@@ -1192,14 +1192,14 @@ read_rec(union map_reply_record_generic *rec)
 					src_selected = 0;
 					src_loc_tmp = (struct source_locator *)src_loc_entry->data;
 					bzero(buff,BSIZE);
-					inet_ntop(AF_INET,(void *)&src_loc_tmp->addr, buff, BSIZE);
+					inet_ntop(AF_INET,(void *)&src_loc_tmp->addr.sin.sin_addr, buff, BSIZE);
 					cp_log(LDEBUG, " Check source %s  \n",buff);
 
 
 					for (j=0;j<i_src;j++)
 					{
 						if ( (rg_src_locator[j].selected)
-								&& (!memcmp(&(src_loc_tmp->addr),&(rg_src_locator[j].addr),sizeof(struct in_addr))) );
+								&& (!memcmp(&(src_loc_tmp->addr.sin.sin_addr),&(rg_src_locator[j].addr),sizeof(struct in_addr))) );
 						{
 
 							bzero(buff,BSIZE);
