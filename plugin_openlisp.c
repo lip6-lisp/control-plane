@@ -1158,6 +1158,7 @@ read_rec(union map_reply_record_generic *rec)
 		int i;
 		for (i=0;i<i_dst;i++)
 		{
+			struct map_entry *correspond_entry =  rg_dst_locator[i].entry;
 			if (rg_dst_locator[i].selected);
 			{
 				char buff[BSIZE];
@@ -1166,16 +1167,54 @@ read_rec(union map_reply_record_generic *rec)
 				cp_log(LDEBUG, " Destination locator %s with weight %d \n",buff,rg_dst_locator[i].weight);
 
 				bzero(buff,BSIZE);
-				struct map_entry *correspond_entry =  rg_dst_locator[i].entry;
+
 				inet_ntop(AF_INET,(void *)&correspond_entry->rloc.sin.sin_addr, buff, BSIZE);
 				cp_log(LDEBUG, " Mapping entry for %s  \n",buff);
 				// update weight and priority for the corresponding entry
 				// all selected destination locator having same prioity = 1
 				// weight is set according to calculated value
+				correspond_entry->priority = 1;
+				correspond_entry->weight = rg_dst_locator[i].weight;
 
-				// update also the source locator list for corresponding entry
+				// assign weight for each source locator in the list
 				calculating_weight(i_src*i_dst,rg_dst_locator[i].id,local_strategy,rg_src_locator,rg_dst_locator);
+
+				// update the source locator list for corresponding entry
+				struct list_t *src_loc_ls = correspond_entry->src_loc;
+				struct list_entry_t * src_loc_entry;
+				struct source_locator *src_loc_tmp;
 				int j;
+				int src_selected;
+				// find correspond source entry in the src_loc_ls list and update weight
+				src_loc_entry = src_loc_ls->head.next;
+
+				while (src_loc_entry != &src_loc_ls->tail) {
+					src_selected = 0;
+					src_loc_tmp = (struct source_locator *)src_loc_entry->data;
+					for (j=0;j<i_src;j++)
+					{
+						if ( (rg_src_locator[j].selected)
+								&& (!memcmp(&(src_loc_tmp->addr),&(rg_src_locator[j].addr), sizeof(struct in_addr))) );
+						{
+
+							bzero(buff,BSIZE);
+							inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, buff, BSIZE);
+							cp_log(LDEBUG, " Source locator %s with weight %d \n",buff,rg_src_locator[j].weight);
+
+							src_loc_tmp->priority = 1; // this is not used in the data plane yet
+							src_loc_tmp->weight  = rg_src_locator[j].weight;
+							src_selected++;
+							break;
+						}
+					}
+					if ( !src_selected )
+					{
+						src_loc_tmp->priority = 100; // this is not used in the data plane yet
+						src_loc_tmp->weight  = 0;
+					}
+					src_loc_entry = src_loc_entry->next;
+				}
+				/*
 				for (j=0;j<i_src;j++)
 				{
 					if (rg_src_locator[j].selected);
@@ -1183,6 +1222,24 @@ read_rec(union map_reply_record_generic *rec)
 						bzero(buff,BSIZE);
 						inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, buff, BSIZE);
 						cp_log(LDEBUG, " Source locator %s with weight %d \n",buff,rg_src_locator[j].weight);
+
+						// find correspond source entry in the src_loc_ls list and update weight
+						src_loc_entry = src_loc_ls->head.next;
+						while (src_loc_entry != &src_loc_ls->tail) {
+							src_loc_tmp = (struct source_locator *)src_loc_entry->data;
+							if ( !memcmp(&(src_loc_tmp->addr),&(rg_src_locator[j].addr), sizeof(struct in_addr)) )
+							{
+								src_loc_tmp->priority = 1; // this is not used in the data plane yet
+								src_loc_tmp->weight  = rg_src_locator[j].weight;
+								break;
+							}
+							//else
+							//{
+							//	src_loc_tmp->priority = 1; // this is not used in the data plane yet
+							//	src_loc_tmp->weight  = 0;
+							//}
+							src_loc_entry = src_loc_entry->next;
+						}
 
 						// we need to do an update here to update weight and priority for
 						// destination and source before adding them to the data plane
@@ -1204,13 +1261,17 @@ read_rec(union map_reply_record_generic *rec)
 						// for the weight set to 0
 						// no need to add to the data plane, however the it impact processing time
 				}
+				*/
 			}
-			//else
-			//{
-			//}
 			// if this destination locator is not selected
-			// need also to update it, but with weight = 0 and priority higher ( = 10 )
+			// need also to update it, but with weight = 0 and priority higher ( = 100 )
 			// and for each followed source locator, same priority and weight (deafault behavior)
+			else
+			{
+				correspond_entry->priority = 100;
+				correspond_entry->weight = 100 ;
+			}
+
 		}
 
 		//weight_assignment(i_src*i_dst,i_dst,local_strategy,rg_src_locator,rg_dst_locator);
