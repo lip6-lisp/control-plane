@@ -1192,7 +1192,7 @@ read_rec(union map_reply_record_generic *rec)
 					src_selected = 0;
 					src_loc_tmp = (struct source_locator *)src_loc_entry->data;
 					bzero(buff,BSIZE);
-					inet_ntop(AF_INET,(void *)src_loc_tmp->addr, buff, BSIZE);
+					inet_ntop(AF_INET,(void *)&src_loc_tmp->addr, buff, BSIZE);
 					cp_log(LDEBUG, " Check source %s  \n",buff);
 
 
