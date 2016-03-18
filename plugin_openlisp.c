@@ -1159,7 +1159,7 @@ read_rec(union map_reply_record_generic *rec)
 		for (i=0;i<i_dst;i++)
 		{
 			struct map_entry *correspond_entry =  rg_dst_locator[i].entry;
-			if (rg_dst_locator[i].selected);
+			if (rg_dst_locator[i].selected)
 			{
 				char buff[BSIZE];
 				bzero(buff,BSIZE);
@@ -1263,9 +1263,6 @@ read_rec(union map_reply_record_generic *rec)
 				}
 				*/
 			}
-			// if this destination locator is not selected
-			// need also to update it, but with weight = 0 and priority higher ( = 100 )
-			// and for each followed source locator, same priority and weight (deafault behavior)
 			else
 			{
 				correspond_entry->priority = 100;
