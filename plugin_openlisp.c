@@ -1066,6 +1066,7 @@ read_rec(union map_reply_record_generic *rec)
 			{
 				rg_dst_locator[i_dst].id 		= i_dst;
 				rg_dst_locator[i_dst].addr 		= &entry->rloc.sin.sin_addr;
+				rg_dst_locator[i_dst].entry 	= entry;
 				rg_dst_locator[i_dst].icost 	= entry->priority;
 				rg_dst_locator[i_dst].ecost 	= entry->weight;
 				rg_dst_locator[i_dst].weight 	= 0;
@@ -1134,6 +1135,7 @@ read_rec(union map_reply_record_generic *rec)
 		// contruct the remote routing strategy
 		construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
 
+		// build the routing game
 		int n_selected = routing_game_result_LISP(i_src*i_dst,1,local_strategy,remote_strategy);
 		cp_log(LDEBUG, " Number of selected strategy is %d \n",n_selected);
 
@@ -1147,6 +1149,16 @@ read_rec(union map_reply_record_generic *rec)
 				bzero(buff,BSIZE);
 				inet_ntop(AF_INET,(void *)rg_dst_locator[i].addr, buff, BSIZE);
 				cp_log(LDEBUG, " Destination locator %s with weight %d \n",buff,rg_dst_locator[i].weight);
+
+				bzero(buff,BSIZE);
+				struct map_entry *correspond_entry =  rg_dst_locator[i].entry;
+				inet_ntop(AF_INET,(void *)&correspond_entry->rloc.sin.sin_addr, buff, BSIZE);
+				cp_log(LDEBUG, " Mapping entry for %s  \n",buff);
+				// update weight and priority for the corresponding entry
+				// all selected destination locator having same prioity = 1
+				// weight is set according to calculated value
+
+				// update also the source locator list for corresponding entry
 				calculating_weight(i_src*i_dst,rg_dst_locator[i].id,local_strategy,rg_src_locator,rg_dst_locator);
 				int j;
 				for (j=0;j<i_src;j++)
@@ -1157,9 +1169,31 @@ read_rec(union map_reply_record_generic *rec)
 						inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, buff, BSIZE);
 						cp_log(LDEBUG, " Source locator %s with weight %d \n",buff,rg_src_locator[j].weight);
 
+						// we need to do an update here to update weight and priority for
+						// destination and source before adding them to the data plane
+						// lookup using the locator addr
+						// locators that are not select will have weight value equal to 0
+						// or having higher priority
+						// then the data plane will handle that
+					}
+					else
+					{
+						// if it is not selected, we still keep in the list added to dataplane
+						// but we made change to deactivate it, two choice here
+						// + set weight = 0
+						// + set priority = 100
+						// need to define how to handle priority at the data plane
+						// for the weight set to 0
+						// no need to add to the data plane, however the it impact processing time
 					}
 				}
 			}
+			//else
+			//{
+			//}
+			// if this destination locator is not selected
+			// need also to update it, but with weight = 0 and priority higher ( = 10 )
+			// and for each followed source locator, same priority and weight (deafault behavior)
 		}
 
 		//weight_assignment(i_src*i_dst,i_dst,local_strategy,rg_src_locator,rg_dst_locator);
@@ -1190,8 +1224,6 @@ read_rec(union map_reply_record_generic *rec)
 		*/
 
 	}
-
-	// build routing game
 	// update the weight and priority for entry before adding to data plane
 	/* y5er */
 	/* add to OpenLISP mapping cache */

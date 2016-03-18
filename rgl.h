@@ -5,6 +5,7 @@
  *      Author: sirius
  */
 #include <stdint.h>
+#include "db.h"
 
 #ifndef RGLIB_H_
 #define RGLIB_H_
@@ -17,12 +18,13 @@
 /* added 15Feb */
 struct rg_locator
 {
-	uint8_t 		id;
-	struct in_addr 	*addr;
-	uint8_t 		icost;
-	uint8_t 		ecost;
-	uint8_t 		weight;
-	uint8_t 		selected;
+	uint8_t 			id;
+	struct in_addr 		*addr;
+	struct map_entry 	*entry; // only used for destination locator
+	uint8_t 			icost;
+	uint8_t 			ecost;
+	uint8_t 			weight;
+	uint8_t 			selected;
 };
 
 /* define coordination cost structure to hold multiple cost value into a 32bit variable */
