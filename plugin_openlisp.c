@@ -1191,8 +1191,9 @@ read_rec(union map_reply_record_generic *rec)
 						// or having higher priority
 						// then the data plane will handle that
 					}
-					else
-					{
+					//else
+					//{
+					//}
 						// if it is not selected, we still keep in the list added to dataplane
 						// but we made change to deactivate it, two choice here
 						// + set weight = 0
@@ -1202,7 +1203,6 @@ read_rec(union map_reply_record_generic *rec)
 						// when setting up the load balancing ring, only add when priority = 1 (for example)
 						// for the weight set to 0
 						// no need to add to the data plane, however the it impact processing time
-					}
 				}
 			}
 			//else
