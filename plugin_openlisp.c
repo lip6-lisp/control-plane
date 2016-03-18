@@ -1198,14 +1198,13 @@ read_rec(union map_reply_record_generic *rec)
 					for (j=0;j<i_src;j++)
 					{
 						char ip_buf[BSIZE];
-						bzero(ip_buf);
+						bzero(ip_buf,BSIZE);
 						inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, ip_buf, BSIZE);
 					    // cp_log(LDEBUG, "  --- locator %s selected = %d \n",buff,rg_src_locator[j].selected);
 
 						//if ( (rg_src_locator[j].selected)
 						//		&& (!memcmp(&src_loc_tmp->addr.sin.sin_addr,&rg_src_locator[j].addr,sizeof(struct in_addr))))
-						if ( (rg_src_locator[j].selected)
-								&& (strcmp(ip_buf,buff)==0)
+						if ( (rg_src_locator[j].selected) && (strcmp(ip_buf,buff)==0) )
 						{
 							//bzero(buff,BSIZE);
 							//inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, buff, BSIZE);
