@@ -1094,9 +1094,13 @@ read_rec(union map_reply_record_generic *rec)
 				i_dst++;
 			}
 		}
-		else // RC flag is off, this entry not including the routing cost
+		else
+		// RC flag is off, this entry not including the routing cost, RLOC is not considered as a destination locator
+		// not participate in routing game , so we should set a higher priority
 		{
 			entry->src_loc_count = 0;
+			entry->priority = 100;
+			entry->weight = 100;
 		}
 		/* y5er */
 
@@ -1130,6 +1134,9 @@ read_rec(union map_reply_record_generic *rec)
 	// converting the rg_src_loc and rg_dst_loc into 2 routing strategy array
 	// number of source locator and destination locator is i_src and i_dst
 	// only build routing game when there are more than 2 locators
+	// TODO
+	// how to handle the case where routing game is not built ?
+	// return 0 , since the priority and weight now donot have original meaning
 	if ( i_dst > 1 && i_src > 1 )
 	{
 		struct routing_strategy local_strategy[i_src*i_dst],remote_strategy[i_src*i_dst];
@@ -1225,7 +1232,9 @@ read_rec(union map_reply_record_generic *rec)
 				correspond_entry->priority = 100;
 				correspond_entry->weight = 100 ;
 			}
-
+			// TODO
+			// how about the entry that are not in destination locator array
+			// entry that have RC->flag off
 		}
 	}
 	// update the weight and priority for entry before adding to data plane
