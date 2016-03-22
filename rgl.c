@@ -14,7 +14,7 @@
 
 /* Routing game's global parameter */
 int 	N;			// number of strategy or number of multipath (number of peering links ^ number of inter flow pairs)
-int 	Policy;		// PEMP coordination policy (0-3), provided by user
+int 	Policy;		// PEMP coordination policy (0-3), provided by user, LISP's routing policy is 4
 int 	LB;			// even load-balancing (0) or weighted load-balancing (1)
 float 	T;			// value of potential threshold
 
@@ -182,8 +182,10 @@ void updatePvalue(int i, int j,strategy_profile p[N][N])
 	}
 }
 
-// set potential value to 0 for the profile (i,j) that has the minimum egress cost
+// the default approach for calculating Potential value for each strategy profile
+// firstly set potential value to 0 for the profile (i,j) that has the minimum egress cost
 // i is the strategy that has min egress cost on local side while j is the strategy that has min egress cost on peer
+// using the updatePvalue() function to calculate potential value for all other profile
 void calculatePvalue(path_cost path[], strategy_profile p[N][N])
 {
 	int i,j;
@@ -209,14 +211,13 @@ void calculatePvalue(path_cost path[], strategy_profile p[N][N])
 }
 
 
-// special use for LISP_TE implementation where we have different input
+// a different approach for computing the potential value (used in LISP-TE)
 // set potential value to 0 for the profile (i,j) that is a social welfare (minimum (local cost + remote cost) )
-// i is the strategy that has min egress cost on local side while j is the strategy that has min egress cost on peer
 void find_potential_min(struct routing_strategy local_strategy[],
 		struct routing_strategy remote_strategy[],
 		strategy_profile p[N][N])
 {
-	uint8_t min_cost = p[0][0].localcost +  p[0][0].peercost;
+	uint8_t min_cost = p[0][0].localcost + p[0][0].peercost;
 	uint8_t i,j;
 
 	// find the social welfare profile
@@ -234,38 +235,14 @@ void find_potential_min(struct routing_strategy local_strategy[],
 				break;
 			}
 
-
-	/*
-	local_min 	= local_strategy[0].loc_eg_cost;
-	remote_min 	= remote_strategy[0].loc_eg_cost;
-
-	for(i=0;i<N;i++)
-	{
-		local_min = (local_strategy[i].loc_eg_cost <local_min) ? local_strategy[i].loc_eg_cost : local_min ;
-		remote_min = (remote_strategy[i].loc_eg_cost <remote_min) ? remote_strategy[i].loc_eg_cost : remote_min ;
-	}
-	printf(" local min = %d \n",local_min);
-	printf(" remote min = %d \n",remote_min);
-
-	for (i =0; i<N;i++)
-		for (j=0; j<N;j++)
-			if (local_strategy[i].loc_eg_cost == local_min
-					&& remote_strategy[j].loc_eg_cost == remote_min ){
-				p[i][j].pvalue = 0;
-				updatePvalue(i,j,p);
-				break;
-			}
-	 */
 }
 
-// from the two routing_strategy array, create a 2D array of strategy profiles
-// also calculate the corresponding potential value for each profile after that
 
-// extend build game - added 14/03
-// build game from local strategy and remote strategy
-// number of strategy is N , global parameter , set by game_configure() function (N = number of gateway x number of locator)
-// remember the strategy_profile structure is different than the routing_strategy structure
-// need to have a linkage between these two structure
+
+// a different version of buildGame function - added on 14Mar
+// from the two routing_strategy array local_strategy and remote_strategy, create a 2D array of strategy profiles
+// number of strategy is N (global parameter),set by game_configure() function (N=number of gateway x number of locator)
+// also calculate the corresponding potential value for each profile (using the find_potential_min function)
 void build_routing_game(struct routing_strategy local_strategy[N],
 		struct routing_strategy remote_strategy[N],
 		strategy_profile profile[N][N])
@@ -277,9 +254,6 @@ void build_routing_game(struct routing_strategy local_strategy[N],
 		{
 			profile[i][j].localcost = local_strategy[i].loc_eg_cost + remote_strategy[j].rmt_in_cost ;
 			profile[i][j].peercost 	= local_strategy[i].rmt_in_cost + remote_strategy[j].loc_eg_cost ;
-			//printf(" profile[%d,%d] ",i,j);
-			//printf(" local cost = %d + %d ",local_strategy[i].loc_eg_cost, remote_strategy[j].rmt_in_cost );
-			//printf(" peer cost = %d + %d \n",local_strategy[i].rmt_in_cost, remote_strategy[j].loc_eg_cost );
 			profile[i][j].eq = 0;
 			profile[i][j].pe = 0;
 			profile[i][j].status = 0;
@@ -288,26 +262,27 @@ void build_routing_game(struct routing_strategy local_strategy[N],
 
 	find_potential_min(local_strategy,remote_strategy,profile);
 
+	/*
 	printf("\n");
 	for (i=0;i<N;i++)
 	{
 		for (j=0;j<N;j++)
 		{
-			//printf(" profile[%d,%d] cost value (%d,%d) potential value %d \n",i,j,profile[i][j].localcost,profile[i][j].peercost,profile[i][j].pvalue);
-			printf("  (%d,%d)",profile[i][j].localcost,profile[i][j].peercost);
-			printf("[%d]",profile[i][j].pvalue);
+			// printf(" profile[%d,%d] cost value (%d,%d) potential value %d \n",i,j,profile[i][j].localcost,profile[i][j].peercost,profile[i][j].pvalue);
+			// printf("  (%d,%d)",profile[i][j].localcost,profile[i][j].peercost);
+			// printf("[%d]",profile[i][j].pvalue);
 			if (profile[i][j].status)
 				printf("*");
 			printf("   ");
 		}
 		printf("\n");
 	}
+	*/
 
 }
 
 
 /* Finding the right threshold value when the input threshold is between 0 and 1 (Not mentioned in the paper) */
-
 // support the find_threshold function
 void bubble_sort(int list[], int np)
 {
@@ -493,8 +468,9 @@ int efficiencyCompare(strategy_profile p1, strategy_profile p2)
 		return PARETO_INFERIOR;
 }
 
+// added on 14Mar
+// determine whether a profile p1 is Pareto inferior to profile p2 or not
 // return 1 if p1 is pareto inferior to p2
-// use strict less than (<) not equal or less than (<=)
 int paretoinferior(strategy_profile p1, strategy_profile p2)
 {
 	if ( ((p1.localcost > p2.localcost) && (p1.peercost >= p2.peercost))
@@ -538,6 +514,8 @@ void NEMP(strategy_profile p[N*N],int ne, int nash_set[ne])
 
 }
 
+// added on 14Mar
+// policy used by LISP-TE
 void restrict_equilibrium_set(strategy_profile p[N*N],int ne, int nash_set[ne])
 {
 	int i,j,flag;
@@ -553,9 +531,8 @@ void restrict_equilibrium_set(strategy_profile p[N*N],int ne, int nash_set[ne])
 		{
 			if ( j != i && paretoinferior(p[nash_set[i]], p[nash_set[j]]) == 1)
 			{
+				//printf("profile(%d,%d) is pareto inferrior to (%d,%d) \n",p[nash_set[i]].localcost,p[nash_set[i]].peercost,p[nash_set[j]].localcost,p[nash_set[j]].peercost);
 				flag = 1;
-				printf("profile(%d,%d) is pareto inferrior to (%d,%d) \n",p[nash_set[i]].localcost,p[nash_set[i]].peercost,
-																p[nash_set[j]].localcost,p[nash_set[j]].peercost);
 				break;
 			}
 		}
@@ -569,11 +546,8 @@ void restrict_equilibrium_set(strategy_profile p[N*N],int ne, int nash_set[ne])
 	}
 
 	if (!selected) // if no profile is selected, selected all
-	{
-		printf("all selected \n");
 		for (i=0;i<ne;i++)
 			p[nash_set[i]].status = 1;
-	}
 
 }
 
@@ -749,7 +723,7 @@ void ParetoJump(strategy_profile p[N*N],int ne,int ns[ne])
 }
 
 //Make routing decision based on the selected coordination policy
-//0(NEMP) 1(Pareto Frontier) 2(Unselfish Jump) 3(Pareto Jump)
+//0(NEMP) 1(Pareto Frontier) 2(Unselfish Jump) 3(Pareto Jump) 4(restrict_equilibrium_set)
 void applyPolicy(strategy_profile g[N][N])
 {
 	int i,j;
@@ -960,6 +934,7 @@ void initPathArr(int n,routing_path path[])
 	}
 }
 
+// the default routing decision process
 // recording the routing decision and load distribution made by local AS into selectedpath array
 // return the number of path selected by local AS
 int routingDecision(strategy_profile g[N][N],path_cost s[],routing_path selectedpath[],int p)
@@ -1010,7 +985,10 @@ int routingDecision(strategy_profile g[N][N],path_cost s[],routing_path selected
 	return npath;
 }
 
-// added for LISP_TE 15/03
+// added for LISP_TE 15Mar
+// the default routingDecision() function could not be reused
+// this new routing_decision() function updates local routing strategy
+// with the result from the routing game, determine which profiles are selected
 int routing_decision(int n, struct routing_strategy local_strategy[n],
 						struct routing_strategy remote_strategy[n],
 						strategy_profile profile[n][n],
@@ -1018,8 +996,9 @@ int routing_decision(int n, struct routing_strategy local_strategy[n],
 {
 	uint8_t i,j,x;
 	uint8_t n_selected =0 ; // number of selected strategy
-	// we using the same selected path array to store the routing decision
-	// the only different is the selectedpath[i].id = id of local strategy
+	// we also use the selected path array to keep track of the routing decision
+	// the only difference is the selectedpath[i].id is set to the id of local strategy
+
 	// init the selected path array
 	initPathArr(n,selectedpath);
 	x = 0;
@@ -1028,14 +1007,12 @@ int routing_decision(int n, struct routing_strategy local_strategy[n],
 		for (j=0;j<N;j++)
 			if (profile[i][j].status)
 			{
+				// update selected local and remote strategy
 				local_strategy[i].selected = 1;
 				remote_strategy[j].selected = 1;
-				// local_strategy[i].weight
-				// need to calculate the weight for each local_strategy
-				//printf("Local strategy %d Source locator %d and destination locator %d \n",
-				//		i,local_strategy[i].src_id,local_strategy[i].dst_id);
-				//printf("Remote strategy %d \n",j);
-				selectedpath[x].id = i ;
+
+				// keep track of selected local strategy in the selected path array
+				selectedpath[x].id = i ; // i also the id of local strategy
 				selectedpath[x].status = 1 ;
 				selectedpath[x].pvalue = profile[i][j].pvalue;
 				selectedpath[x].freq = 1 ;
@@ -1043,17 +1020,18 @@ int routing_decision(int n, struct routing_strategy local_strategy[n],
 			}
 
 	remove_duplicated_selection(x,selectedpath);
+
+	// calculate the weight for each selected strategy
 	loadCal(x,selectedpath);
-	for (i=0; i < x; i++)
+	for (i=0;i<x;i++)
 	{
 		if ( selectedpath[i].status )
 		{
-			printf("Path %d is selected, weight = %f ",selectedpath[i].id,selectedpath[i].tload);
+			// printf("Path %d is selected, weight = %f ",selectedpath[i].id,selectedpath[i].tload);
 			int id = selectedpath[i].id;
 			// id of selected selectedpath is also the the id of loc_routing_strategy
 			// from id of selected path, we can find the corresponding local routing strategy -> source locator and destiantion locator
-			printf("source locator %d and destination locator %d \n"
-					,local_strategy[id].src_id,local_strategy[id].dst_id);
+			//printf("source locator %d and destination locator %d \n" ,local_strategy[id].src_id,local_strategy[id].dst_id);
 			n_selected++;
 			// need to translate the weight to source and destination locator weight
 		}
@@ -1105,24 +1083,23 @@ void update_local_strategy(int n, struct routing_strategy local_strategy[],routi
 	}
 }
 
-// modified 16/03
-// calling new defined functions support for LISP-TE
+// modified 15Mar
+// calling new defined functions that support LISP-TE
 // building_routing_game takes two new input
-// + local_strategy represents the path used by local router to reach a remote router
-//   path is a combination of source locator and destination locator
-// + remote_strategy represents the path used by remote router to send traffic to local router
-//   * these how to generated these input is not part of the library
-// rouing game is constructed by considering all possible combinations of local and remote strategy
-// from that the set strategy profiles is computed, potential vaule is computed (not the same technique as PEMP)
-// and equilibria profiles is selected
-// depend on potential value, threshold and policy (pareto restriction , policy = 4) determine selected strategy
-//   + need to define a method to find a threshold value ( 1st quartile of potential distribution)
-// reuse the selected path, then convert the result from selected path to local_strategy array
-// from the weight for each local strategy, calculate the weight for each source and destination locator
-//   + this function is not part of the library
+// + local_strategy represents the routing path could be used by local router to direct traffic to remote site
+// + remote_strategy represents the routing path could be used by remote router to send traffic to local site
+// NOTE: how to create these local and strategy is not part of the routing game library
 
-// update the local's routing strategy local_strategy with weight
-// weight represented for the percentage of traffic distributed
+// Routing game is constructed by considering all possible combinations of local and remote strategy
+// from that the set of strategy profiles is built with corresponding potential value of each profile
+// then the equilibria profiles are selected
+// depend on potential value, threshold and policy (pareto restriction, policy = 4) the selected profile is determined
+// NOTE: define a method to find a threshold value (1st quartile of potential distribution)
+
+// Reuse the selected_path array, then convert the result from selected path to local_strategy array
+// update the local_strategy with weight, weight represented for the percentage of traffic distributed on that path
+// from the computed weight for each local strategy, calculate the corresponding weight for each destination and source locator
+// NOTE: this weight assginment is not part of the routing game library
 int routing_game_result_LISP(int n, float t,
 		struct routing_strategy local_strategy[n],
 		struct routing_strategy remote_strategy[n])

@@ -14,7 +14,7 @@
 #define PARETO_SUPERIOR 	1
 #define PARETO_INFERIOR 	0
 
-/* added 15Feb */
+/* This structure is used only by LISP, so we should rather define in LISP control plane */
 /*
 struct rg_locator
 {
@@ -28,7 +28,7 @@ struct rg_locator
 };
 */
 
-/* define coordination cost structure to hold multiple cost value into a 32bit variable */
+/* Define coordination cost structure to hold multiple cost value into a 32bit variable */
 struct coordination_cost5 {
 	unsigned int incost : 8;
 	unsigned int egcost : 8;
@@ -59,20 +59,23 @@ struct path_cost
 
 };
 typedef struct path_cost path_cost;
+/* routing path is also 1 kind of simpler routing strategy in which each out going link is consider as a strategy */
+// was used in PEMP
 
+
+/* routing strategy which combine the selection of source and destination, each pair of source and destination is consider as a strategy */
+// was used in LISP-TE
 struct routing_strategy
 {
-	uint8_t 		s_id;
-	uint8_t 		src_id;
-	uint8_t 		dst_id;
-	//struct in_addr 	src_loc;
-	//struct in_addr 	dst_loc;
-	uint8_t 		loc_in_cost;
-	uint8_t 		loc_eg_cost;
-	uint8_t 		rmt_in_cost;
-	uint8_t 		rmt_eg_cost;
-	uint8_t 		selected;
-	uint8_t 		weight;
+	uint8_t 	s_id;
+	uint8_t 	src_id;
+	uint8_t 	dst_id;
+	uint8_t 	loc_in_cost;
+	uint8_t 	loc_eg_cost;
+	uint8_t 	rmt_in_cost;
+	uint8_t 	rmt_eg_cost;
+	uint8_t 	selected;
+	uint8_t 	weight;
 };
 
 /*
@@ -92,7 +95,7 @@ struct strategy_profile
 typedef struct strategy_profile strategy_profile;
 
 
-/* routing_path is the structure recored all the information required for the selected routing path*/
+/* routing_path is the structure recored all the information required for the selected routing path */
 struct routing_path
 {
 	int 	id;
