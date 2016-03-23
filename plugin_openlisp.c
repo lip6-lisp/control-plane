@@ -774,7 +774,7 @@ read_rec(union map_reply_record_generic *rec)
 				inet_ntop(AF_INET,(void *)&local_map_node->peer.u.prefix4, peer_ipadd, BSIZE);
 
 				// if ( !memcmp(&(local_map_node->peer.u.prefix4),&(eid.u.prefix4),sizeof(struct in_addr)) )
-				if ( (peer_ipadd) && (strcmp(peer_ipadd,buf)==0) ) //buf is currently set as eid.u.prefix
+				if (strcmp(peer_ipadd,buf)==0)  //buf is currently set as eid.u.prefix
 				{
 					is_peer = 1;
 					cp_log(LDEBUG, " peer eid  \n");
@@ -802,7 +802,7 @@ read_rec(union map_reply_record_generic *rec)
 	int i_dst = 0; // index for dst_src_locator array
 	struct rg_locator rg_src_locator[n_src];
 	struct rg_locator rg_dst_locator[n_dst];
-
+	int n_nongame_rloc = 0; // count the number of advertised RLOC but have RC flag off or not a local one
 	/* y5er */
 	// TODO
 	// consider the case when one loc is play routing game (RC flag on), the other not playing ?
@@ -1004,7 +1004,7 @@ read_rec(union map_reply_record_generic *rec)
 		// now attach to each of the advertised RLOC a same list of local locator (source locator) collected from the local_node
 		if (is_peer)
 		{
-			if ( entry->RC )
+			if ( entry->RC && entry->L )
 			{
 				int count = 0;
 				if ( _fncs & (_FNC_XTR | _FNC_RTR ))
@@ -1081,11 +1081,12 @@ read_rec(union map_reply_record_generic *rec)
 					i_dst++;
 				}
 			}
-			else // RC flag is off, RLOC does not particiate in routing game
+			else // RC flag is off or RLOC is not local at the remote site, RLOC does not particiate in routing game
 			{
-				entry->src_loc_count = 0;
-				entry->priority = 100;
-				entry->weight 	= 100;
+				entry->src_loc_count 	= 0;
+				entry->priority 		= 100+n_nongame_rloc;
+				entry->weight 			= 100;
+				n_nongame_rloc++;
 			}
 		}
 		/* y5er end */
@@ -1210,8 +1211,8 @@ read_rec(union map_reply_record_generic *rec)
 			}
 			else // the destination locator is not selected, update cooresponding entry with high priority
 			{
-				correspond_entry->priority 	= 100;
-				correspond_entry->weight 	= 100 ;
+				correspond_entry->priority 	= 99; // priority >= is for non game locator
+				correspond_entry->weight 	= 10; // remember the total weight for RLOC of same prioirty must smaller than 100
 			}
 		}
 	}
