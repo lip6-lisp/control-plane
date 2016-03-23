@@ -994,14 +994,13 @@ int routing_decision(int n, struct routing_strategy local_strategy[n],
 						strategy_profile profile[n][n],
 						routing_path selectedpath[n])
 {
-	uint8_t i,j,x;
-	uint8_t n_selected =0 ; // number of selected strategy
-	// we also use the selected path array to keep track of the routing decision
-	// the only difference is the selectedpath[i].id is set to the id of local strategy
+	uint8_t i,j,x=0;
+	uint8_t n_selected = 0 ; // number of selected strategy
+	// reuse the selectedpath array to keep track of the routing decision
+	// the difference is the selectedpath[i].id is set to the id of local strategy
 
-	// init the selected path array
+
 	initPathArr(n,selectedpath);
-	x = 0;
 
 	for (i=0;i<N;i++)
 		for (j=0;j<N;j++)
@@ -1012,10 +1011,10 @@ int routing_decision(int n, struct routing_strategy local_strategy[n],
 				remote_strategy[j].selected = 1;
 
 				// keep track of selected local strategy in the selected path array
-				selectedpath[x].id = i ; // i also the id of local strategy
-				selectedpath[x].status = 1 ;
-				selectedpath[x].pvalue = profile[i][j].pvalue;
-				selectedpath[x].freq = 1 ;
+				selectedpath[x].id 		= i ; // i is the id of local strategy, actually i = local_strategy[i].id
+				selectedpath[x].status 	= 1 ;
+				selectedpath[x].pvalue 	= profile[i][j].pvalue;
+				selectedpath[x].freq 	= 1 ;
 				x++;
 			}
 
@@ -1023,19 +1022,10 @@ int routing_decision(int n, struct routing_strategy local_strategy[n],
 
 	// calculate the weight for each selected strategy
 	loadCal(x,selectedpath);
-	for (i=0;i<x;i++)
-	{
-		if ( selectedpath[i].status )
-		{
-			// printf("Path %d is selected, weight = %f ",selectedpath[i].id,selectedpath[i].tload);
-			int id = selectedpath[i].id;
-			// id of selected selectedpath is also the the id of loc_routing_strategy
-			// from id of selected path, we can find the corresponding local routing strategy -> source locator and destiantion locator
-			//printf("source locator %d and destination locator %d \n" ,local_strategy[id].src_id,local_strategy[id].dst_id);
+
+	for(i=0;i<x;i++)
+		if(selectedpath[i].status)
 			n_selected++;
-			// need to translate the weight to source and destination locator weight
-		}
-	}
 
 	return n_selected;
 
