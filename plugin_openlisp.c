@@ -1116,7 +1116,7 @@ read_rec(union map_reply_record_generic *rec)
 	// update the weight and priority for entry before adding to data plane
 
 	// i_src and i_dst are number of source and destination locator that join routing game
-	if ( i_dst < 2 || i_src < 2)
+	if ( is_peer && (i_dst < 2 || i_src < 2) )
 	{
 		// Not able to build the routing game, return a warning
 		cp_log(LDEBUG, " Routing game required more than 1 destination RLOC \n");
@@ -1126,7 +1126,7 @@ read_rec(union map_reply_record_generic *rec)
 
 	// converting the rg_src_loc and rg_dst_loc into local and remote routing strategy arrays
 	// and building the routing game
-	if ( i_dst > 1 && i_src > 1 )
+	if ( is_peer && i_dst > 1 && i_src > 1 )
 	{
 		struct routing_strategy local_strategy[i_src*i_dst],remote_strategy[i_src*i_dst];
 		construct_routing_strategy(i_src,i_dst,rg_src_locator,rg_dst_locator,local_strategy);
