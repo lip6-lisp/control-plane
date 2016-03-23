@@ -769,7 +769,12 @@ read_rec(union map_reply_record_generic *rec)
 		{
 			if ((local_map_node = (struct db_node *)(db_entry->data)))
 			{
-				if ( !memcmp(&(local_map_node->peer.u.prefix4),&(eid.u.prefix4), sizeof(struct in_addr)) );
+				char peer_ipadd[BSIZE];
+				bzero(peer_ipadd, BSIZE);
+				inet_ntop(AF_INET,(void *)&local_map_node->peer.u.prefix4, peer_ipadd, BSIZE);
+
+				// if ( !memcmp(&(local_map_node->peer.u.prefix4),&(eid.u.prefix4),sizeof(struct in_addr)) )
+				if ( (peer_ipadd) && (strcmp(peer_ipadd,buf)==0) ) //buf is currently set as eid.u.prefix
 				{
 					is_peer = 1;
 					cp_log(LDEBUG, " peer eid  \n");
