@@ -1119,7 +1119,7 @@ read_rec(union map_reply_record_generic *rec)
 	if ( i_dst < 2 || i_src < 2)
 	{
 		// Not able to build the routing game, return a warning
-		cp_log(LDEBUG, " Routing game required more than 1 destination RLOC \n",buff);
+		cp_log(LDEBUG, " Routing game required more than 1 destination RLOC \n");
 		// TODO: free allocated resource, it is not added to dataplane but it is already created at control plane
 		return 0;
 	}
