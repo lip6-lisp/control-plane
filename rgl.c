@@ -1025,7 +1025,14 @@ int routing_decision(int n, struct routing_strategy local_strategy[n],
 
 	for(i=0;i<x;i++)
 		if(selectedpath[i].status)
+		{
+			// instead of call update_local_strategy() we update also in this function
+			// update 24 Mar due to local strategy is not updated correctly
+			int id = selectedpath[i].id;
+			local_strategy[id].selected = 1;
+			local_strategy[id].weight = selectedpath[i].tload * 100;
 			n_selected++;
+		}
 
 	return n_selected;
 
@@ -1117,7 +1124,7 @@ int routing_game_result_LISP(int n, float t,
 	}
 	routing_path selectedpath[n];
 	n_selected = routing_decision(n, local_strategy,remote_strategy,routinggame,selectedpath);
-	update_local_strategy(n, local_strategy,selectedpath);
+	// update_local_strategy(n, local_strategy,selectedpath); // the local_strategy is not correctly updated
 
 	return n_selected;
 }
