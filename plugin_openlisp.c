@@ -124,7 +124,9 @@ void update_dst_locator_weight(int n,struct routing_strategy strategy[],struct r
 		{
 			int d_id = strategy[i].dst_id;
 			dst_loc[d_id].selected 	= 1;
-			dst_loc[d_id].weight 	= dst_loc[d_id].weight +strategy[i].weight;
+			dst_loc[d_id].weight 	= dst_loc[d_id].weight + strategy[i].weight;
+			cp_log(LLOG, " ------ strategy %d is selected with weight = %d \n",i,strategy[i].weight );
+			cp_log(LLOG, " ------ update destination loc %d with weight = %d \n",d_id,dst_loc[d_id].weight  );
 		}
 }
 
