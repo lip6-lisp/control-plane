@@ -771,7 +771,7 @@ read_rec(union map_reply_record_generic *rec)
 		{
 			if ((local_map_node = (struct db_node *)(db_entry->data)))
 			{
-				if ( local_map_node->flags.local_opt )
+				if ( local_map_node->flags->local_opt )
 					cp_log(LDEBUG, " Local Optimize \n");
 
 				char peer_ipadd[BSIZE];
