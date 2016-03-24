@@ -691,7 +691,8 @@ read_rec(union map_reply_record_generic *rec)
 	struct list_entry_t *db_entry;
 	struct db_node *local_map_node = NULL;
 	db_entry = etr_db->head.next;
-	int is_peer = 0 ;
+	int is_peer = 0;
+	int use_local_opt = 0 ;
 	/* y5er */
 	
 	node.flags = NULL;
@@ -773,7 +774,10 @@ read_rec(union map_reply_record_generic *rec)
 			{
 				struct mapping_flags *mp_flag = (struct mapping_flags *)local_map_node->flags;
 				if ( mp_flag->local_opt )
+				{
 					cp_log(LDEBUG, " Local Optimize \n");
+					use_local_opt = 1;
+				}
 
 				char peer_ipadd[BSIZE];
 				bzero(peer_ipadd, BSIZE);
@@ -1005,10 +1009,61 @@ read_rec(union map_reply_record_generic *rec)
 			loc = (union map_reply_locator_generic *)CO(loc, len);	
 		}
 
+		/* y5er begin */
+		// using local traffic engineering method for that remote eid
+		// for each destination RLOC, add a list of local source locator
+		// we prioritize the use_local_opt than the equilibirium, if local_opt flag is on
+		// so ignore the routing cost , not building the game
+		if (use_local_opt)
+		{
+			int cnt = 0;
+			if ( _fncs & (_FNC_XTR | _FNC_RTR ))
+			{
+				if (local_map_node)
+				{
+					struct list_t 		*ll;
+					struct list_entry_t *rl_entry;
+					struct map_entry 	*rl;
+
+					if (!(ll = (struct list_t *)(local_map_node->info)) || (ll->count <= 0) )
+						return 0;
+					rl_entry = ll->head.next;
+
+					// create a list of source locator
+					struct list_t *src_loc_list;
+					struct source_locator *src_loc;
+					entry->src_loc = src_loc_list = list_init();
+
+					// go throught the list of all RLOC in the local mapping entry
+					while (rl_entry != &ll->tail)
+					{
+						rl = (struct map_entry*)rl_entry->data;
+						// RLOC is a local locator,then add to the new source locator list src_loc_list
+						if (rl->L)
+						{
+							// create new source locator
+							src_loc 						= calloc(1,sizeof(struct source_locator));
+							src_loc->weight 				= rl->weight;
+							src_loc->priority 				= rl->priority;
+							src_loc->addr.sin.sin_family 	= AF_INET;
+							memcpy(&src_loc->addr.sin.sin_addr,&rl->rloc.sin.sin_addr,sizeof(struct in_addr));
+
+							list_insert(src_loc_list,src_loc,NULL);
+							cnt++;
+						}
+						rl_entry = rl_entry->next;
+					}
+				}
+				entry->src_loc_count = cnt; // update the number of source locator count
+				}
+
+		}
+
+
 		// received EID peers with one of the local EID, the check for is_peer is done before when processing the map header
 		// local_map_node points to the corresponding mapping entry for that local EID in the local_db
 		// now attach to each of the advertised RLOC a same list of local locator (source locator) collected from the local_node
-		if (is_peer)
+		if (is_peer && !use_local_opt )
 		{
 			if ( entry->RC && entry->L )
 			{
