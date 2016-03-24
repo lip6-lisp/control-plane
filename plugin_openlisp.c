@@ -1182,98 +1182,102 @@ read_rec(union map_reply_record_generic *rec)
 	/* y5er begin */
 	// update the weight and priority for entry before adding to data plane
 
-	// i_src and i_dst are number of source and destination locator that join routing game
-	if ( is_peer && (i_dst < 2 || i_src < 2) )
+	// only perform routing game update when not using use_local_opt
+	if (!use_local_opt)
 	{
-		// Not able to build the routing game, return a warning
-		cp_log(LDEBUG, " Routing game required more than 1 destination RLOC \n");
-		// TODO: free allocated resource, it is not added to dataplane but it is already created at control plane
-		return 0;
-	}
-
-	// converting the rg_src_loc and rg_dst_loc into local and remote routing strategy arrays
-	// and building the routing game
-	if ( is_peer && i_dst > 1 && i_src > 1 )
-	{
-		struct routing_strategy local_strategy[i_src*i_dst],remote_strategy[i_src*i_dst];
-		construct_routing_strategy(i_src,i_dst,rg_src_locator,rg_dst_locator,local_strategy);
-		construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
-
-		// TODO: update rgl, since the thresold is set by user, it is depended on the distribution of potential value
-		if ( !routing_game_result_LISP(i_src*i_dst,1,local_strategy,remote_strategy) )
+		// i_src and i_dst are number of source and destination locator that join routing game
+		if ( is_peer && (i_dst < 2 || i_src < 2) )
 		{
-			cp_log(LDEBUG, " Error while building the routing game \n");
+			// Not able to build the routing game, return a warning
+			cp_log(LDEBUG, " Routing game required more than 1 destination RLOC \n");
+			// TODO: free allocated resource, it is not added to dataplane but it is already created at control plane
 			return 0;
 		}
 
-		update_dst_locator_weight(i_src*i_dst,local_strategy,rg_dst_locator);
-		int i;
-		for (i=0;i<i_dst;i++) // check all destination locator in rg_dst_locator array, and update their corresponding entry in the db
+		// converting the rg_src_loc and rg_dst_loc into local and remote routing strategy arrays
+		// and building the routing game
+		if ( is_peer && i_dst > 1 && i_src > 1 )
 		{
-			struct map_entry *correspond_entry =  rg_dst_locator[i].entry;
-			if (rg_dst_locator[i].selected)
+			struct routing_strategy local_strategy[i_src*i_dst],remote_strategy[i_src*i_dst];
+			construct_routing_strategy(i_src,i_dst,rg_src_locator,rg_dst_locator,local_strategy);
+			construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
+
+			// TODO: update rgl, since the thresold is set by user, it is depended on the distribution of potential value
+			if ( !routing_game_result_LISP(i_src*i_dst,1,local_strategy,remote_strategy) )
 			{
-				char buff[BSIZE];
-				bzero(buff,BSIZE);
-				inet_ntop(AF_INET,(void *)rg_dst_locator[i].addr, buff, BSIZE);
-				cp_log(LDEBUG, " Destination locator %s with weight %d \n",buff,rg_dst_locator[i].weight);
-
-				// update weight and priority for the corresponding entry
-				correspond_entry->priority 	= 1;  // all selected locator have same priority of 1
-				correspond_entry->weight 	= rg_dst_locator[i].weight; // weight is set according to the calculated weight
-
-				// caculating weight for each source locator (each destination RLOC maintain a list of source locator)
-				calculating_weight(i_src*i_dst,rg_dst_locator[i].id,local_strategy,rg_src_locator,rg_dst_locator);
-				// NOTE: one rg_src_locator array is used for all destination locator
-				// for next destination locator the weight for each source in this array will be updated with different value
-				// the purpose is to update the db in data plane, so we just temporarily put it in the rg_src_locator
-
-				// update the source locator list for corresponding entry
-				struct list_t *src_loc_ls = correspond_entry->src_loc;
-				struct list_entry_t 	*src_loc_entry;
-				struct source_locator 	*src_loc_tmp;
-				int j;
-				int src_selected;
-				// find correspond source entry in the src_loc_ls list and update weight
-				src_loc_entry = src_loc_ls->head.next;
-
-				while (src_loc_entry != &src_loc_ls->tail) {
-					src_selected = 0;
-					src_loc_tmp = (struct source_locator *)src_loc_entry->data;
-					bzero(buff,BSIZE);
-					inet_ntop(AF_INET,(void *)&src_loc_tmp->addr.sin.sin_addr, buff, BSIZE);
-					// check each src locator in the list with all the locator in the rg_src_locator array
-					for (j=0;j<i_src;j++)
-					{
-						char ip_buf[BSIZE];
-						bzero(ip_buf,BSIZE);
-						inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, ip_buf, BSIZE);
-
-						// use string compare to compare two ip address
-						if ( (rg_src_locator[j].selected) && (strcmp(ip_buf,buff)==0) )
-						{
-							cp_log(LDEBUG, " ++ Source locator %s with weight %d \n",ip_buf,rg_src_locator[j].weight);
-
-							src_loc_tmp->priority 	= 1; // priority for source locator is not used in the data plane yet
-							src_loc_tmp->weight  	= rg_src_locator[j].weight;
-							src_selected++;
-							break;
-						}
-					}
-					// if this src_locator is not selected, set weight = 0
-					if ( !src_selected )
-					{
-						src_loc_tmp->priority 	= 100;
-						src_loc_tmp->weight  	= 0;
-					}
-					// move to next src locator
-					src_loc_entry = src_loc_entry->next;
-				}
+				cp_log(LDEBUG, " Error while building the routing game \n");
+				return 0;
 			}
-			else // the destination locator is not selected, update cooresponding entry with high priority
+
+			update_dst_locator_weight(i_src*i_dst,local_strategy,rg_dst_locator);
+			int i;
+			for (i=0;i<i_dst;i++) // check all destination locator in rg_dst_locator array, and update their corresponding entry in the db
 			{
-				correspond_entry->priority 	= 99; // priority >= is for non game locator
-				correspond_entry->weight 	= 10; // remember the total weight for RLOC of same prioirty must smaller than 100
+				struct map_entry *correspond_entry =  rg_dst_locator[i].entry;
+				if (rg_dst_locator[i].selected)
+				{
+					char buff[BSIZE];
+					bzero(buff,BSIZE);
+					inet_ntop(AF_INET,(void *)rg_dst_locator[i].addr, buff, BSIZE);
+					cp_log(LDEBUG, " Destination locator %s with weight %d \n",buff,rg_dst_locator[i].weight);
+
+					// update weight and priority for the corresponding entry
+					correspond_entry->priority 	= 1;  // all selected locator have same priority of 1
+					correspond_entry->weight 	= rg_dst_locator[i].weight; // weight is set according to the calculated weight
+
+					// caculating weight for each source locator (each destination RLOC maintain a list of source locator)
+					calculating_weight(i_src*i_dst,rg_dst_locator[i].id,local_strategy,rg_src_locator,rg_dst_locator);
+					// NOTE: one rg_src_locator array is used for all destination locator
+					// for next destination locator the weight for each source in this array will be updated with different value
+					// the purpose is to update the db in data plane, so we just temporarily put it in the rg_src_locator
+
+					// update the source locator list for corresponding entry
+					struct list_t *src_loc_ls = correspond_entry->src_loc;
+					struct list_entry_t 	*src_loc_entry;
+					struct source_locator 	*src_loc_tmp;
+					int j;
+					int src_selected;
+					// find correspond source entry in the src_loc_ls list and update weight
+					src_loc_entry = src_loc_ls->head.next;
+
+					while (src_loc_entry != &src_loc_ls->tail) {
+						src_selected = 0;
+						src_loc_tmp = (struct source_locator *)src_loc_entry->data;
+						bzero(buff,BSIZE);
+						inet_ntop(AF_INET,(void *)&src_loc_tmp->addr.sin.sin_addr, buff, BSIZE);
+						// check each src locator in the list with all the locator in the rg_src_locator array
+						for (j=0;j<i_src;j++)
+						{
+							char ip_buf[BSIZE];
+							bzero(ip_buf,BSIZE);
+							inet_ntop(AF_INET,(void *)rg_src_locator[j].addr, ip_buf, BSIZE);
+
+							// use string compare to compare two ip address
+							if ( (rg_src_locator[j].selected) && (strcmp(ip_buf,buff)==0) )
+							{
+								cp_log(LDEBUG, " ++ Source locator %s with weight %d \n",ip_buf,rg_src_locator[j].weight);
+
+								src_loc_tmp->priority 	= 1; // priority for source locator is not used in the data plane yet
+								src_loc_tmp->weight  	= rg_src_locator[j].weight;
+								src_selected++;
+								break;
+							}
+						}
+						// if this src_locator is not selected, set weight = 0
+						if ( !src_selected )
+						{
+							src_loc_tmp->priority 	= 100;
+							src_loc_tmp->weight  	= 0;
+						}
+						// move to next src locator
+						src_loc_entry = src_loc_entry->next;
+					}
+				}
+				else // the destination locator is not selected, update cooresponding entry with high priority
+				{
+					correspond_entry->priority 	= 99; // priority >= is for non game locator
+					correspond_entry->weight 	= 10; // remember the total weight for RLOC of same prioirty must smaller than 100
+				}
 			}
 		}
 	}
