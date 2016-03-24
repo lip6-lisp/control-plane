@@ -1026,8 +1026,8 @@ int routing_decision(int n, struct routing_strategy local_strategy[n],
 	for(i=0;i<x;i++)
 		if(selectedpath[i].status)
 		{
-			// instead of call update_local_strategy() we update also in this function
-			// update 24 Mar due to local strategy is not updated correctly
+			// added on 24Mar due to localstrategy is not updated correctly
+			// instead of call update_local_strategy() we do update directly in this function
 			int id = selectedpath[i].id;
 			local_strategy[id].selected = 1;
 			local_strategy[id].weight = selectedpath[i].tload * 100;

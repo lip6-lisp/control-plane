@@ -49,6 +49,9 @@ struct mapping_flags {
 	uint8_t incomplete:1;	/* incomplete DDT entry */
 	uint8_t range;	/*range of EID: an mapping, a global EID-range */
 	uint8_t active:1;
+	/* y5er */
+	uint8_t local_opt:1;
+	/* y5er */
 	void *rsvd;
 };
 

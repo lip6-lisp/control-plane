@@ -441,7 +441,11 @@ xtr_startElement(void *userData, const char *name, const char **atts)
 					_err_config("unable to set peer");
 					exit(1);
 				}
-
+			}
+			// using local opt TE or not
+			if (0 == strcasecmp(*atts, "local_opt")) {
+				atts++;
+				_mflags.local_opt = (strcasecmp(*atts,"true")==0);
 			}
 			/*end y5er*/
 
