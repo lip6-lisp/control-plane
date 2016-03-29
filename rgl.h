@@ -126,7 +126,7 @@ uint32_t encode_five(coord_cost5 *rc);
 void decode_four(uint32_t e, coord_cost4 *rc);
 uint32_t encode_four(coord_cost4 *rc);
 
-int routing_game_result_LISP(int n, float t,
+int routing_game_result_LISP(int n,
 		struct routing_strategy local_strategy[n],
 		struct routing_strategy remote_strategy[n]);
 

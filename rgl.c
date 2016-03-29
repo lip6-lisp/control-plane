@@ -210,6 +210,22 @@ void calculatePvalue(path_cost path[], strategy_profile p[N][N])
 			}
 }
 
+/* Finding the right threshold value when the input threshold is between 0 and 1 (Not mentioned in the paper) */
+// support the find_threshold function
+void bubble_sort(int list[], int np)
+{
+	long c, d, t;
+
+	for (c = 0 ; c < ( np - 1 ); c++)
+		for (d = 0 ; d < np - c - 1; d++)
+			if (list[d] > list[d+1])
+			{
+				t         = list[d];
+				list[d]   = list[d+1];
+				list[d+1] = t;
+			}
+
+}
 
 // a different approach for computing the potential value (used in LISP-TE)
 // set potential value to 0 for the profile (i,j) that is a social welfare (minimum (local cost + remote cost) )
@@ -234,6 +250,22 @@ void find_potential_min(struct routing_strategy local_strategy[],
 				updatePvalue(i,j,p);
 				break;
 			}
+
+	// create temporary array temp_pa of all (NxN) potential value
+	int temp_pa[N*N];
+	int x=0;
+	for(i=0;i<N;i++)
+		for (j=0;j<N;j++)
+			temp_pa[x++]=p[i][j].pvalue;
+
+	// sort the potential value array in increasing order
+	bubble_sort(temp_pa,N*N);
+
+	//find the 1st quartile and reset the Threshold value T accordingly
+	if (N*N % 2 == 0)
+		T = (float) temp_pa[N*N/4];
+	else
+		T = (float )(( (float) temp_pa[N*N/4] + (float) temp_pa[N*N/4 + 1] ) / 2 ) ;
 
 }
 
@@ -281,23 +313,6 @@ void build_routing_game(struct routing_strategy local_strategy[N],
 
 }
 
-
-/* Finding the right threshold value when the input threshold is between 0 and 1 (Not mentioned in the paper) */
-// support the find_threshold function
-void bubble_sort(int list[], int np)
-{
-	long c, d, t;
-
-	for (c = 0 ; c < ( np - 1 ); c++)
-		for (d = 0 ; d < np - c - 1; d++)
-			if (list[d] > list[d+1])
-			{
-				t         = list[d];
-				list[d]   = list[d+1];
-				list[d+1] = t;
-			}
-
-}
 /* Utility functions to support routing game decision */
 
 // convert position (i,j) in 2D array into an index x in 1D array
@@ -1097,12 +1112,14 @@ void update_local_strategy(int n, struct routing_strategy local_strategy[],routi
 // update the local_strategy with weight, weight represented for the percentage of traffic distributed on that path
 // from the computed weight for each local strategy, calculate the corresponding weight for each destination and source locator
 // NOTE: this weight assginment is not part of the routing game library
-int routing_game_result_LISP(int n, float t,
+int routing_game_result_LISP(int n,
 		struct routing_strategy local_strategy[n],
 		struct routing_strategy remote_strategy[n])
 {
 	strategy_profile routinggame[n][n];
-	game_config(n,4,t,1); // with LISP_TE the routing policy is 4 and always use load balancing
+	game_config(n,4,0,1);
+	// with LISP_TE the routing policy is 4, thresold will be calculated when having all potential value
+	// and always use load balancing
 	build_routing_game(local_strategy,remote_strategy,routinggame);
 	applyPolicy(routinggame);
 	printf("\n");
