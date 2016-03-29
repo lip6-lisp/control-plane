@@ -1203,7 +1203,7 @@ read_rec(union map_reply_record_generic *rec)
 			construct_routing_strategy(i_dst,i_src,rg_dst_locator,rg_src_locator,remote_strategy);
 
 			// TODO: update rgl, since the thresold is set by user, it is depended on the distribution of potential value
-			if ( !routing_game_result_LISP(i_src*i_dst,0,local_strategy,remote_strategy) )
+			if ( !routing_game_result_LISP(i_src*i_dst,local_strategy,remote_strategy) )
 			{
 				cp_log(LDEBUG, " Error while building the routing game \n");
 				return 0;
