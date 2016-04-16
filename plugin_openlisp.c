@@ -5,6 +5,8 @@
 #include <net/lisp/maptables.h>
 /* y5er */
 #include "rgl.h"
+#include <time.h>
+#include <sys/time.h>
 /* y5er */
 
 #define PSIZE	4089
@@ -730,6 +732,17 @@ read_rec(union map_reply_record_generic *rec)
 	generic_mapping_set_flags(&node, &mflags);
 	node.info = list_init();
 	
+	/* y5er */
+	struct timeval start_process_reply;			// map reply received and processed
+	struct timeval finish_build_routing_game;	// finish constructing the routing game
+	struct timeval finish_update_cp_mapping;	// the mapping db at control plane is updated
+	struct timeval finish_send_map_add;			// map add message is sent
+	/* y5er */
+
+	gettimeofday(&start_process_reply,NULL);
+	cp_log(LDEBUG, " Processing the map reply message at %ld \n",start_process_reply.tv_sec*1000000+start_process_reply.tv_usec);
+
+
 	/* ====================================================== */
 	cp_log(LDEBUG, "  EID %s/%d: ", buf, eid.prefixlen);
 	cp_log(LDEBUG, "<");
@@ -1209,6 +1222,9 @@ read_rec(union map_reply_record_generic *rec)
 				return 0;
 			}
 
+			gettimeofday(&finish_build_routing_game,NULL);
+			cp_log(LDEBUG, " Routing game constructed at %ld \n",finish_build_routing_game.tv_sec*1000000+finish_build_routing_game.tv_usec);
+
 			update_dst_locator_weight(i_src*i_dst,local_strategy,rg_dst_locator);
 			int i;
 			for (i=0;i<i_dst;i++) // check all destination locator in rg_dst_locator array, and update their corresponding entry in the db
@@ -1279,12 +1295,24 @@ read_rec(union map_reply_record_generic *rec)
 					correspond_entry->weight 	= 10; // remember the total weight for RLOC of same prioirty must smaller than 100
 				}
 			}
+
+			gettimeofday(&finish_update_cp_mapping,NULL);
+			cp_log(LDEBUG, " The mapping entry is updated at %ld \n",finish_update_cp_mapping.tv_sec*1000000+finish_update_cp_mapping.tv_usec);
 		}
 	}
 	/* y5er */
 
 	/* add to OpenLISP mapping cache */
 	opl_add(openlispsck, &node, 0);
+
+	gettimeofday(&finish_send_map_add,NULL);
+	cp_log(LDEBUG, " Map_add message is sent to the dataplane at %ld \n",finish_send_map_add.tv_sec*1000000+finish_send_map_add.tv_usec);
+
+	// record the total delay from processing the map reply message until the MAP_ADD message is sent
+	// expect very low delay for legacy LISP and higher delay for routing game based solution
+	cp_log(LDEBUG, " Total delay  %ld \n",(start_process_reply.tv_sec*1000000+start_process_reply.tv_usec)
+			- (finish_send_map_add.tv_sec*1000000+finish_send_map_add.tv_usec));
+
 	if (node.info)
 		list_destroy((struct list_t *)node.info, NULL);
 	return (rlen);
