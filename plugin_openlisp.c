@@ -103,9 +103,8 @@ int construct_routing_strategy(int ns, int nd,
 			strategy[n].rmt_eg_cost = remote_loc[j].ecost;
 			// strategy[i].rmt_eg_cost = remote_loc[j].ecost + remote_as_fwcost[j][i];
 
-			cp_log(LDEBUG,"\n Strategy %d (%d,%d) %d %d %d %d \n",
+			cp_log(LDEBUG,"\n Strategy %d (%d,%d) %d %d %d %d ",
 					n,i,j,strategy[n].loc_in_cost,strategy[n].loc_eg_cost,strategy[n].rmt_in_cost,strategy[n].rmt_eg_cost);
-
 			n++;
 		}
 	}
@@ -1310,8 +1309,9 @@ read_rec(union map_reply_record_generic *rec)
 
 	// record the total delay from processing the map reply message until the MAP_ADD message is sent
 	// expect very low delay for legacy LISP and higher delay for routing game based solution
-	cp_log(LDEBUG, " Total delay  %ld \n",(start_process_reply.tv_sec*1000000+start_process_reply.tv_usec)
-			- (finish_send_map_add.tv_sec*1000000+finish_send_map_add.tv_usec));
+
+	cp_log(LDEBUG, " Total delay  %ld \n",(finish_send_map_add.tv_sec*1000000+finish_send_map_add.tv_usec)
+			- (start_process_reply.tv_sec*1000000+start_process_reply.tv_usec) );
 
 	if (node.info)
 		list_destroy((struct list_t *)node.info, NULL);
@@ -1849,8 +1849,8 @@ opl_add_rloc(void *buf, struct db_node *mapp)
 				mcm = CO(mxx,sizeof(struct rloc_mtx));
 				sl_count++;
 				sl_entry = sl_entry->next;
-				cp_log(LLOG, " source locator added \n");
-				cp_log(LLOG, " message length %d \n",(char *)mcm - (char *)mhdr);
+				// cp_log(LLOG, " source locator added \n");
+				// cp_log(LLOG, " message length %d \n",(char *)mcm - (char *)mhdr);
 			}
 			// not increase the map_rloc_count and update the mcm
 			// remember to keep the mcm update after a new field added
