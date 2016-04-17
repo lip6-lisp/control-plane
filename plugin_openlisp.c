@@ -1222,7 +1222,9 @@ read_rec(union map_reply_record_generic *rec)
 			}
 
 			gettimeofday(&finish_build_routing_game,NULL);
-			cp_log(LDEBUG, " Routing game constructed at %ld \n",finish_build_routing_game.tv_sec*1000000+finish_build_routing_game.tv_usec);
+			cp_log(LDEBUG, " Time to contruct routing game %ld \n",(finish_build_routing_game.tv_sec*1000000+finish_build_routing_game.tv_usec)
+									- (start_process_reply.tv_sec*1000000+start_process_reply.tv_usec) );
+			//cp_log(LDEBUG, " Routing game constructed at %ld \n",finish_build_routing_game.tv_sec*1000000+finish_build_routing_game.tv_usec);
 
 			update_dst_locator_weight(i_src*i_dst,local_strategy,rg_dst_locator);
 			int i;
@@ -1296,7 +1298,9 @@ read_rec(union map_reply_record_generic *rec)
 			}
 
 			gettimeofday(&finish_update_cp_mapping,NULL);
-			cp_log(LDEBUG, " The mapping entry is updated at %ld \n",finish_update_cp_mapping.tv_sec*1000000+finish_update_cp_mapping.tv_usec);
+			cp_log(LDEBUG, " Time to update mapping db %ld \n",(finish_update_cp_mapping.tv_sec*1000000+finish_update_cp_mapping.tv_usec)
+						- (start_process_reply.tv_sec*1000000+start_process_reply.tv_usec) );
+			// cp_log(LDEBUG, " The mapping entry is updated at %ld \n",finish_update_cp_mapping.tv_sec*1000000+finish_update_cp_mapping.tv_usec);
 		}
 	}
 	/* y5er */
