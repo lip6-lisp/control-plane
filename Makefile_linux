@@ -1,0 +1,35 @@
+SRC     != ls *.c */*.c
+INC	 =
+OBJ	 = $(SRC:%.c=%.o)
+EXE      = opencp
+
+#
+#
+#	misc junk
+#
+RCS      = RCS
+MISC     = Makefile README
+
+#
+#	compile/load options
+#
+
+CFLAGS   = -g -O2  -DHAVE_IPV6  -DLINUX
+LDLIBS   =
+LDFLAGS  = -L/usr/local/lib/ -lexpat  -lpthread
+#
+#
+
+all:
+	${CC}   */*.c ./*.c  -o ${EXE}  $(LDFLAGS)  $(CFLAGS)
+
+safe-install: $(EXE)
+	/usr/bin/install -m a+x $(EXE) /sbin/
+	/usr/bin/install -m a+x opencp_service_linux /etc/init.d/opencp
+	[ -d "/var/lock/subsys" ] || install -d -m 0755 /var/lock/subsys 1>/dev/null 2>&1
+
+install: safe-install
+	/usr/bin/install -b opencp.conf opencp_xtr.xml opencp_ms.xml opencp_mr.xml opencp_ddtnode.xml opencp_rtr.xml /etc/
+
+clean:
+	/bin/rm -f ${OBJ} ${EXE} ${MANOUT} *.core a.out Make.log Make.err *~

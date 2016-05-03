@@ -282,6 +282,7 @@ rtr_send_data_map_notify(struct pk_req_entry *pke, union sockunion *dest)
 	int
 rtr_opl_add_rloc(void *buf, struct db_node *mapp)
 {
+#ifdef OPENLISP
 	void *mcm;
 	struct map_msghdr *mhdr;
 	struct list_t *rl_list = (struct list_t *)mapp->info;
@@ -337,6 +338,9 @@ rtr_opl_add_rloc(void *buf, struct db_node *mapp)
 
 	mhdr->map_msglen = (char *)mcm - (char *)mhdr;
 	return mhdr->map_msglen;
+#else
+	return 0;
+#endif		
 }
 
 	int

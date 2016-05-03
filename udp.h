@@ -1,12 +1,12 @@
 #ifndef __HAVE_UDP_H
 #define __HAVE_UDP_H
 
-#define LISP_AFI_IP	1                                               
+#define LISP_AFI_IP	1
 #define LISP_AFI_IPV6	2
 
 #define BUFLEN 512
 #define PKBUFLEN 65527
-#define	LISP_TYPE_RESERVED	0x0 
+#define	LISP_TYPE_RESERVED	0x0
 #define LISP_TYPE_MAP_REQUEST	0x1
 #define LISP_TYPE_MAP_REPLY	0x2
 #define LISP_TYPE_MAP_REGISTER	0x3
@@ -27,7 +27,7 @@
  *      pointer arithmetic
  *
  */
- 
+
 
 
 /* <AFI, Address> tuple IPv4 */
@@ -87,13 +87,13 @@ d   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
 
 struct map_referral_lcaf_afi {
-uint16_t	afi;	
+uint16_t	afi;
 uint8_t		rsvd1;
 uint8_t		flags;
 uint8_t		type;
 uint8_t		iid_masklen;
 uint16_t	length;
-uint32_t	iid; 	
+uint32_t	iid;
 };
 
 struct map_referral_hdr {
@@ -357,16 +357,16 @@ union map_reply_locator_generic {
 	struct map_reply_locator rloc;
 	struct map_reply_locator6 rloc6;
 };
- 
+
 struct lcaf_hdr{
 	uint16_t 	afi;
 	uint8_t		reserved;
 	uint8_t		flags;
 	uint8_t		type;
 	uint8_t		reserved2;
-	uint16_t	payload_len;	
+	uint16_t	payload_len;
 };
-	
+
 struct rloc_te{
 	uint16_t	afi;
 #ifdef LITTLE_ENDIAN
@@ -380,7 +380,7 @@ struct rloc_te{
 	uint8_t		S:1;
 	uint8_t		reserved:13;
 #endif
-	struct in_addr	hop_addr;	
+	struct in_addr	hop_addr;
 };
 
 struct rloc6_te{
@@ -396,7 +396,7 @@ struct rloc6_te{
 	uint8_t		S:1;
 	uint8_t		reserved:13;
 #endif
-	struct in6_addr	hop_addr;	
+	struct in6_addr	hop_addr;
 };
 union rloc_te_generic {
 	struct rloc_te rloc;
@@ -424,34 +424,32 @@ struct map_reply_locator_te {
 } __attribute__ ((__packed__));
 
 /* Map-Referral handling code */
-void * udp_referral_add(void *data);
+void * udp_map_referral_init(void *data);
 
-int udp_referral_add_record(void *data, uint32_t iid, struct prefix *p, 
-							uint32_t ttl, uint8_t lcount, uint32_t version, 
+int udp_map_referral_add_record(void *data, uint32_t iid, struct prefix *p,
+							uint32_t ttl, uint8_t lcount, uint32_t version,
 							uint8_t A, uint8_t act, uint8_t i, uint8_t sigcnt);
 
-int udp_referral_add_locator(void *data, struct map_entry *e);
+int udp_map_referral_add_locator(void *data, struct map_entry *e);
 
-int udp_referral_error(void *data);
+int udp_map_referral_error(void *data);
 
-int udp_referral_terminate(void *data);
+int udp_map_referral_terminate(void *data);
 
 /* ! Map-Referral handling code */
 
 
 
 /* Map-Reply handling code */
-void *udp_reply_add(void *data);
+void *udp_map_reply_init(void *data);
 
-int udp_reply_add_record(void *data, struct prefix *p, 
-						uint32_t ttl, uint8_t lcount, 
+int udp_map_reply_add_record(void *data, struct prefix *p,
+						uint32_t ttl, uint8_t lcount,
 						uint32_t version, uint8_t A, uint8_t act);
 
-int udp_reply_add_locator(void *data, struct map_entry *e);
+int udp_map_reply_add_locator(void *data, struct map_entry *e);
 
-int udp_reply_error(void *data);
-
-int udp_reply_terminate(void *data);
+int udp_map_reply_terminate(void *data);
 
 /* ! Map-Reply handling code */
 
@@ -480,11 +478,9 @@ void *udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		const union sockunion *dst, \
 		const struct prefix *eid );
 
-int udp_request_ddt_terminate(void *data, const union sockunion *server, 
-							char terminal);
-
 uint32_t _forward_to_etr(void *data, struct db_node *rn);
-
+int _send_negative_map_reply(void *data, struct communication_fct *fct, \
+		struct db_node *rn, struct prefix *pf, uint32_t ttl, uint8_t A, uint8_t act,	uint8_t version );
 /* ! Map-Request handling code */
 
 /* Communication handling code */
@@ -516,7 +512,7 @@ int rtr_process_map_notify(struct pk_req_entry *pke);
 LH  |Type=8 |S|D|R|N|                 Reserved                      |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   / |                       IPv4 or IPv6 Header                     |
-IH  |                  (uses RLOC or EID addresses)                 | 
+IH  |                  (uses RLOC or EID addresses)                 |
   \ |                                                               |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   / |       Source Port = xxxx      |       Dest Port = yyyy        |
@@ -621,7 +617,7 @@ union map_request_record_generic {
 	struct map_request_record	record;
 	struct map_request_record6	record6;
 };
-/*	
+/*
 	0                   1                   2                   3
      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -638,13 +634,13 @@ union map_request_record_generic {
 struct map_request_record_lcaf {
 	uint8_t		reserved;
 	uint8_t		eid_mask_len;
-	uint16_t	afi;	
+	uint16_t	afi;
 	uint8_t		rsvd1;
 	uint8_t		flags;
 	uint8_t		type;
 	uint8_t		iid_masklen;
 	uint16_t	length;
-	uint32_t	iid; 	
+	uint32_t	iid;
 	uint16_t	eid_prefix_afi;
 	struct in_addr	eid_prefix;
 } __attribute__ ((__packed__));
@@ -652,13 +648,13 @@ struct map_request_record_lcaf {
 struct map_request_record6_lcaf {
 	uint8_t		reserved;
 	uint8_t		eid_mask_len;
-	uint16_t	afi;	
+	uint16_t	afi;
 	uint8_t		rsvd1;
 	uint8_t		flags;
 	uint8_t		type;
 	uint8_t		iid_masklen;
 	uint16_t	length;
-	uint32_t	iid; 	
+	uint32_t	iid;
 	uint16_t	eid_prefix_afi;
 	struct in6_addr	eid_prefix;
 } __attribute__ ((__packed__));
@@ -713,14 +709,14 @@ struct map_register_hdr {
 	uint8_t		I:1;
 	uint8_t		R:1; /* TODO: no longer RFC compliante */
 #endif
-    uint8_t     reserved1;
+        uint8_t     reserved1;
 #ifdef LITTLE_ENDIAN
 	uint8_t     want_map_notify:1;
-    uint8_t     reserved2:7;
+        uint8_t     reserved2:7;
 #else
-    uint8_t     reserved2:7;
+        uint8_t     reserved2:7;
 	uint8_t     want_map_notify:1;
-#endif	
+#endif
 	uint8_t		record_count;
 	uint64_t        nonce;
 	uint16_t	key_id;
@@ -824,7 +820,7 @@ F  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 +->+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
 
-struct info_msg_hdr {
+struct  info_msg_hdr {
 #ifdef LITTLE_ENDIAN
 	uint8_t		rsvd:3;
 	uint8_t		R:1;

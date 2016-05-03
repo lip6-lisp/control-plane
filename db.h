@@ -17,7 +17,7 @@
 #define _GREID		16
 #define _ROOT		0
 /*not readly use to assin type of node */
-#define _REID		64 
+#define _REID		64
 
 #define	_ACTIVE 	1
 #define _NOACTIVE 	0
@@ -33,18 +33,18 @@ union sockunion {
 
 /*db include 2 radix tree, one for ipv4 and other for ipv6 */
 struct lisp_db {
-		struct db_table *lisp_db4;
-		struct db_table *lisp_db6;
+	struct db_table *lisp_db4;
+	struct db_table *lisp_db6;
 };
 
 /*second db: db of sites */
 struct site_info {
-		char *name;
-		char *key;
-		char *contact;
-		u_char active;
-		char *hashing;
-		struct list_t  *eid;		 		
+	char *name;
+	char *key;
+	char *contact;
+	u_char active;
+	char *hashing;
+	struct list_t  *eid;
 };
 
 struct mapping_flags {
@@ -84,7 +84,7 @@ struct map_entry {
 	uint8_t L:1,			/* Local locator */
 		p:1,			/* RLOC-probing locator */
 		r:1;			/* reachability bit */
-	struct list_t *pe;	/* list of pe, each pe is an pe_entry */	
+	struct list_t *pe;	/* list of pe, each pe is an pe_entry */
 
 	/* The following fields are only used by a RTR */
 	int natted;			/* This RLOC is natted or local to this
@@ -98,7 +98,7 @@ struct map_entry {
 	uint64_t nonce;
 };
 
-struct pk_req_entry {	
+struct pk_req_entry {
 	uint8_t ecm:1;		/*Encapsulate Message Control*/
 	union sockunion  si; /* source address OH */
 	union sockunion  di; /* destination address OH */
@@ -112,6 +112,7 @@ struct pk_req_entry {
 	size_t buf_len; /*package len */
 	uint8_t ttl; /* how long exist in queue, ttl = n (n second) */
 	uint8_t hop; /* number of recue - use for map-request */
+	uint8_t ref_cnt; /* reference counts */
 };
 
 struct pk_rpl_entry {

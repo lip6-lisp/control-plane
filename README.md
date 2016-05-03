@@ -12,37 +12,43 @@ http://www.lisp.ipv6.lip6.fr
 
 Requirements: expat library (need expat.h expat_external.h in /usr/local/include/)
 	Installation of the expat library using ports collection (on FreeBSD) or packaging tool (on Linux).
-	
+
 On FreeBSD:
 ```
+#pkg install expat
+or
 #cd /usr/ports/textproc/expat2
 #make clean install
 ```
-	
+
 On Linux (example for Ubuntu):
 
 `#apt-get install libexpat1-dev`
 
-1. Make sure that you have the gcc compiler. 
+1. Make sure that you have the gcc compiler.
 If you use other compiler, modify the Makefile to assign CC variable to your compiler.
 (Note: default FreeBSD 10 use `clang` instead `gcc`)
 	CC = gcc  --> CC = your_compiler
 
-2. From source code directory, run 'make'. This will create the binary file 'opencp'.
+2. From source code directory, run 'make' or 'make -f Makefile_linux' on Linux.
+This will create the binary file 'opencp'.
 
-3. From source code directory, run 'make install' to install the service script to /etc/rc.d/. 
-It also copies the main configuration file (opencp.conf) and five other specific configuration files: 
- 'opencp_xtr.xml, opencp_ms.xml, opencp_mr.xml, opencp_node.xml, opencp_rtr.xml' to /etc/. Please edit 
-the configuration files to customize it before continuing. By default: opencp_mr-sample-configure-of-ddt-root.xml file 
-contains an example configuration for the DDT root node function; opencp_xtr-sample-configure-of-lisp-te.xml file contains an example  configuration of the RTR node function; opencp_xtr-sample-configure-multi-mapping-system.xml contains an example  
-configuration for the xTR node function. 
+3. From source code directory, run 'make install'  or 'make -f Makefile_linux install' on Linux
+to install the service script. It also copies the main configuration file (opencp.conf) and
+five other specific configuration files:  'opencp_xtr.xml, opencp_ms.xml, opencp_mr.xml,
+opencp_node.xml, opencp_rtr.xml' to /etc/. Please edit the configuration files
+to customize it before continuing. By default: opencp_mr-sample-configure-of-ddt-root.xml file
+contains an example configuration for the DDT root node function;
+opencp_xtr-sample-configure-of-lisp-te.xml file contains an example  configuration of the RTR node function;
+opencp_xtr-sample-configure-multi-mapping-system.xml contains an example  
+configuration for the xTR node function.
 
 	a.  The main configuration (opencp.conf) allows you to indicate what  
 control-plane function to enable. It also points to the specific xml configuration files for each functions.
 
 	b.  The xTR configuration file (opencp_xtr.xml) includes:
-	+ <mapserver> section: list of MSs the xTR registers to. 
-	Each MS needs an authentication key. 
+	+ <mapserver> section: list of MSs the xTR registers to.
+	Each MS needs an authentication key.
 	+ <mapresolve> section: list of MRs the xTR can send map-requests to.
 	+ One or more <eid> sections: each section gives the information of one EID IP prefix to register.
 
@@ -52,17 +58,18 @@ control-plane function to enable. It also points to the specific xml configurati
 		+ site name.
 		+ key for map-register messages. NB: the key is case sensitive and must not include spaces.
 		+ EID IP prefixes the site can register.
+	+ One or more <rtr /> sections: each section includes the information for one RTR used for LISP-NAT.
 
 	d. DDT node and MR configuration file (opencp_mr.xml) includes:
 	+ <geid> section: the IP prefix(es) the node is delegated. The IP ranges must not overlap. 
 	NB: if the node is a DDT root, then it is here configured as being delegated for 0.0.0.0/0 (IPv4) and 0::/0 (IPv6).
-	+ One or more <eid> sections: each section contains the information for one delegated prefix. 
+	+ One or more <eid> sections: each section contains the information for one delegated prefix.
 	Special <eid> sections with prefix equal 0.0.0.0/0 or 0::/0 are for DDT root nodes.
 
 	e. RTR configuration file (pencp_rtr.xml) includes:
 	+ <mapresolve> section: list of MRs the RTR can send map-requests.
 	+ One or more <eid> sections: each section includes the information for EID-prefix pass over RTR.
-	
+
 4. To start the program the first time, use 'service opencp start' or '/etc/rc.d/opencp_service start' command or run it manually by ./opencp -f [<path_to_opencp.conf>]
 
 5. To let the program autostart when rebooting, edit the /etc/rc.conf adding the following line:
@@ -74,7 +81,7 @@ control-plane function to enable. It also points to the specific xml configurati
 # Contact
 
 Use github tracking system in case you encounter a bug.
-Pull requests are welcome and should also go through the github system. 
+Pull requests are welcome and should also go through the github system.
 
 
 Reference

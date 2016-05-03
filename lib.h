@@ -43,7 +43,17 @@
 
 #define BSIZE   40
 #define	OUTPUT_STREAM stdout
-#define OUTPUT_ERROR	stderr	
+#define OUTPUT_ERROR	stderr
+
+/* for Linux */
+#ifndef OPEN_MAX
+#define OPEN_MAX	256
+#endif
+
+#ifndef INFTIM
+#define INFTIM		-1
+#endif
+
 
 /* referral action types */
 #define	LISP_REFERRAL_NODE_REFERRAL	 0x0
@@ -57,7 +67,7 @@
 #define MIN_COUNT		1
 #define	MAX_COUNT		3
 #define MR_MAX_LOOKUP	10
-#define MAX_LOOKUPS     100 
+#define MAX_LOOKUPS     100
 #define MAP_REPLY_TIMEOUT	2
 #define	MIN_EPHEMERAL_PORT	32768
 #define	MAX_EPHEMERAL_PORT	65535
@@ -108,7 +118,7 @@ int max_thread;
 int linger_thread;
 int _debug;
 thr_pool_t *cpp;
-	
+
 int skfd, skfd6;
 struct pollfd _sk[OPEN_MAX];
 
@@ -207,7 +217,7 @@ struct communication_fct {
 	/* Indicates that the request has been processed completely */
         int (*request_terminate)(void *data);
 	/* Indicates that the DDT request construction is finished,
-	   post-processing can be started 
+	   post-processing can be started
 	   @param id request identifier
 	   @param server server where to send the DDT request
 	   return TRUE on success, otherwise a FALSE is returned
@@ -232,7 +242,7 @@ uint64_t _make_nonce();
 int _parser_config(const char *filename);
 int timespec_subtract(struct timespec *res, struct timespec *x, struct timespec *y);
 int entrycmp(void *esrc, void *edst);
-int _insert_ip_ordered(void *data, void *entry);
+int _map_entry_cmp(void *data, void *entry);
 ushort ip_checksum (unsigned short *buf, int nwords);
 int is_my_addr(union sockunion *sk);
 void cp_log(int level, char *format, ...);

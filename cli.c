@@ -6,7 +6,7 @@ void *cli_start_communication(void *context);
 void *cli_stop_communication(void *context);
 
 /* Map-Reply handling code */
-	int 
+	int
 cli_reply_add(uint32_t id)
 {
 	uint64_t nonce = cli_request_get_nonce(id);
@@ -19,9 +19,9 @@ cli_reply_add(uint32_t id)
 	return (TRUE);
 }
 
-	int 
-cli_reply_add_record(struct prefix *p, 
-		uint32_t ttl, uint8_t lcount, 
+	int
+cli_reply_add_record(struct prefix *p,
+		uint32_t ttl, uint8_t lcount,
 		uint32_t version, uint8_t A, uint8_t act)
 {
 	char buf[BSIZE];
@@ -32,7 +32,7 @@ cli_reply_add_record(struct prefix *p,
 
 	printf("<");
 	printf("Lcount=%u", lcount);
-	
+
 	printf(", ");
 	printf("TTL=%u", ttl);
 
@@ -48,7 +48,7 @@ cli_reply_add_record(struct prefix *p,
 	printf("A=%u", A);
 
 	printf(">\n");
-	
+
 	if (lcount == 0) {
 		printf("\tNegative reply\n");
 	}
@@ -56,7 +56,7 @@ cli_reply_add_record(struct prefix *p,
 
 }
 
-	int 
+	int
 cli_reply_add_locator(uint32_t id, struct map_entry *e)
 {
 	char buf[BSIZE];
@@ -73,19 +73,19 @@ cli_reply_add_locator(uint32_t id, struct map_entry *e)
 			return (FALSE);
 	}
 
-	printf("\t•[rloc=%s, p=%d, w=%d, r=%d, L=%d, p=%d]\n", buf, e->priority, e->weight, e->r, e->L, e->p);
+	printf("\t[rloc=%s, p=%d, w=%d, r=%d, L=%d, p=%d]\n", buf, e->priority, e->weight, e->r, e->L, e->p);
 
 	return (TRUE);
 }
 
-	int 
+	int
 cli_reply_error(uint32_t id)
 {
 	printf("Unknown error (%u)\n", id);
 	return (TRUE);
 }
 
-	int 
+	int
 cli_reply_terminate(uint32_t id)
 {
 	printf("send Map-Reply %u\n", id);
@@ -103,18 +103,18 @@ struct map_request{
 #define	MAX_INCOMING_QUEUE	1024
 struct map_request incoming_messages[MAX_INCOMING_QUEUE];
 
-	uint32_t 
+	uint32_t
 cli_request_add(char *eid, uint64_t nonce)
 {
 	struct map_request *mr = &incoming_messages[666];
-	
+
 	mr->eid = eid;
 	mr->nonce = nonce;
 
 	return (666);
 }
 
-	int 
+	int
 cli_request_terminate(uint32_t id)
 {
     assert(id < MAX_INCOMING_QUEUE);
@@ -124,7 +124,7 @@ cli_request_terminate(uint32_t id)
 	return (TRUE);
 }
 
-	int 
+	int
 cli_request_get_eid(uint32_t id, struct prefix *p)
 {
 	assert(id < MAX_INCOMING_QUEUE);
@@ -167,22 +167,21 @@ cli_start_communication(void *context)
 	char line[2048];
 	char *params[100];
 	char *token;
-	uint32_t rid; 
+	uint32_t rid;
 	int i = 0;
-	
+
 	while (fgets(line, sizeof line, stdin) != NULL) {
 		line[strlen(line)-1] = '\0';
 		token = strtok (line, " ");
-		
-		while (token != NULL)
-		{
+
+		while (token != NULL) {
 			params[i++] = token;
 			token = strtok (NULL, " ,");
 		}
-			
+
 		if (!i)
 			continue;
-			
+
 		/* == GET  a mapping */
 		/* Map-Request <eid> <nonce> */
 		if (strcasecmp("map-request", params[0]) == 0 && i == 3) {
@@ -211,6 +210,7 @@ cli_start_communication(void *context)
 			struct map_entry *entry = NULL;
 			int j = 1;
 
+			printf("p1:%s\n", params[j]);
 			str2prefix (params[j], &p1);
 			apply_mask(&p1);
 			_mapping = generic_mapping_new(&p1);
@@ -219,10 +219,10 @@ cli_start_communication(void *context)
 			int count = 0;
 			void *ptr = NULL;
 			mflags = calloc(1, sizeof(struct mapping_flags));
-			
+
 
 			while (j < i - 1) {
-				if (0 == strcasecmp(params[j], "-rloc")) {
+					if (0 == strcasecmp(params[j], "-rloc")) {
 					j++;
 					if (prev && count > 0) {
 						printf("ADD RLOC\n");
@@ -250,7 +250,7 @@ cli_start_communication(void *context)
 					entry->p = (strcasecmp(params[j+1], "true")==0);
 				}else if (0 == strcasecmp(params[j], "address")) {
 					entry->rloc.sa.sa_family = AF_INET;
-					ptr = &entry->rloc.sin.sin_addr;
+					ptr = &(entry->rloc.sin.sin_addr);
 				}else if (0 == strcasecmp(params[j], "address6")) {
 					entry->rloc.sa.sa_family = AF_INET6;
 					ptr = &entry->rloc.sin6.sin6_addr;
@@ -271,7 +271,7 @@ cli_start_communication(void *context)
 					ptr = NULL;
 				}
 
-				printf("%s -> %s\n", params[j], params[j+1]);
+				//printf("%s -> %s\n", params[j], params[j+1]);
 				j = j+2;
 				prev = 1;
 			}
@@ -284,16 +284,17 @@ cli_start_communication(void *context)
 
 			generic_mapping_set_flags(_mapping, mflags);
 		}
+
 		if (strcasecmp("map-database", params[0]) == 0) {
 			assert(ms_db->lisp_db4);
 			assert(ms_db->lisp_db6);
 			list_db(ms_db->lisp_db4);
-			list_db(ms_db->lisp_db6);	
+			list_db(ms_db->lisp_db6);
 		}
 		if (strcasecmp("reload", params[0]) == 0) {
-			reconfigure(SIGHUP);
+			reconfigure();
 		}
-		
+
 		if (strcasecmp("help", params[0]) == 0) {
 			printf("""\t•map-database\n");
 			printf("\t•map-register\n");

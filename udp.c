@@ -1,15 +1,18 @@
 #include "lib.h"
 #include "udp.h"
 #include "plugin_openlisp.h"
+#ifdef LINUX
+#include <linux/ipv6.h>
+#endif
 
 static uint16_t ip_id = 0;
 
 uint32_t udp_prc_request(void *data);
-uint32_t _register(void *data);
-uint32_t _referral(void *data);
+uint32_t ms_process_map_register(void *data);
 uint32_t _forward(void *data);
 
 size_t _process_register_record(const union map_reply_record_generic *rec);
+void * process_map_referral(void *data, int idx);
 size_t _process_referral_record(const union map_referral_record_generic *rec,
 								union afi_address_generic *best_rloc,
 								struct db_node **node);
@@ -18,7 +21,7 @@ void _ms_clean_site_mapping(struct list_entry_t *site);
 size_t _ms_process_register_record(const union map_reply_record_generic *rec,
 				   uint8_t proxy_map_repl, uint8_t *xtr_id);
 
-void *general_register_process(void *data);
+void *general_xtr_register_process(void *data);
 void *mr_event_loop(void *context);
 void *get_mr_ddt(void *);
 
@@ -29,17 +32,16 @@ struct communication_fct udp_fct = {\
 	.start_communication	= udp_start_communication, \
 	.stop_communication	= udp_stop_communication, \
 	/* Map-Reply */
-	.reply_add		= udp_reply_add,\
-	.reply_add_record	= udp_reply_add_record, \
-	.reply_add_locator	= udp_reply_add_locator,\
-	.reply_error		= udp_reply_error, \
-	.reply_terminate	= udp_reply_terminate, \
+	.reply_add		= udp_map_reply_init,\
+	.reply_add_record	= udp_map_reply_add_record, \
+	.reply_add_locator	= udp_map_reply_add_locator,\
+	.reply_terminate	= udp_map_reply_terminate, \
 	/* Map-Referral */
-	.referral_add		= udp_referral_add,\
-	.referral_add_record	= udp_referral_add_record, \
-	.referral_add_locator	= udp_referral_add_locator,\
-	.referral_error		= udp_referral_error, \
-	.referral_terminate	= udp_referral_terminate, \
+	.referral_add		= udp_map_referral_init,\
+	.referral_add_record	= udp_map_referral_add_record, \
+	.referral_add_locator	= udp_map_referral_add_locator,\
+	.referral_error		= udp_map_referral_error, \
+	.referral_terminate	= udp_map_referral_terminate, \
 	/* Map-Request */
 	.request_add		= udp_request_add, \
 	.request_terminate	= udp_request_terminate, \
@@ -48,7 +50,6 @@ struct communication_fct udp_fct = {\
 	.request_is_ddt		= udp_request_is_ddt, \
 	.request_get_itr	= udp_request_get_itr, \
 	.request_get_port	= udp_request_get_port,\
-	.request_ddt_terminate	= udp_request_ddt_terminate,\
 };
 /*------------helper function-------------------  */
 
@@ -67,14 +68,13 @@ _make_nonce()
 	int
 addrcmp(union sockunion *src, union sockunion *dst)
 {
-	if (src->sa.sa_family != dst->sa.sa_family)
-		return -1;
-
-	switch (src->sa.sa_family) {
-	case AF_INET:
-		return memcmp((void *)&(src->sin.sin_addr), (void *)&(dst->sin.sin_addr), sizeof(struct in_addr));
-	case AF_INET6:
-		return memcmp((void *)&(src->sin6.sin6_addr), (void *)&(dst->sin6.sin6_addr), sizeof(struct in6_addr));
+	if (src->sa.sa_family == dst->sa.sa_family) {
+		switch (src->sa.sa_family) {
+		case AF_INET:
+			return memcmp((void *)&(src->sin.sin_addr), (void *)&(dst->sin.sin_addr), sizeof(struct in_addr));
+		case AF_INET6:
+			return memcmp((void *)&(src->sin6.sin6_addr), (void *)&(dst->sin6.sin6_addr), sizeof(struct in6_addr));
+		}
 	}
 	return -1;
 }
@@ -82,12 +82,9 @@ addrcmp(union sockunion *src, union sockunion *dst)
 	int
 entrycmp(void *esrc, void *edst)
 {
-	struct map_entry *src, *dst;
+	if (esrc && edst)
+		return addrcmp(&((struct map_entry *)esrc)->rloc, &((struct map_entry *)edst)->rloc);
 
-	src = (struct map_entry *)esrc;
-	dst = (struct map_entry *)edst;
-	if (src && dst)
-		return addrcmp(&src->rloc, &dst->rloc);
 	return -1;
 }
 
@@ -106,7 +103,7 @@ is_my_addr(union sockunion *sk)
 	if (getifaddrs(&ifap) == -1)
 		return -1;
 
-    for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
+	for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
 		/*ignore: */
 			/*interface with not ip*/
 		if (ifa->ifa_addr == NULL)
@@ -116,11 +113,11 @@ is_my_addr(union sockunion *sk)
 			continue;
 			/*look back interface */
 		if (getnameinfo(ifa->ifa_addr,SA_LEN(ifa->ifa_addr->sa_family),
-		    buf,NI_MAXHOST,NULL,0,NI_NUMERICHOST) != 0) {
+			buf,NI_MAXHOST,NULL,0,NI_NUMERICHOST) != 0) {
 			continue;
-	    }
+		}
 
-	if (!(strcmp(LOOPBACK,buf) && strcmp(LOOPBACK6,buf) &&  strncmp(LINK_LOCAL,buf,LINK_LOCAL_LEN)))
+		if (!(strcmp(LOOPBACK,buf) && strcmp(LOOPBACK6,buf) &&  strncmp(LINK_LOCAL,buf,LINK_LOCAL_LEN)))
 			continue;
 
 		/*compare addr */
@@ -144,25 +141,29 @@ is_my_addr(union sockunion *sk)
 }
 
 	void *
-_get_rpl_pool_place()
+_package_alloc()
 {
 	struct pk_rpl_entry *rpk;
 
 	rpk = (struct pk_rpl_entry *)calloc(1,sizeof(struct pk_rpl_entry));
 	rpk->buf = calloc(PKBUFLEN,sizeof(char));
+	rpk->curs = rpk->buf;
+	rpk->buf_len = 0;
+	rpk->request_id = NULL;
 	return rpk;
 }
 
 /* a very basic function to remove a request package from queue */
 	void
-_rm_rpl(void *entry)
+_package_free(void *entry)
 {
 	free(((struct pk_rpl_entry *)entry)->buf);
+	free(entry);
 }
 
 /* free function */
 	int
-rem(void *e)
+mem_free(void *e)
 {
 	free(e);
 	return TRUE;
@@ -173,12 +174,15 @@ udp_free_pk(void *data)
 {
 	struct pk_req_entry *pke = data;
 
-	if (pke) {
+	if (pke && !pke->ref_cnt) {
 		if (pke->itr)
-			list_destroy(pke->itr,rem);
+			list_destroy(pke->itr, mem_free);
 		if (pke->eid)
-			list_destroy(pke->eid,rem);
-		free(pke->buf);
+			list_destroy(pke->eid, mem_free);
+		if (pke->lh)
+			free(pke->lh);
+		else
+			free(pke->buf);
 		free(pke);
 		pthread_mutex_lock(&ipq_mutex);
 		ipq_no--;
@@ -190,36 +194,18 @@ udp_free_pk(void *data)
 	return 0;
 }
 
-	uint32_t
-_free_rpl_pool_place(void *rpk, void (*fnc)(void *))
-{
-	fnc((void *)rpk);
-	free(rpk);
-	return 0;
-}
-/*
- * Determine the LISP AFI type of an <AFI, address> tuple on the wire
- */
-	inline static uint16_t
-_get_address_type(const union afi_address_generic *addr)
-{
-	return (ntohs(addr->ip.afi));
-}
-
-
 /* Determine the actual size of an <AFI, address> tuple on the wire (only IPv4
  * and IPv6 supported)
  */
 	inline size_t
 _get_address_size(const union afi_address_generic *addr)
 {
-	switch (_get_address_type(addr)) {
+	switch (ntohs(addr->ip.afi)) {
 	case LISP_AFI_IP:
 		return (sizeof(struct afi_address));
 	case LISP_AFI_IPV6:
 		return (sizeof(struct afi_address6));
 	default:
-		assert(FALSE);
 		return (0);
 	}
 }
@@ -229,7 +215,7 @@ _get_address_size(const union afi_address_generic *addr)
  * IPv4 and IPv6 supported)
  */
 	inline size_t
-_get_record_size(const union map_request_record_generic *rec)
+_get_request_record_size(const union map_request_record_generic *rec)
 {
 	switch (ntohs(rec->record.eid_prefix_afi)) {
 	case LISP_AFI_IP:
@@ -237,7 +223,7 @@ _get_record_size(const union map_request_record_generic *rec)
 	case LISP_AFI_IPV6:
 		return (sizeof(struct map_request_record6));
 	default:
-		cp_log(LDEBUG, "AF not support\n");
+		cp_log(LDEBUG, "AF not support in record request\n");
 		return (0);
 	}
 }
@@ -255,7 +241,7 @@ _get_reply_record_size(const union map_reply_record_generic *rec)
 	case LISP_AFI_IPV6:
 		return (sizeof(struct map_reply_record6));
 	default:
-		assert(FALSE);
+		cp_log(LDEBUG, "AF not support in record reply\n");
 		return (0);
 	}
 }
@@ -273,7 +259,7 @@ _get_referral_record_size(const union map_referral_record_generic *rec)
 	case LISP_AFI_IPV6:
 		return (sizeof(struct map_referral_record6));
 	default:
-		assert(FALSE);
+		cp_log(LDEBUG, "AF not support in record referral\n");
 		return (0);
 	}
 }
@@ -292,7 +278,7 @@ _afi_address_str(const union afi_address_generic *addr, char *buf, size_t len)
 	int ret = TRUE;
 
 	bzero(buf, len);
-	switch (_get_address_type(addr)) {
+	switch (ntohs(addr->ip.afi)) {
 	case LISP_AFI_IP:
 		inet_ntop(AF_INET, (void *)&addr->ip.address, buf, len);
 		break;
@@ -317,9 +303,8 @@ get_ip_hdr_len(const union sockunion *addr)
 	case AF_INET6:
 		return(sizeof(struct ip6_hdr));
 	default:
-		cp_log(LLOG, "get_ip_hdr_len: unknown AFI (%d)",
-		       addr->sa.sa_family);
-		return - 1;
+		cp_log(LLOG, "get_ip_hdr_len: unknown AFI (%d)", addr->sa.sa_family);
+		return -1;
 	}
 }
 
@@ -417,34 +402,19 @@ build_encap_pkt(uint8_t *pkt, size_t pkt_len, void *lisp_oh,
 	return buf;
 }
 
-/*------------Main functions: Reply------------- */
-	void *
-udp_new_reply_entry(void *data)
-{
-	struct pk_req_entry *pke = data;
-	struct pk_rpl_entry *rpk;
-
-	if (!(rpk = _get_rpl_pool_place()))
-		return NULL;
-	rpk->curs = rpk->buf;
-	rpk->buf_len = 0;
-	rpk->request_id = pke;
-
-	return rpk;
-}
-
 /* ========================================================== */
 /* Map-register handing code */
 
 	void *
-udp_register_add(void *data)
+udp_map_register_init(void *data)
 {
 	struct map_register_hdr *hdr;
 	struct pk_rpl_entry *rpk;
 	struct pk_req_entry *pke = data;
 
-	if (!(rpk = udp_new_reply_entry(pke)))
+	if (!(rpk = _package_alloc()))
 		return NULL;
+	rpk->request_id = pke;
 
 	hdr = (struct map_register_hdr *)rpk->buf;
 
@@ -460,18 +430,18 @@ udp_register_add(void *data)
 }
 
 /* send map-register
-	udp_register_add_record == udp_reply_add_record
-	udp_register_add_locator == udp_reply_add_locator
+	udp_map_register_add_record == udp_map_reply_add_record
+
  */
 	int
-udp_register_add_record(void *data, struct prefix *p,
+udp_map_register_add_record(void *data, struct prefix *p,
 					uint32_t ttl, uint8_t lcount, uint32_t version, uint8_t A, uint8_t act)
 {
-	return udp_reply_add_record(data, p, ttl, lcount, version, A, act);
+	return udp_map_reply_add_record(data, p, ttl, lcount, version, A, act);
 }
 
 	int
-udp_register_add_locator(void *data, struct map_entry *e, int ex_info)
+udp_map_register_add_locator(void *data, struct map_entry *e, int ex_info)
 {
 	union map_reply_locator_generic *loc;
 	struct map_reply_locator_te *loc_te;
@@ -497,7 +467,7 @@ udp_register_add_locator(void *data, struct map_entry *e, int ex_info)
 			loc_te->L = e->L;
 			loc_te->p = e->p;
 			loc_te->R = e->r;
-			cp_log(LDEBUG, "\t•[rloc=TE, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+			cp_log(LDEBUG, "\t[rloc=TE, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 					pe->priority, \
 					pe->weight, \
 					pe->m_priority, \
@@ -540,8 +510,7 @@ udp_register_add_locator(void *data, struct map_entry *e, int ex_info)
 				default:
 					assert(FALSE);
 				}
-				cp_log(LDEBUG, "\t\t•[hop=%s]\n",buf);
-
+				cp_log(LDEBUG, "\t\t[hop=%s]\n",buf);
 				p = p->next;
 			}
 			/*rloc as last hop */
@@ -561,7 +530,7 @@ udp_register_add_locator(void *data, struct map_entry *e, int ex_info)
 			default:
 				assert(FALSE);
 			}
-			cp_log(LDEBUG, "\t\t•[hop=%s]\n",buf);
+			cp_log(LDEBUG, "\t\t[hop=%s]\n",buf);
 
 			lcaf->payload_len = htons(((char *)rpk->curs - (char *)lcaf) - sizeof(struct lcaf_hdr));
 			lc++;
@@ -618,21 +587,20 @@ udp_register_add_locator(void *data, struct map_entry *e, int ex_info)
 					e->r, \
 					e->L, \
 					e->p);
-		lc++;
 	}
 	return (TRUE);
 }
 
 /* send map-register to ms */
 	uint32_t
-udp_register_terminate(void *data, union sockunion *ds)
+udp_map_register_terminate(void *data, union sockunion *ds)
 {
 	int skt;
 	struct pk_rpl_entry *rpk = data;
 
 	socklen_t slen = 0;
 	if (_debug == LDEBUG) {
-		cp_log(LDEBUG, "send Map-Register ");
+		cp_log(LDEBUG, "Send Map-Register ");
 		cp_log(LDEBUG, "to %s:%d\n",
 				sk_get_ip(ds, ip), sk_get_port(ds) );
 		cp_log(LDEBUG, "Sending packet... ");
@@ -671,28 +639,21 @@ udp_register_terminate(void *data, union sockunion *ds)
 	return (TRUE);
 }
 
-	uint32_t
-udp_register_error(void *data)
-{
-	cp_log(LDEBUG, "Error processing\n");
-	return -1;
-}
-
 /* ========================================================== */
 /* Map-Reply handling code */
 /* make new map-reply header */
 	void *
-udp_reply_add(void *data)
+udp_map_reply_init(void *data)
 {
 	struct map_reply_hdr *hdr;
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
 
-	if (!(rpk = udp_new_reply_entry(pke)) ) {
+	if (!(rpk = _package_alloc()) ) {
 		udp_free_pk(pke);
 		return NULL;
 	}
-
+	rpk->request_id = pke;
 	hdr = (struct map_reply_hdr *)rpk->buf;
 
 	hdr->lisp_type = LISP_TYPE_MAP_REPLY;
@@ -711,7 +672,7 @@ udp_reply_add(void *data)
 
 /* add new record to message */
 	int
-udp_reply_add_record(void *data, struct prefix *p,
+udp_map_reply_add_record(void *data, struct prefix *p,
 					uint32_t ttl, uint8_t lcount, uint32_t version, uint8_t A, uint8_t act)
 {
 	union map_reply_record_generic *rec;
@@ -813,7 +774,7 @@ sockunioncmp(void *m, void *n)
 }
 
 	int
-udp_reply_add_locator(void *data, struct map_entry *e)
+udp_map_reply_add_locator(void *data, struct map_entry *e)
 {
 	union map_reply_locator_generic *loc;
 	struct map_reply_locator_te *loc_te;
@@ -850,7 +811,7 @@ udp_reply_add_locator(void *data, struct map_entry *e)
 			lcaf->afi = htons(LCAF_AFI);
 			lcaf->type = LCAF_TE;
 
-			cp_log(LDEBUG, "\t•[rloc=TE, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+			cp_log(LDEBUG, "\t[rloc=TE, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 					loc_te->priority, \
 					loc_te->weight, \
 					loc_te->m_priority, \
@@ -962,7 +923,7 @@ udp_reply_add_locator(void *data, struct map_entry *e)
 			cp_log(LDEBUG, "unsuported family\n");
 			return (FALSE);
 		}
-		cp_log(LDEBUG, "\t[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+		cp_log(LDEBUG, "\t[rloc=%s 2, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 					buf, \
 					loc->rloc.priority, \
 					loc->rloc.weight, \
@@ -980,7 +941,7 @@ udp_reply_add_locator(void *data, struct map_entry *e)
 
 /* send map-reply */
 	int
-udp_reply_terminate(void *data)
+udp_map_reply_terminate(void *data)
 {
 	union sockunion local;
 	int socket;
@@ -1001,13 +962,14 @@ udp_reply_terminate(void *data)
 	}else {
 		/* choose one ITR */
 		if (udp_request_get_itr(pke,&itr,0) <= 0)
-			return -1;
+			goto reply_error;
 
 		if (!pke->ecm) {
-			if (pke->si.sin.sin_family == AF_INET)
-                itr_port = pke->si.sin.sin_port;
-            else
-                itr_port = pke->si.sin6.sin6_port;
+			if (pke->si.sin.sin_family == AF_INET) {
+                		itr_port = pke->ih_si.sin.sin_port;
+			}else{
+                		itr_port = pke->ih_si.sin6.sin6_port;
+			}
 		}
 
 		local.sin.sin_family = itr.sin.sin_family;
@@ -1017,8 +979,7 @@ udp_reply_terminate(void *data)
 				local.sin.sin_port = pke->ih_si.sin.sin_port;
 			else
 				local.sin.sin_port = itr_port;
-		}
-		else{
+		}else{
 			memcpy(&local.sin6.sin6_addr, &itr.sin6.sin6_addr, SIN_LEN(AF_INET6));
 			if (pke->ecm)
 				local.sin6.sin6_port = pke->ih_si.sin6.sin6_port;
@@ -1045,45 +1006,36 @@ udp_reply_terminate(void *data)
 
 	if (socket) {
 		if (sendto(socket, (char *)rpk->buf, rpk->buf_len, 0, (struct sockaddr *)&(local.sa), slen) == -1) {
-			cp_log(LLOG, "failed\n");
-			perror("sendto()");
-			_free_rpl_pool_place(rpk, _rm_rpl);
-			return (FALSE);
+			cp_log(LLOG, "send ");
+			goto reply_error;
 		}
 	}
 	else{
-		if (_debug == LDEBUG) {
-			cp_log(LDEBUG, "failed\n");
-			perror("select_socket");
-		}
-
-		_free_rpl_pool_place(rpk, _rm_rpl);
-		return (FALSE);
+		cp_log(LDEBUG, "socket ");
+		goto reply_error;
 	}
-	cp_log(LDEBUG, "done\n");
-	_free_rpl_pool_place(rpk, _rm_rpl);
-	return (TRUE);
-}
 
-/* error when process */
-	int
-udp_reply_error(void *data)
-{
-	cp_log(LDEBUG, "Unknown error\n");
-	return (TRUE);
+	cp_log(LDEBUG, "done\n");
+	_package_free(rpk);
+	return (0);
+
+reply_error:
+	cp_log(LDEBUG,"failed\n");
+	_package_free(rpk);
+	return (1);
 }
 
 /* ========================================================== */
 /*  Map-Referral handling code */
 /* make new map-referral message */
 	void *
-udp_referral_add(void *data)
+udp_map_referral_init(void *data)
 {
 	struct map_referral_hdr *hdr;
 	struct pk_req_entry *pke = data;
 	struct pk_rpl_entry *rpk;
 
-	rpk = _get_rpl_pool_place();
+	rpk = _package_alloc();
 	rpk->curs = rpk->buf;
 	rpk->buf_len = 0;
 	rpk->request_id = pke;
@@ -1108,7 +1060,7 @@ udp_referral_add(void *data)
 
 /* add new record to map-referral */
 	int
-udp_referral_add_record(void *data, uint32_t iid, struct prefix *p, uint32_t ttl, uint8_t lcount,
+udp_map_referral_add_record(void *data, uint32_t iid, struct prefix *p, uint32_t ttl, uint8_t lcount,
 						uint32_t version, uint8_t A, uint8_t act, uint8_t i, uint8_t sigcnt)
 {
 	union map_referral_record_generic *rec;
@@ -1188,7 +1140,7 @@ udp_referral_add_record(void *data, uint32_t iid, struct prefix *p, uint32_t ttl
 
 /* add new locator  to map-referral-record */
 	int
-udp_referral_add_locator(void *data, struct map_entry *e)
+udp_map_referral_add_locator(void *data, struct map_entry *e)
 {
 	union map_referral_locator_generic *loc;
 	struct pk_rpl_entry *rpk = data;
@@ -1231,7 +1183,7 @@ udp_referral_add_locator(void *data, struct map_entry *e)
 		return (FALSE);
 	}
 
-	cp_log(LDEBUG, "\t[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d]\n", \
+	cp_log(LDEBUG, "\t[rloc=%s 3, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d]\n", \
 				buf, \
 				e->priority, \
 				e->weight, \
@@ -1245,7 +1197,7 @@ udp_referral_add_locator(void *data, struct map_entry *e)
 }
 
 	int
-udp_referral_error(void *data)
+udp_map_referral_error(void *data)
 {
 	cp_log(LDEBUG, "referral_error\n");
 	return (TRUE);
@@ -1253,7 +1205,7 @@ udp_referral_error(void *data)
 
 /* send map-referral */
 	int
-udp_referral_terminate(void *data)
+udp_map_referral_terminate(void *data)
 {
 	union sockunion local;
 	int socket;
@@ -1285,24 +1237,23 @@ udp_referral_terminate(void *data)
 
 	if (socket) {
 		if (sendto(socket, rpk->buf, rpk->buf_len, 0, (struct sockaddr *)&(local.sa), slen) == -1) {
-			cp_log(LLOG, "failed\n");
-			perror("sendto()");
-			_free_rpl_pool_place(rpk, _rm_rpl);
-			return (FALSE);
+			cp_log(LLOG, "send ");
+			goto referral_error;
 		}
 	}
 	else{
-		if (_debug == LDEBUG) {
-			cp_log(LDEBUG, "failed\n");
-			perror("select_socket");
-		}
-		_free_rpl_pool_place(rpk, _rm_rpl);
-
-		return (FALSE);
+		cp_log(LDEBUG, "socket ");
+		goto referral_error;
 	}
+
 	cp_log(LDEBUG, "done\n");
-	_free_rpl_pool_place(rpk, _rm_rpl);
-	return (TRUE);
+	_package_free(rpk);
+	return (0);
+
+referral_error:
+	cp_log(LDEBUG, "failed\n");
+	_package_free(rpk);
+	return 1;
 }
 
 /* ========================================================== */
@@ -1355,8 +1306,11 @@ udp_request_get_nonce(void *data)
 udp_request_is_ddt(void *data)
 {
 	struct pk_req_entry *pke = data;
-	struct lisp_control_hdr *lcm = pke->buf;
-
+	struct lisp_control_hdr *lcm;
+	if (pke->lh)
+	 	lcm = pke->lh;
+	else
+		lcm = pke->buf;
 	return lcm->ddt_originated;
 }
 
@@ -1394,7 +1348,7 @@ udp_request_get_itr(void *data, union sockunion *itr, int afi)
 				itr->sin6.sin6_family = AF_INET6;
 				break;
 			default:
-				cp_log(LDEBUG, "AF not support\n");
+				cp_log(LDEBUG, "AF not support 2\n");
 				return -1;
 			}
 			break;
@@ -1433,180 +1387,8 @@ udp_request_add(void *data, uint8_t security, uint8_t ddt,\
 		const union sockunion *dst,\
 		const struct prefix *eid)
 {
-	size_t itr_size;
-	struct pk_req_entry *pke = data;
-	struct pk_rpl_entry *rpk;
-	struct map_request_hdr *lcm;
-	union afi_address_generic *itr_rloc;
-	//union map_request_record_generic_lcaf * rec;
-	union map_request_record_generic *rec;
-	struct lisp_control_hdr lh;
-	uint8_t *buf;
 
-	rpk = _get_rpl_pool_place();
-	rpk->curs = rpk->buf;
-	rpk->buf_len = 0;
-	rpk->request_id = pke;
-
-	lcm = (struct map_request_hdr*)rpk->buf;
-
-	/* set all the LISP flags  */
-	lcm->lisp_type = LISP_TYPE_MAP_REQUEST;
-	lcm->auth_bit = A;
-	lcm->map_data_present = M;
-	lcm->rloc_probe = P;
-	lcm->smr_bit = S;
-	lcm->pitr_bit = p;
-	lcm->smr_invoke_bit = s;
-	/* XXX dsa hard coded */
-	lcm->irc = 0;
-	lcm->record_count = 1;
-	lcm->nonce = htonll(nonce);
-
-	/* set no source EID <AFI=0, addres is empty> -> jump of 2 bytes */
-	/* nothing to do as bzero of the packet at init */
-	itr_rloc = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr) + 2);
-
-	/* set source ITR */
-	struct list_t *ll;
-	struct list_entry_t *l;
-
-	ll = pke->itr;
-	if (!ll)
-		return NULL;
-	l = ll->head.next;
-
-	while (l != &ll->tail) {
-		memcpy(itr_rloc, l->data,sizeof(union afi_address_generic));
-		if (ntohs(itr_rloc->ip.afi) == AF_INET)
-			itr_rloc->ip.afi = htons(LISP_AFI_IP);
-		else
-			itr_rloc->ip6.afi = htons(LISP_AFI_IPV6)	;
-
-		itr_size = _get_address_size(itr_rloc);
-		itr_rloc = (union afi_address_generic *)CO(itr_rloc,itr_size);
-		lcm->irc++;
-		l = l->next;
-	}
-	lcm->irc--;/* ACTUAL NUMBER OF ITR-RLOCs is (IRC + 1 ) */
-
-	rec = (union map_request_record_generic *)itr_rloc;
-
-	switch (eid->family) {
-	case AF_INET:
-		rec->record.eid_mask_len = eid->prefixlen;
-		rec->record.eid_prefix_afi = htons(LISP_AFI_IP);
-		memcpy(&rec->record.eid_prefix, &eid->u.prefix4, sizeof(struct in_addr));
-
-		/* EID prefix is an IPv4 so 32 bits (4 bytes) */
-		rpk->curs = (void *)CO(rec, sizeof(struct map_request_record));
-		break;
-	case AF_INET6:
-		rec->record6.eid_mask_len = eid->prefixlen;
-		rec->record.eid_prefix_afi = htons(LISP_AFI_IPV6);
-		memcpy(&rec->record6.eid_prefix, &eid->u.prefix6, sizeof(struct in6_addr));
-
-		/* EID prefix is an IPv6 so 128 bits (16 bytes) */
-		rpk->curs = (void *)CO(rec, sizeof(struct map_request_record6));
-		break;
-	default:
-		cp_log(LDEBUG, "not supported\n");
-		return NULL;
-	}
-
-	/* add LISP ECM part */
-	memset(&lh , 0, sizeof(lh));
-	lh.type = LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE;
-	lh.security_bit = security;
-	lh.ddt_originated = ddt;
-	buf = build_encap_pkt(rpk->buf, rpk->buf_len, &lh, sizeof(lh),
-			      src, dst, &rpk->buf_len);
-	if (!buf)
-		return NULL;
-	free(rpk->buf);
-	rpk->buf = buf;
-
-	if (_debug == LDEBUG) {
-		/* ================================= */
-		cp_log(LDEBUG, "Map-Request-Referral ");
-		cp_log(LDEBUG, " <");
-		cp_log(LDEBUG, "nonce=0x%lx", nonce);
-		cp_log(LDEBUG, ">\n");
-		/* ================================= */
-	}
-	return rpk;
-}
-
-	int
-udp_request_ddt_terminate(void *data, const union sockunion *server, char terminal)
-{
-	union sockunion servaddr;
-	int skt;
-	socklen_t slen;
-	struct pk_rpl_entry *rpk = data;
-
-	bzero(&servaddr,sizeof(servaddr));
-	memcpy(&servaddr,server, sizeof(servaddr));
-	/* for testing: fix soure of map-request-ddt to 4342 */
-	if ((server->sa).sa_family == AF_INET) {
-		skt = skfd;
-
-		(servaddr.sin).sin_port=ntohs(LISP_CP_PORT);
-		slen = sizeof(struct sockaddr_in);
-	}else if ((server->sa).sa_family == AF_INET6) {
-		skt = skfd6;
-		(servaddr.sin6).sin6_port=ntohs(LISP_CP_PORT);
-		slen = sizeof(struct sockaddr_in6);
-	}
-	else{
-		return 0;
-	}
-
-	/* here is flow the ietf: choose a randome source port --> must listent to received the reply
-
-	if ((server->sa).sa_family == AF_INET) {
-		(servaddr.sin).sin_port=ntohs(LISP_CP_PORT);
-		if ((skt = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-			perror("socket");
-			exit(0);
-		}
-		slen = sizeof(struct sockaddr_in);
-	}else if ((server->sa).sa_family == AF_INET6) {
-		(servaddr.sin6).sin6_port=ntohs(LISP_CP_PORT);
-		if ((skt = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-			perror("socket");
-			exit(0);
-		}
-		slen = sizeof(struct sockaddr_in6);
-	}
-	else
-		return 0;
-	*/
-
-	/*=============================*/
-	if (_debug == LDEBUG) {
-		cp_log(LDEBUG,  "send Map-Request-Referral ");
-		cp_log(LDEBUG,  "to %s:%d\n",
-				sk_get_ip(&servaddr, ip), sk_get_port(&servaddr) );
-		cp_log(LDEBUG, "Sending packet... ");
-	}
-	/*=============================*/
-	if (sendto(skt, rpk->buf, rpk->buf_len, 0, (struct sockaddr *)&(servaddr.sa),slen) < 0) {
-			cp_log(LLOG, "failed\n");
-			perror("sendto()");
-			_free_rpl_pool_place(rpk, _rm_rpl);
-			close(skt);
-			return (FALSE);
-	}
-
-	cp_log(LLOG, "done\n");
-
-	if (terminal) {
-		udp_free_pk(rpk->request_id);
-	}
-	_free_rpl_pool_place(rpk, _rm_rpl);
-
-	return (TRUE);
+	return NULL;
 }
 
 /* ========================================================== */
@@ -1725,12 +1507,12 @@ _forward_to_etr(void *data, struct db_node *rn)
 	struct list_entry_t *_iter;
 	struct map_entry *e = NULL;
 	char ip[INET6_ADDRSTRLEN];
-	void *packet = pke->buf;
-	int pkt_len = pke->buf_len;
+	void *packet = pke->lh;
+	int pkt_len = pke->buf_len + ((char *)pke->buf - (char *)pke->lh);
 
-	lh = (struct lisp_control_hdr *)CO(packet, 0);
+	lh = (struct lisp_control_hdr *)CO(pke->buf, 0);
 	/* Encapsulated Control Message Format => decap first */
-	if (lh->type != LISP_TYPE_ENCAPSULATED_CONTROL_MESSAGE) {
+	if (!(pke->ecm)) {
 		cp_log(LDEBUG, "Forwarding works only on Encapsulated Control Message mode\n");
 		return (FALSE);
 	}
@@ -1804,7 +1586,7 @@ _forward_to_etr(void *data, struct db_node *rn)
 udp_init_socket()
 {
 	struct addrinfo	    hints;
-    struct addrinfo	    *res;
+	struct addrinfo	    *res;
 	int e;
 	char _str_port[NI_MAXSERV];
 
@@ -1813,7 +1595,7 @@ udp_init_socket()
 
 	/* socket for bind ipv4 */
 	if ((skfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-		perror("socket");
+		perror("socket_ipv4");
 		exit(0);
 	}
 
@@ -1829,17 +1611,21 @@ udp_init_socket()
 	}
 
 	if (bind(skfd, res->ai_addr, res->ai_addrlen) == -1) {
-		perror("bind");
+		perror("bind_ipv4");
 		close(skfd);
 		exit(0);
 	}
 	int ip_recvaddr = 1;
 
+#ifdef LINUX
+	setsockopt(skfd, IPPROTO_IP, IP_PKTINFO, &ip_recvaddr, sizeof(ip_recvaddr));
+#else
 	setsockopt(skfd, IPPROTO_IP, IP_RECVDSTADDR, &ip_recvaddr, sizeof(ip_recvaddr));
+#endif
 
 	/* socket for bind ipv6 */
 	if ((skfd6 = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-			perror("socket6");
+			perror("socket_ipv6");
 			exit(0);
 	}
 
@@ -1854,8 +1640,10 @@ udp_init_socket()
 		exit(0);
 	}
 
+	int bind_ipv6_only=TRUE;
+	setsockopt(skfd6, IPPROTO_IPV6, IPV6_V6ONLY, &bind_ipv6_only, sizeof(bind_ipv6_only));
 	if (bind(skfd6, res->ai_addr, res->ai_addrlen) == -1) {
-		perror("bind");
+		perror("bind_ipv6");
 		close(skfd6);
 		exit(0);
 	}
@@ -1938,8 +1726,8 @@ _lisp_process_encaps(struct pk_req_entry *pke)
 		if ((_fncs & _FNC_RTR) && (mrh->R || pke->lh->R)) {
 			rtr_process_map_register(pke);
 		} else if ((_fncs & _FNC_MS) && pke->lh->N &&
-			   mrh->want_map_notify) {
-			_register(pke);
+			 	mrh->want_map_notify) {
+			ms_process_map_register(pke);
 		} else {
 			cp_log(LDEBUG, "unexpected ECMed Map-Register\n");
 		}
@@ -1991,11 +1779,11 @@ _lisp_process(void *data)
 		/* Map-Register */
 	case LISP_TYPE_MAP_REGISTER:
 		if (_fncs & _FNC_MS)
-			_register(pke);
+			ms_process_map_register(pke);
 		break;
 		/* Map-Referral */
 	case LISP_TYPE_MAP_REFERRAL:
-		 get_mr_ddt(pke);
+		 process_map_referral(pke->buf, -1);
 		 break;
 		/* Map-Reply */
 	case LISP_TYPE_MAP_REPLY:
@@ -2061,20 +1849,34 @@ udp_get_pk(int sockfd, socklen_t slen)
 		return -1;
 	}
 
-	cp_log(LLOG,  "Received packet (%zd bytes) from  %s:%d\n", pk_len, sk_get_ip(&ssk, ip) , sk_get_port(&ssk));
+	cp_log(LLOG,  "\nReceived packet (%zd bytes) from %s:%d ", pk_len, sk_get_ip(&ssk, ip) , sk_get_port(&ssk));
 
 	switch (ssk.sa.sa_family) {
 	case AF_INET:
+#ifdef LINUX
+		for (ctrmsg = CMSG_FIRSTHDR(&msg); ctrmsg != NULL; ctrmsg = CMSG_NXTHDR(&msg, ctrmsg)) {
+			if ((ctrmsg->cmsg_level == IPPROTO_IP) && (ctrmsg->cmsg_type == IP_PKTINFO)) {
+				pktinfo = (union union_pktinfo *)(CMSG_DATA(ctrmsg));
+				dsk.sin.sin_family = AF_INET;
+				dsk.sin.sin_addr =  pktinfo->pkif;
+				inet_ntop(AF_INET, &dsk.sin.sin_addr,ip, INET6_ADDRSTRLEN);
+				cp_log(LDEBUG, "to %s\n",ip);
+				break;
+			}
+		}
+#else
 		for (ctrmsg = CMSG_FIRSTHDR(&msg); ctrmsg != NULL; ctrmsg = CMSG_NXTHDR(&msg, ctrmsg)) {
 			if ((ctrmsg->cmsg_level == IPPROTO_IP) && (ctrmsg->cmsg_type == IP_RECVDSTADDR)) {
 				pktinfo = (union union_pktinfo *)(CMSG_DATA(ctrmsg));
 				dsk.sin.sin_family = AF_INET;
 				dsk.sin.sin_addr =  pktinfo->pkif;
 				inet_ntop(AF_INET, &dsk.sin.sin_addr,ip, INET6_ADDRSTRLEN);
-				cp_log(LDEBUG, "To: %s\n",ip);
+				cp_log(LDEBUG, "to %s\n",ip);
 				break;
 			}
 		}
+
+#endif
 		break;
 	case AF_INET6:
 		for (ctrmsg = CMSG_FIRSTHDR(&msg); ctrmsg != NULL; ctrmsg = CMSG_NXTHDR(&msg, ctrmsg)) {
@@ -2083,7 +1885,7 @@ udp_get_pk(int sockfd, socklen_t slen)
 				dsk.sin6.sin6_family = AF_INET6;
 				memcpy(&dsk.sin6.sin6_addr, &pktinfo->pkif6.ipi6_addr, sizeof(struct in6_addr));
 				inet_ntop(AF_INET6, &dsk.sin6.sin6_addr,ip, INET6_ADDRSTRLEN);
-				cp_log(LDEBUG, "To: %s\n",ip);
+				cp_log(LDEBUG, "to %s\n",ip);
 				break;
 			}
 		}
@@ -2140,7 +1942,7 @@ udp_start_communication(void *context)
 	/*map-register process thread*/
 
 	if (_fncs & _FNC_XTR) {
-		pthread_create(&_thr_map_register_process, NULL, general_register_process, NULL);
+		pthread_create(&_thr_map_register_process, NULL, general_xtr_register_process, NULL);
 	}
 
 #ifdef OPENLISP
@@ -2222,7 +2024,8 @@ udp_prc_request(void *data)
 		lh = (struct lisp_control_hdr *)pke->lh;
 		if (_debug == LDEBUG) {
 			cp_log(LDEBUG, "LH: <type=%u>\n", lh->type);
-			cp_log(LDEBUG, "Encapsulated Control Message mode <S=%u, D=%u>\n", lh->security_bit, lh->ddt_originated);
+			cp_log(LDEBUG, "Encapsulated Control Message mode <S=%u, D=%u>\n",
+											lh->security_bit, lh->ddt_originated);
 		}
 	}
 
@@ -2248,6 +2051,7 @@ udp_prc_request(void *data)
 
 	eid_source = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr));
 
+	cp_log(LDEBUG, "Source EID:");
 	ret = _afi_address_str(eid_source, buf, BSIZE);
 	/* check if the source EID is specified */
 	if (ret) {
@@ -2258,7 +2062,7 @@ udp_prc_request(void *data)
 		/* size is [Source EID AFI field] as no address is provided */
 		eid_size = 2;
 	}
-	cp_log(LDEBUG, "Source EID: %s\n", buf);
+	cp_log(LDEBUG, " %s\n", buf);
 
 	/* jump to the ITR address list */
 	itr_rloc = (union afi_address_generic *)CO(eid_source, eid_size);
@@ -2276,7 +2080,7 @@ udp_prc_request(void *data)
 	while (icount--) {
 		itr_address = calloc(1,sizeof(union afi_address_generic));
 
-		switch (_get_address_type(itr_rloc)) {
+		switch (ntohs(itr_rloc->ip.afi)) {
 		case LISP_AFI_IP:
 			memcpy(&itr_address->ip.address, &itr_rloc->ip.address, sizeof(struct in_addr));
 			itr_address->ip.afi = htons(AF_INET);
@@ -2330,14 +2134,14 @@ udp_prc_request(void *data)
 			inet_ntop(AF_INET6, (void *)&rec->record6.eid_prefix, buf, BSIZE);
 			break;
 		default:
-			cp_log(LDEBUG, "AF not support\n");
+			cp_log(LDEBUG, "AF not support 3\n");
 
 			return -1;
 		}
 		cp_log(LDEBUG, "EID prefix: %s/%u\n", buf, eid_prefix->prefixlen);
 
 		list_insert(pke->eid,eid_prefix, NULL);
-		rec = (union map_request_record_generic *)CO(rec, _get_record_size(rec));
+		rec = (union map_request_record_generic *)CO(rec, _get_request_record_size(rec));
 	}
 	return (1);
 }
@@ -2482,7 +2286,7 @@ _process_referral_record(const union map_referral_record_generic *rec, union afi
 		if (mapping) {
 			generic_mapping_add_rloc(mapping, entry);
 		}
-		cp_log(LDEBUG, "\t•[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+		cp_log(LDEBUG, "\t[rloc=%s 4, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 					buf, \
 					entry->priority, \
 					entry->weight, \
@@ -2514,7 +2318,7 @@ _process_referral_record(const union map_referral_record_generic *rec, union afi
 
 /* Map-notify */
 	int
-_register_notify(struct pk_req_entry *pke, struct site_info *site)
+_send_map_notify(struct pk_req_entry *pke, struct site_info *site)
 {
 	uint8_t *buf;
 	union sockunion ds;
@@ -2584,7 +2388,7 @@ _register_notify(struct pk_req_entry *pke, struct site_info *site)
 
 /* Process Map-Register */
 	uint32_t
-_register(void *data)
+ms_process_map_register(void *data)
 {
 	struct map_register_hdr *lcm;
 	union map_reply_record_generic *rec;		/* current record */
@@ -2640,7 +2444,7 @@ _register(void *data)
 		}
 		/* Send map-notify if required */
 		if (lcm->want_map_notify && site->data) {
-			_register_notify(pke, site->data);
+			_send_map_notify(pke, site->data);
 		}
 		return 1;
 	}
@@ -2654,7 +2458,7 @@ _ms_recal_hashing(const void *packet, int pk_len, void *key, void *rt, int no_no
 
     void *packet2;
 	struct map_register_hdr *map_register;
-    HMAC_SHA1_CTX	ctx;
+	HMAC_SHA1_CTX	ctx;
 	unsigned char	buf[BUFLEN];
 	u_char auth_len;
 	int i;
@@ -3140,7 +2944,7 @@ _ms_process_register_record(const union map_reply_record_generic *rec, uint8_t p
 				pe->L = entry->L;
 				pe->p = entry->p;
 			}
-			cp_log(LDEBUG, "\t•[rloc=TE, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+			cp_log(LDEBUG, "\t[rloc=TE, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 						entry->priority, \
 						entry->weight, \
 						entry->m_priority, \
@@ -3230,7 +3034,7 @@ _ms_process_register_record(const union map_reply_record_generic *rec, uint8_t p
 			}
 			if (_debug == LDEBUG) {
 				inet_ntop(entry->rloc.sin.sin_family, (void *)&loc->rloc.rloc, buf, BSIZE);
-				cp_log(LDEBUG, "\t•[rloc=%s, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
+				cp_log(LDEBUG, "\t[rloc=%s 5, priority=%u, weight=%u, m_priority=%u, m_weight=%u, r=%d, L=%d, p=%d]\n", \
 						buf, \
 						entry->priority, \
 						entry->weight, \
@@ -3286,21 +3090,17 @@ _ms_process_register_record(const union map_reply_record_generic *rec, uint8_t p
 
 /* Map-register process thread */
 	void *
-general_register_process(void *data)
+general_xtr_register_process(void *data)
 {
 	struct pk_rpl_entry *rpk;
-	struct pk_rpl_entry *rpk_ex=NULL;
 	struct list_entry_t *ptr;
 	struct db_node *node;
 	struct ms_entry *ms;
 	struct mapping_flags *mflags;
 	struct map_register_hdr *hr;
-	HMAC_SHA1_CTX	ctx;
-	unsigned char	buf[BUFLEN];
 	struct map_entry *e = NULL;
 	struct list_entry_t *_iter, *pr;
 	struct list_t *l = NULL;
-	u_char pkbuf[PKMSIZE];
 	int count;
 	int buflen;
 
@@ -3311,16 +3111,9 @@ general_register_process(void *data)
 			ms = (struct ms_entry *)pr->data;
 
 			/* init map-register message */
-			while (!(rpk = udp_register_add(NULL)) ) {
+			while (!(rpk = udp_map_register_init(NULL)) ) {
 				sleep(1);
 				continue;
-			}
-
-			if(lisp_te && (_fncs & _FNC_XTR)){
-				while( !(rpk_ex = udp_register_add(NULL)) ){
-					sleep(1);
-					continue;
-				}
 			}
 
 			/* add mapping to map-register message */
@@ -3329,7 +3122,6 @@ general_register_process(void *data)
 				node = (struct db_node *)ptr->data;
 				mflags = node->flags;
 				l = (struct list_t *)db_node_get_info(node);
-				assert(l);
 				_iter = l->head.next;
 
 				if (!_iter) {
@@ -3349,18 +3141,19 @@ general_register_process(void *data)
 							lcount++;
 						_iter = _iter->next;
 					}
-					udp_register_add_record(rpk, &node->p, mflags->ttl, lcount, mflags->version, mflags->A, mflags->act);
+					_iter = l->head.next;
+					udp_map_register_add_record(rpk, &node->p, mflags->ttl, lcount, mflags->version, mflags->A, mflags->act);
 				}else{
-					udp_register_add_record(rpk, &node->p, mflags->ttl, l->count, mflags->version, mflags->A, mflags->act);
+					udp_map_register_add_record(rpk, &node->p, mflags->ttl, l->count, mflags->version, mflags->A, mflags->act);
 				}
 
 				/* insert RLOC */
-				_iter = l->head.next;
 				while (_iter != &l->tail) {
 					e = (struct map_entry*)_iter->data;
-					udp_register_add_locator(rpk, e, 0);
-					if (lisp_te && (_fncs & _FNC_XTR))
-						udp_register_add_locator(rpk_ex, e, 1);
+					if (ms->proxy && lisp_te && (_fncs & _FNC_XTR))
+						udp_map_register_add_locator(rpk, e, 1);
+					else
+						udp_map_register_add_locator(rpk, e, 0);
 
 					_iter = _iter->next;
 				}
@@ -3379,18 +3172,8 @@ general_register_process(void *data)
 			}
 			count++;
 
-			/*Calc auth data */
-			memset(hr->auth_data, 0, hr->auth_data_length);
-
 			hr->nonce = htonll(_make_nonce());
-			memcpy(pkbuf, hr,buflen);
-			HMAC_SHA1_Init(&ctx);
-			HMAC_SHA1_UpdateKey(&ctx, (unsigned char *)ms->key, strlen((char *)ms->key));
-			HMAC_SHA1_EndKey(&ctx);
-			HMAC_SHA1_StartMessage(&ctx);
-			HMAC_SHA1_UpdateMessage(&ctx, pkbuf,buflen);
-			HMAC_SHA1_EndMessage(buf, &ctx);
-			memcpy(hr->auth_data, buf, hr->auth_data_length);
+			_ms_recal_hashing(rpk->buf, rpk->buf_len, ms->key, hr->auth_data, 0);
 
 			cp_log(LDEBUG, "Map-Register ");
 			cp_log(LDEBUG, " <");
@@ -3398,8 +3181,8 @@ general_register_process(void *data)
 			cp_log(LDEBUG, ">\n");
 
 			/*Send */
-			udp_register_terminate(rpk, (union sockunion *)&(ms->addr));
-			_free_rpl_pool_place(rpk, _rm_rpl);
+			udp_map_register_terminate(rpk, (union sockunion *)&(ms->addr));
+			_package_free(rpk);
 			pr = pr->next;
 		};/* send map-regiter finish */
 
@@ -3496,18 +3279,16 @@ int timeout = MAP_REPLY_TIMEOUT;
 int seq;
 
 struct eid_pending {
-    struct prefix *last_eid;		/* Last eid-prefix received by MR - to prevent loop*/
-    int rx;                     /* Receiving socket */
-    int rx6;                     /* Receiving socket */
+	struct prefix *last_eid;		/* Last eid-prefix received by MR - to prevent loop*/
+	int rx;                     /* Receiving socket */
+	int rx6;                     /* Receiving socket */
 	uint64_t nonce;		/* nonce */
-    struct timespec start;      /* Start time of lookup */
-    int count;                  /* Current count of retries */
-    uint64_t active;            /* Unique lookup identifier, 0 if inactive */
+	struct timespec start;      /* Start time of lookup */
+	int count;                  /* Current count of retries */
+	uint64_t active;            /* Unique lookup identifier, 0 if inactive */
 	struct list_t *rlocs;		/* List of next RLOC for map-request */
 	struct list_entry_t *rloc_cur;				/* Point to next RLOC to send map-request */
-	void *orgi_pkg;				/* IH package */
 	void *pke;	 /* orig packet */
-	uint16_t orgi_pkg_len;
 } mr_lookups[MAX_LOOKUPS];
 
 
@@ -3519,11 +3300,13 @@ send_mr_ddt(uint32_t idx)
 	uint16_t buf_len;
 	union sockunion servaddr, *rloc;
 	struct map_entry *e;
+	struct pk_req_entry *pke;
 	socklen_t slen;
 
 	if (mr_lookups[idx].active) {
-		buf = mr_lookups[idx].orgi_pkg;
-		buf_len = mr_lookups[idx].orgi_pkg_len;
+		pke = mr_lookups[idx].pke;
+		buf = pke->lh;
+		buf_len =pke->buf_len + ((char *)pke->buf  - (char *)pke->lh);
 
 		if (!mr_lookups[idx].rloc_cur) {
 			mr_lookups[idx].count = MR_MAX_LOOKUP+1;
@@ -3544,7 +3327,7 @@ send_mr_ddt(uint32_t idx)
 			slen = sizeof(struct sockaddr_in6);
 		}
 		else{
-			cp_log(LDEBUG,"AF not support\n");
+			cp_log(LDEBUG,"AF not support 4\n");
 			mr_lookups[idx].count++;
 			return 1;
 		}
@@ -3584,31 +3367,31 @@ send_mr_ddt(uint32_t idx)
 	void
 mr_new_lookup(void *data,struct communication_fct *fct,struct db_node *rn)
 {
-    int i,e,r,r6;
-    uint16_t sport,sport6;             /* inner EMR header source port */
-    char sport_str[NI_MAXSERV]; /* source port in string format */
-    struct addrinfo hints;
-    struct addrinfo *res;
+	int i,e,r,r6;
+	uint16_t sport,sport6;             /* inner EMR header source port */
+	char sport_str[NI_MAXSERV]; /* source port in string format */
+	struct addrinfo hints;
+	struct addrinfo *res;
 	struct pk_req_entry *pke = data;
 
 	/* Find an inactive slot in the lookup table */
-    for (i = 0; i < MAX_LOOKUPS; i++)
-        if (!mr_lookups[i].active)
-            break;
+	for (i = 0; i < MAX_LOOKUPS; i++)
+        	if (!mr_lookups[i].active)
+			break;
 
-    if (i >= MAX_LOOKUPS) {
-	    return;
-    }
+	if (i >= MAX_LOOKUPS)
+		return;
+
 
 	/*new socket for map-request */
 	if ((r = socket(AF_INET, SOCK_DGRAM, udpproto)) < 0) {
 		cp_log(LLOG, "Socket\n");
-    }
+	}
 
 	if ((r6 = socket(AF_INET6, SOCK_DGRAM, udpproto)) < 0) {
 		cp_log(LLOG, "Socket6\n");
-    }
-    /*random source port of map-request */
+	}
+	/*random source port of map-request */
 	e = -1;
 	while (e == -1) {
 		sport = MIN_EPHEMERAL_PORT + random() % (MAX_EPHEMERAL_PORT - MIN_EPHEMERAL_PORT);
@@ -3663,21 +3446,16 @@ mr_new_lookup(void *data,struct communication_fct *fct,struct db_node *rn)
 
 	struct prefix eid;
 	struct lisp_control_hdr *lh;
-	int pkg_len;
 
 	fct->request_get_eid(pke, &eid);
 
 	mr_lookups[i].last_eid = NULL;
 	mr_lookups[i].rx = r;
-    mr_lookups[i].rx6 = r6;
-    mr_lookups[i].count = 0;
-    mr_lookups[i].active = 1;
+	mr_lookups[i].rx6 = r6;
+	mr_lookups[i].count = 0;
+	mr_lookups[i].active = 1;
 	mr_lookups[i].pke = pke;
-	pkg_len = pke->buf_len + ((uint8_t *)pke->lh - (uint8_t *)pke->buf);
-	mr_lookups[i].orgi_pkg = calloc(pkg_len, sizeof(char));
-	memcpy(mr_lookups[i].orgi_pkg, pke->lh, pkg_len);
-	mr_lookups[i].orgi_pkg_len = pkg_len;
-	lh = mr_lookups[i].orgi_pkg;
+	lh = ((struct pk_req_entry *)mr_lookups[i].pke)->lh;
 	lh->ddt_originated  = 1;
 	mr_lookups[i].nonce = fct->request_get_nonce(pke);
 
@@ -3736,10 +3514,11 @@ pending_request(void *data, struct communication_fct *fct, struct db_node *rn)
 free_lookups(int idx)
 {
 	if (mr_lookups[idx].active) {
+		((struct pk_req_entry *)mr_lookups[idx].pke)->ref_cnt=0;
 		udp_free_pk(mr_lookups[idx].pke);
 		free(mr_lookups[idx].last_eid);
 		mr_lookups[idx].last_eid = NULL;
-		list_destroy(mr_lookups[idx].rlocs,rem);
+		list_destroy(mr_lookups[idx].rlocs, mem_free);
 		close(mr_lookups[idx].rx);
 		close(mr_lookups[idx].rx6);
 		mr_lookups[idx].active = 0;
@@ -3747,50 +3526,16 @@ free_lookups(int idx)
 }
 
 	void *
-read_mr_ddt(void *enid)
+process_map_referral(void *data, int idx)
 {
-	int rcvl;
-	/* enid: encoding of idx and type of socket
-		enid = idx *2 + (ipv4?1:0);
-	*/
-	int idx = *((int *)enid) / 2;
-	int ipv4 = *((int *)enid) % 2;
-	char buf[PKBUFLEN];
-	union sockunion si;
 	struct map_referral_hdr *lcm;
 	union map_referral_record_generic *rec;		/* current record */
-	socklen_t sockaddr_len;
 	size_t lcm_len;
 	uint8_t rcount;
 	size_t rlen = 0;
 	union afi_address_generic best_rloc;
+	void *buf = data;
 	struct prefix *pf;
-
-	free(enid);
-
-	/* read package */
-	if (ipv4) {
-		sockaddr_len = sizeof(struct sockaddr_in);
-		if ((rcvl = recvfrom(mr_lookups[idx].rx,
-			 buf,
-			 PKBUFLEN,
-			0,
-			(struct sockaddr *)&(si.sa),
-			&sockaddr_len)) < 0) {
-			return NULL;
-		}
-	}
-	else{
-		sockaddr_len = sizeof(struct sockaddr_in6);
-		if ((rcvl = recvfrom(mr_lookups[idx].rx6,
-			 buf,
-			 PKBUFLEN,
-			0,
-			(struct sockaddr *)&(si.sa),
-			&sockaddr_len)) < 0) {
-			return NULL;
-		}
-	}
 
 	/* reply must be map-referrel */
 	lcm = (struct map_referral_hdr *)buf;
@@ -3799,37 +3544,52 @@ read_mr_ddt(void *enid)
 	}
 
 	/* check nonce for security*/
-	if (mr_lookups[idx].nonce != lcm->nonce)
-		return NULL;
+	if (idx < 0) {
+		for (idx = 0 ; idx < mr_nfds - 1; idx++) {
+			if (mr_lookups[idx].nonce == ntohll(lcm->nonce))
+				break;
+		}
+		if (idx >= mr_nfds -1)
+			return NULL;
+	}else {
+		if (mr_lookups[idx].nonce != lcm->nonce)
+			return NULL;
+	}
 
+	cp_log(LDEBUG, "LCM: <type=%u, nonce=0x%lx, record=%d>\n", lcm->lisp_type, ntohll(lcm->nonce), lcm->record_count);
 
 	rcount = lcm->record_count;
 	if (rcount <= 0) {
 		cp_log(LDEBUG, "NO RECORD\n");
-
 		return NULL;
 	}
-	cp_log(LDEBUG, "LCM: <type=%u, rcount=%u nonce=0x%lx>\n", \
-				lcm->lisp_type, \
-				rcount, \
-				ntohll(lcm->nonce));
 
 	lcm_len = sizeof(struct map_referral_hdr);
 	rec = (union map_referral_record_generic *)CO(lcm, lcm_len);
 	pf = calloc(1,sizeof(struct prefix));
 
-		/* get new rloc */
+	/* get new rloc */
 	rlen = 0;
 	struct db_node *node;
 	while (rcount--) {
 		bzero(&best_rloc, sizeof(union afi_address_generic));
 		/* check if eid return not loop */
-		pf->family = rec->record.eid_prefix_afi;
+		switch (ntohs(rec->record.eid_prefix_afi)) {
+		case LISP_AFI_IP:
+			pf->family = AF_INET;
+			break;
+		case LISP_AFI_IPV6:
+			pf->family = AF_INET6;
+			break;
+		default:
+			printf("Get_mr_dtt function: not support AF\n");
+			return NULL;
+		}
 		pf->prefixlen = rec->record.eid_mask_len;
 		memcpy(&pf->u.prefix4,&rec->record.eid_prefix, SIN_LEN(pf->family));
+		cp_log(LDEBUG, "rec->act:%d\n", rec->record.act);
 		switch (rec->record.act) {
 		case LISP_REFERRAL_MS_ACK:
-			rlen = _process_referral_record(rec, &best_rloc, (struct db_node **)&node);
 			cp_log(LDEBUG, "Reach to Map Server...Finish\n");
 			free_lookups(idx);
 			free(pf);
@@ -3864,178 +3624,30 @@ read_mr_ddt(void *enid)
 						list_insert(l,rl,NULL);
 						_iter = _iter->next;
 					}
+					if (mr_lookups[idx].rloc_cur)
+						list_remove(mr_lookups[idx].rlocs, mr_lookups[idx].rloc_cur, mem_free);
 					if (l->count > 0)
 						mr_lookups[idx].rloc_cur = l->tail.previous;
 					else
 						mr_lookups[idx].rloc_cur = NULL;
+					printf("rloc_cur: %p\n", mr_lookups[idx].rloc_cur);
 				}
 			}
 			break;
 		case LISP_REFERRAL_MS_NOT_REGISTERED:
 			if (mr_lookups[idx].rlocs->count == 1) {
-				/* send map-negative-reply */
-			}
-			break;
-		case LISP_REFERRAL_DELEGATION_HOLE:
-			/* send map-negative-reply */
-			free(pf);
-			free_lookups(idx);
-			return NULL;
-			break;
-		case LISP_REFERRAL_NOT_AUTHORITATIVE:
-			/* clear cache */
-			free(pf);
-			free_lookups(idx);
-			return NULL;
-			break;
-		}
-		rec = (union map_referral_record_generic *)CO(rec, rlen);
-	}
-	free(pf);
-	send_mr_ddt(idx);
-	return NULL;
-}
-
-	void *
-get_mr_ddt(void *data)
-{
-	int idx;
-	struct map_referral_hdr *lcm;
-	union map_referral_record_generic *rec;		/* current record */
-	size_t lcm_len;
-	uint8_t rcount;
-	size_t rlen = 0;
-	union afi_address_generic best_rloc;
-	struct pk_req_entry *pke = data;
-	void *buf = pke->buf;
-	struct prefix *pf;
-
-	/* reply must be map-referrel */
-	lcm = (struct map_referral_hdr *)buf;
-	if (lcm->lisp_type != LISP_TYPE_MAP_REFERRAL) {
-		return NULL;
-	}
-
-	/* check nonce for security*/
-	for (idx = 0 ; idx < mr_nfds - 1; idx++) {
-		if (_debug == LDEBUG) {
-			fprintf(OUTPUT_STREAM, "idx=%d, nonce=0x%lx>\n", \
-				idx, mr_lookups[idx].nonce);
-		}
-		if (mr_lookups[idx].nonce == ntohll(lcm->nonce))
-			break;
-	}
-	printf("Match with idx:%d\n",idx);
-	if (_debug == LDEBUG) {
-		fprintf(OUTPUT_STREAM, "LCM: <type=%u, nonce=0x%lx>\n", \
-			lcm->lisp_type, ntohll(lcm->nonce));
-	}
-
-	if (idx >= mr_nfds -1)
-		return NULL;
-
-	rcount = lcm->record_count;
-	if (rcount <= 0) {
-		if (_debug == LDEBUG)
-			fprintf(OUTPUT_STREAM, "NO RECORD\n");
-
-		return NULL;
-	}
-	if (_debug == LDEBUG) {
-		fprintf(OUTPUT_STREAM, "LCM: <type=%u, rcount=%u nonce=0x%lx>\n", \
-			lcm->lisp_type, rcount, ntohll(lcm->nonce));
-	}
-
-	lcm_len = sizeof(struct map_referral_hdr);
-	rec = (union map_referral_record_generic *)CO(lcm, lcm_len);
-	pf = calloc(1,sizeof(struct prefix));
-
-		/* get new rloc */
-	rlen = 0;
-	struct db_node *node;
-	while (rcount--) {
-		bzero(&best_rloc, sizeof(union afi_address_generic));
-		/* check if eid return not loop */
-		switch (ntohs(rec->record.eid_prefix_afi)) {
-		case LISP_AFI_IP:
-			pf->family = AF_INET;
-			break;
-		case LISP_AFI_IPV6:
-			pf->family = AF_INET6;
-			break;
-		default:
-			printf("Get_mr_dtt function: not support AF\n");
-			return NULL;
-		}
-
-		pf->prefixlen = rec->record.eid_mask_len;
-		memcpy(&pf->u.prefix4,&rec->record.eid_prefix, SIN_LEN(pf->family));
-		switch (rec->record.act) {
-		case LISP_REFERRAL_MS_ACK:
-			rlen = _process_referral_record(rec, &best_rloc, (struct db_node **)&node);
-			if (_debug == LDEBUG)
-				fprintf(OUTPUT_STREAM, "Reach to Map Server...Finish\n");
-			free_lookups(idx);
-			free(pf);
-			return NULL;
-			break;
-		case LISP_REFERRAL_NODE_REFERRAL:
-		case LISP_REFERRAL_MS_REFERRAL:
-			rlen = _process_referral_record(rec, &best_rloc, (struct db_node **)&node);
-			if (mr_lookups[idx].last_eid && !prefix_match(mr_lookups[idx].last_eid,pf)) {
-				if (_debug == LDEBUG)
-					fprintf(OUTPUT_STREAM,"Error: Map-referral loop\n");
-				free(pf);
+				_send_negative_map_reply(mr_lookups[idx].pke, &udp_fct, NULL, pf, 60,0,1,0);				
 				free_lookups(idx);
 				return NULL;
 			}
-
-			/* update rloc of pending-eid */
-			if (!mr_lookups[idx].last_eid || (pf->prefixlen > mr_lookups[idx].last_eid->prefixlen) ) {
-				if (!mr_lookups[idx].last_eid)
-					mr_lookups[idx].last_eid = calloc(1,sizeof(struct prefix));
-				memcpy(mr_lookups[idx].last_eid, pf, sizeof(struct prefix));
-				struct list_t *l,*lr;
-				struct list_entry_t *_iter;
-				struct map_entry *rl;
-
-				l = mr_lookups[idx].rlocs;
-				lr= (struct list_t *)db_node_get_info(node);
-				if (lr) {
-					_iter = lr->head.next;
-					while (_iter != &lr->tail) {
-						rl = calloc(1,sizeof(struct map_entry));
-						memcpy(rl,_iter->data,sizeof(struct map_entry));
-						list_insert(l,rl,NULL);
-						_iter = _iter->next;
-					}
-					if (l->count > 0)
-						mr_lookups[idx].rloc_cur = l->tail.previous;
-					else
-						mr_lookups[idx].rloc_cur = NULL;
-				}
-			}
-			break;
-		case LISP_REFERRAL_MS_NOT_REGISTERED:
-			if (mr_lookups[idx].rlocs->count == 1) {
-				//send map-negative-reply
-			}
 			break;
 		case LISP_REFERRAL_DELEGATION_HOLE:
-			printf("HOLE: send map-negative-reply\n");
-			struct pk_rpl_entry *rpk;
-			rpk = udp_reply_add(mr_lookups[idx].pke);
-			printf("For EID: %s\n",(char *)prefix2str(pf));
-			udp_reply_add_record(rpk, pf, 15, 0, 0, 0, 1);
-			udp_reply_terminate(rpk);
-			//send map-negative-reply
-			free(pf);
+			_send_negative_map_reply(mr_lookups[idx].pke, &udp_fct, NULL, pf, 900,0,1,0);
 			free_lookups(idx);
 			return NULL;
 			break;
 		case LISP_REFERRAL_NOT_AUTHORITATIVE:
 			//clear cache
-			free(pf);
 			free_lookups(idx);
 			return NULL;
 			break;
@@ -4046,41 +3658,84 @@ get_mr_ddt(void *data)
 	send_mr_ddt(idx);
 	return NULL;
 }
+
+void *
+read_mr_ddt(void *enid)
+{
+	int rcvl;
+	/* enid: encoding of idx and type of socket
+		enid = idx *2 + (ipv4?1:0);
+	*/
+	int idx = *((int *)enid) / 2;
+	int ipv4 = *((int *)enid) % 2;
+	char buf[PKBUFLEN];
+	union sockunion si;
+	socklen_t sockaddr_len;
+
+	free(enid);
+
+	/* read package */
+	if (ipv4) {
+		sockaddr_len = sizeof(struct sockaddr_in);
+		if ((rcvl = recvfrom(mr_lookups[idx].rx,
+			 buf,
+			 PKBUFLEN,
+			0,
+			(struct sockaddr *)&(si.sa),
+			&sockaddr_len)) < 0) {
+			return NULL;
+		}
+	}
+	else{
+		sockaddr_len = sizeof(struct sockaddr_in6);
+		if ((rcvl = recvfrom(mr_lookups[idx].rx6,
+			 buf,
+			 PKBUFLEN,
+			0,
+			(struct sockaddr *)&(si.sa),
+			&sockaddr_len)) < 0) {
+			return NULL;
+		}
+	}
+
+	return process_map_referral(buf, idx);
+}
+
 /* res = x - y */
 	int
 timespec_subtract(struct timespec *res, struct timespec *x, struct timespec *y)
 {
-    int sec;
+	int sec;
 
 	/* perform the carry for the later subtraction by updating y */
-    if (x->tv_nsec < y->tv_nsec) {
-        sec = (y->tv_nsec - x->tv_nsec) / 1000000000 + 1;
-        y->tv_nsec -= 1000000000 * sec;
-        y->tv_sec += sec;
-    }
+	if (x->tv_nsec < y->tv_nsec) {
+		sec = (y->tv_nsec - x->tv_nsec) / 1000000000 + 1;
+		y->tv_nsec -= 1000000000 * sec;
+		y->tv_sec += sec;
+	}
 
-    if (x->tv_nsec - y->tv_nsec > 1000000000) {
-        sec = (x->tv_nsec - y->tv_nsec) / 1000000000;
-        y->tv_nsec += 1000000000 * sec;
-        y->tv_sec -= sec;
-    }
+	if (x->tv_nsec - y->tv_nsec > 1000000000) {
+		sec = (x->tv_nsec - y->tv_nsec) / 1000000000;
+		y->tv_nsec += 1000000000 * sec;
+		y->tv_sec -= sec;
+	}
 
-    res->tv_sec = x->tv_sec - y->tv_sec;
-    res->tv_nsec = x->tv_nsec - y->tv_nsec;
+	res->tv_sec = x->tv_sec - y->tv_sec;
+	res->tv_nsec = x->tv_nsec - y->tv_nsec;
 
 	/* return 1 if result is negative */
-    return x->tv_sec < y->tv_sec;
+	return x->tv_sec < y->tv_sec;
 }
 
 	void *
 mr_event_loop(void *context)
 {
-	thr_pool_t *mrworker;
-	mrworker = thr_pool_create(min_thread,max_thread,linger_thread, NULL);
+	/*thr_pool_t *mrworker;
+	mrworker = thr_pool_create(min_thread,max_thread,linger_thread, NULL); */
 	int *enid;
 
 	for (;;) {
-        int e, i, j, l = -1,ipv4;
+        	int e, i, j, l = -1,ipv4;
 		int poll_timeout = timeout*1000;
 
 		//int poll_timeout = INFTIM;
@@ -4088,62 +3743,62 @@ mr_event_loop(void *context)
                                    to INFTIM = -1 (infinity). If there are no
                                    active lookups, we wait in poll() until a
                                    mapping socket event is received. */
-        struct timespec now, deadline, delta, to, tmp;
+	        struct timespec now, deadline, delta, to, tmp;
 
-        to.tv_sec  = timeout;
-        to.tv_nsec = 0;
+	        to.tv_sec  = timeout;
+	        to.tv_nsec = 0;
 
-        mr_nfds = 0;
+	        mr_nfds = 0;
 
-        clock_gettime(CLOCK_REALTIME, &now);
+	        clock_gettime(CLOCK_REALTIME, &now);
 
-        for (i = 0; i < MAX_LOOKUPS; i++) {
-            if (!(mr_lookups[i].active)) continue;
-			if (mr_lookups[i].count > MR_MAX_LOOKUP) {
-				free_lookups(i);
-				continue;
-			}
+	        for (i = 0; i < MAX_LOOKUPS; i++) {
+			if (!(mr_lookups[i].active)) continue;
+				if (mr_lookups[i].count > MR_MAX_LOOKUP) {
+					free_lookups(i);
+					continue;
+				}
 
-            deadline.tv_sec = mr_lookups[i].start.tv_sec + mr_lookups[i].count * timeout;
-            deadline.tv_nsec = mr_lookups[i].start.tv_nsec;
+		deadline.tv_sec = mr_lookups[i].start.tv_sec + mr_lookups[i].count * timeout;
+		deadline.tv_nsec = mr_lookups[i].start.tv_nsec;
 
-            timespec_subtract(&delta, &deadline, &now);
-			if (delta.tv_sec < 0) {
-				delta.tv_sec = timeout/2 ;
-				delta.tv_nsec = 0;
-			}
+		timespec_subtract(&delta, &deadline, &now);
+		if (delta.tv_sec < 0) {
+			delta.tv_sec = timeout/2 ;
+			delta.tv_nsec = 0;
+		}
 
-            mr_fds[mr_nfds].fd     = mr_lookups[i].rx;
-            mr_fds[mr_nfds].events = POLLIN;
-			mr_fds_idx[mr_nfds]    = i;
-			mr_nfds++;
-			mr_fds6[mr_nfds].fd     = mr_lookups[i].rx6;
-            mr_fds[mr_nfds].events = POLLIN;
-            mr_fds_idx[mr_nfds]    = i;
-            mr_nfds++;
-            /* Find the minimum delta */
-            if (timespec_subtract(&tmp, &delta, &to)) {
-				to.tv_sec    = delta.tv_sec;
-                to.tv_nsec   = delta.tv_nsec;
-                poll_timeout = to.tv_sec * 1000 + to.tv_nsec / 1000000;
-                l = i;
-            }
+		mr_fds[mr_nfds].fd     = mr_lookups[i].rx;
+		mr_fds[mr_nfds].events = POLLIN;
+		mr_fds_idx[mr_nfds]    = i;
+		mr_nfds++;
+		mr_fds6[mr_nfds].fd     = mr_lookups[i].rx6;
+		mr_fds[mr_nfds].events = POLLIN;
+		mr_fds_idx[mr_nfds]    = i;
+		mr_nfds++;
+		/* Find the minimum delta */
+		if (timespec_subtract(&tmp, &delta, &to)) {
+			to.tv_sec    = delta.tv_sec;
+			to.tv_nsec   = delta.tv_nsec;
+			poll_timeout = to.tv_sec * 1000 + to.tv_nsec / 1000000;
+			l = i;
+		}
         } /* Finished iterating through all lookups */
 
-		e = poll(mr_fds, mr_nfds, poll_timeout);
+	e = poll(mr_fds, mr_nfds, poll_timeout);
         if (e < 0) continue;
         if (e == 0)                             /* If timeout expires */
-            if (l >= 0)                         /* and slot is defined */
-				send_mr_ddt(l);                    /* retry Map-Request */
+		if (l >= 0)                         /* and slot is defined */
+			send_mr_ddt(l);                    /* retry Map-Request */
 		for (j = mr_nfds - 1; j >= 0; j--) {
-            if (mr_fds[j].revents == POLLIN) {
+			if (mr_fds[j].revents == POLLIN) {
 				ipv4 = (j % 2 == 0)?1:0;
 				enid = calloc(1,sizeof(int));
 				/*enid: encoding of idx and ipv4 */
 				*enid = mr_fds_idx[j]*2+ipv4;
-                //thr_pool_queue(mrworker, read_mr_ddt, (void *)enid);
+                		//thr_pool_queue(mrworker, read_mr_ddt, (void *)enid);
 				read_mr_ddt((void *)enid);
-            }
-        }
-    }
+			}
+	        }
+	}
 }
