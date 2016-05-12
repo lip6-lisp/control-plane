@@ -10,6 +10,7 @@ static int timeout = MAP_REPLY_TIMEOUT;
 
 struct eid_lookup {
         union sockunion eid;/* Destination EID */
+        union sockunion *seid; /*Source EID */
         int rx;                     /* Receiving socket */
         uint64_t nonce[MAX_COUNT];	/* nonce */
         uint16_t sport;             /* EMR inner header source port */
@@ -30,7 +31,7 @@ int openlispsck;
 
 static void map_message_handler(union sockunion *mr);
 int check_eid(union sockunion *eid);
-void  new_lookup(union sockunion *eid,  union sockunion *mr);
+void  new_lookup(union sockunion *eid,  union sockunion *mr, char *msg);
 int  send_mr(int idx);
 int read_rec(union map_reply_record_generic *rec);
 
@@ -145,10 +146,16 @@ map_message_handler(union sockunion *mr)
         n = read(lookups[0].rx, msg, PSIZE);
         clock_gettime(CLOCK_REALTIME, &now);
 
-        if (((struct map_msghdr *)msg)->map_type == MAPM_MISS_EID) {
+        if ( (((struct map_msghdr *)msg)->map_type == MAPM_MISS_EID) ||
+                                        (((struct map_msghdr *)msg)->map_type == MAPM_MISS_HEADER) ||
+                                        (((struct map_msghdr *)msg)->map_type == MAPM_MISS_PACKET)) {
+
                 eid = (union sockunion *)CO(msg,sizeof(struct map_msghdr));
 		if (check_eid(eid)) {
-                        new_lookup(eid, mr);
+                        if (((struct map_msghdr *)msg)->map_type == MAPM_MISS_EID)
+                                new_lookup(eid, mr, NULL);
+                        else
+                                new_lookup(eid, mr, msg);
 		}
 	}
 }
@@ -167,7 +174,7 @@ check_eid(union sockunion *eid)
 
 /*Add new EID to poll*/
 	void
-new_lookup(union sockunion *eid,  union sockunion *mr)
+new_lookup(union sockunion *eid,  union sockunion *mr, char *msg)
 {
         int i,e,r;
         uint16_t sport;             /* inner EMR header source port */
@@ -231,6 +238,36 @@ new_lookup(union sockunion *eid,  union sockunion *mr)
 	else
 		mr->sin6.sin6_port = htons(LISP_CP_PORT);
 	lookups[i].mr = mr;
+
+        /*Get source eid from packet header */
+        lookups[i].seid = NULL;
+
+        if (msg){
+                lookups[i].seid = calloc(1, sizeof(union sockunion));
+                if ( ((struct map_msghdr *)msg)->map_msglen  < (sizeof(struct map_msghdr) +
+                                                                                                SS_LEN(eid) +
+                                                                                                sizeof(struct ip)) ) {
+                        printf("packet too short::");
+                        return ;
+                }
+                struct ip *ih;
+                struct ip6_hdr *ih6;
+                ih = (struct ip *)CO(msg,sizeof(struct map_msghdr) + SS_LEN(eid));
+                switch (ih->ip_v){
+                case 4:
+                        lookups[i].seid->sin.sin_family = AF_INET;
+                        memcpy(&lookups[i].seid->sin.sin_addr, &ih->ip_src,sizeof(struct in_addr));
+                        break;
+                case 6:
+                        ih6=(struct ip6_hdr *)ih;
+                        lookups[i].seid->sin6.sin6_family = AF_INET6;
+                        memcpy(&lookups[i].seid->sin6.sin6_addr, &ih6->ip6_src,sizeof(struct in6_addr));
+                        break;
+                default:
+                        printf("Not IP packet\n");
+                        return;
+                }
+        };
         send_mr(i);
 }
 
@@ -319,10 +356,28 @@ send_mr(int idx)
 	lcm->record_count = 1;
 	lcm->nonce = htonll(nonce);
 
-	/* set no source EID <AFI=0, addres is empty> -> jump of 2 bytes */
-	/* nothing to do as bzero of the packet at init */
-	itr_rloc = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr) + 2);
-
+	/* set source EID <AFI=0 if exist */
+        if (lookups[idx].seid) {
+                union afi_address_generic *src_eid;
+                src_eid = (struct afi_address *)CO(lcm, sizeof(struct map_request_hdr));
+                switch (lookups[idx].seid->sa.sa_family ) {
+                case AF_INET:
+                        src_eid->ip.afi = htons(LISP_AFI_IP);
+                        memcpy(&src_eid->ip.address, (struct in_addr *)&(lookups[idx].seid->sin.sin_addr),sizeof(struct in_addr));
+                        itr_rloc = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr) + sizeof(struct afi_address));
+                        break;
+                case AF_INET6:
+                        src_eid->ip6.afi = htons(LISP_AFI_IPV6);
+                        memcpy(&src_eid->ip6.address, (struct in6_addr *)&(lookups[idx].seid->sin6.sin6_addr),sizeof(struct in6_addr));
+                        itr_rloc = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr) + sizeof(struct afi_address6));
+                        break;
+                default:
+                        cp_log(LLOG, "AF not support\n");
+                        return -1;
+                }
+        } else {
+                itr_rloc = (union afi_address_generic *)CO(lcm, sizeof(struct map_request_hdr) + 2);
+        }
 
 	/* set source ITR */
 	switch (lookups[idx].mr->sa.sa_family ) {
@@ -350,7 +405,7 @@ send_mr(int idx)
 		rec->record.eid_prefix_afi = htons(LISP_AFI_IP);
 		memcpy(&rec->record.eid_prefix, &(eid->sin.sin_addr), sizeof(struct in_addr));
 		inet_ntop(AF_INET, (void *)&rec->record.eid_prefix, ip, INET6_ADDRSTRLEN);
-		ptr = (uint8_t *)CO(rec,4+4);
+		ptr = (uint8_t *)CO(rec, sizeof(struct map_request_record));
 		break;
 	case AF_INET6:
 		/* EID prefix is an IPv6 so 128 bits (16 bytes) */
@@ -358,7 +413,7 @@ send_mr(int idx)
 		rec->record.eid_prefix_afi = htons(LISP_AFI_IPV6);
 		memcpy(&rec->record6.eid_prefix, &(eid->sin6.sin6_addr), sizeof(struct in6_addr));
 		inet_ntop(AF_INET6, (void *)&rec->record6.eid_prefix, ip, INET6_ADDRSTRLEN);
-		ptr = (uint8_t *)CO(rec,4+16);
+		ptr = (uint8_t *)CO(rec, sizeof(struct map_request_record6));
 		break;
 	default:
 		cp_log(LLOG, "not supported\n");
@@ -398,7 +453,7 @@ send_mr(int idx)
 	case AF_INET6:
 		ip_len = (uint8_t *)ptr - (uint8_t *)ih;
 		ih6->ip6_vfc	  = 0x6E; //version
-		ih6->ip6_plen	  = htons(ip_len); //payload length
+		ih6->ip6_plen	  = htons(ip_len - sizeof(struct ip6_hdr)); //payload length
 		ih6->ip6_nxt      = IPPROTO_UDP;//nex header
 		ih6->ip6_hlim     = 64; //hop limit
 		memcpy(&ih6->ip6_src, &afi_addr_src.ip6.address, sizeof(struct in6_addr));
