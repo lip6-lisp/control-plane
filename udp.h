@@ -368,7 +368,6 @@ struct lcaf_hdr{
 };
 
 struct rloc_te{
-	uint16_t	afi;
 #ifdef LITTLE_ENDIAN
 	uint16_t	reserved:13;
 	uint8_t		L:1;
@@ -380,11 +379,11 @@ struct rloc_te{
 	uint8_t		S:1;
 	uint8_t		reserved:13;
 #endif
+	uint16_t	afi;
 	struct in_addr	hop_addr;
 };
 
 struct rloc6_te{
-	uint16_t	afi;
 #ifdef LITTLE_ENDIAN
 	uint16_t	reserved:13;
 	uint8_t		L:1;
@@ -396,6 +395,7 @@ struct rloc6_te{
 	uint8_t		S:1;
 	uint8_t		reserved:13;
 #endif
+	uint16_t	afi;
 	struct in6_addr	hop_addr;
 };
 union rloc_te_generic {
