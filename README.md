@@ -4,7 +4,7 @@ The OpenLISP control plane (opencp) repository https://github.com/lip6-lisp/cont
 It is designed to work on both linux and BSD platforms.
 
 # For more info
-http://www.lisp.ipv6.lip6.fr
+http://www.lisp-lab.org
 
 
 # How to install ?
